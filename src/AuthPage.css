@@ -1,0 +1,114 @@
+/* --- Kartlar --- */
+.rapor-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  color: #111;
+  transition: all 0.3s ease;
+}
+.rapor-card:hover {
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+.rapor-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #111;
+}
+.rapor-stats {
+  font-size: 0.9rem;
+  color: #333;
+  margin-top: 6px;
+}
+.süre {
+  margin-left: 10px;
+  color: #666;
+}
+.detay-btn {
+  margin-top: 8px;
+  background: #111827;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.detay-btn:hover {
+  background: #000;
+}
+
+/* --- Popup --- */
+.popup-arka {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.popup-icerik {
+  background: #fff;
+  color: #111;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 900px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.popup-baslik {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #111;
+}
+.detay-tablo table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.detay-tablo th,
+.detay-tablo td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+.detay-tablo th {
+  background: #f3f4f6;
+  color: #111;
+  font-weight: 600;
+}
+.detay-tablo td {
+  color: #222;
+}
+.yanlis {
+  color: #dc2626;
+}
+.dogru {
+  color: #16a34a;
+}
+.popup-alt {
+  text-align: right;
+  margin-top: 16px;
+}
+.kapat-btn {
+  background: #111827;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+.kapat-btn:hover {
+  background: #000;
+}

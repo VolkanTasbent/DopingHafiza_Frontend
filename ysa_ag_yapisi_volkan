@@ -1,0 +1,59 @@
+// Yapay Sinir Ağı
+digraph {
+	rankdir=LR
+	G1 [label=X1 fillcolor="#b3e6ff" shape=circle style=filled]
+	G2 [label=X2 fillcolor="#b3e6ff" shape=circle style=filled]
+	G3 [label=X3 fillcolor="#b3e6ff" shape=circle style=filled]
+	G4 [label=X4 fillcolor="#b3e6ff" shape=circle style=filled]
+	H1 [label=H1 fillcolor="#ffe6b3" shape=circle style=filled]
+	H2 [label=H2 fillcolor="#ffe6b3" shape=circle style=filled]
+	H3 [label=H3 fillcolor="#ffe6b3" shape=circle style=filled]
+	H4 [label=H4 fillcolor="#ffe6b3" shape=circle style=filled]
+	H5 [label=H5 fillcolor="#ffe6b3" shape=circle style=filled]
+	H6 [label=H6 fillcolor="#ffe6b3" shape=circle style=filled]
+	H7 [label=H7 fillcolor="#ffe6b3" shape=circle style=filled]
+	C1 [label=Y1 fillcolor="#b3ffb3" shape=circle style=filled]
+	C2 [label=Y2 fillcolor="#b3ffb3" shape=circle style=filled]
+	G1 -> H1
+	G1 -> H2
+	G1 -> H3
+	G1 -> H4
+	G1 -> H5
+	G1 -> H6
+	G1 -> H7
+	G2 -> H1
+	G2 -> H2
+	G2 -> H3
+	G2 -> H4
+	G2 -> H5
+	G2 -> H6
+	G2 -> H7
+	G3 -> H1
+	G3 -> H2
+	G3 -> H3
+	G3 -> H4
+	G3 -> H5
+	G3 -> H6
+	G3 -> H7
+	G4 -> H1
+	G4 -> H2
+	G4 -> H3
+	G4 -> H4
+	G4 -> H5
+	G4 -> H6
+	G4 -> H7
+	H1 -> C1
+	H1 -> C2
+	H2 -> C1
+	H2 -> C2
+	H3 -> C1
+	H3 -> C2
+	H4 -> C1
+	H4 -> C2
+	H5 -> C1
+	H5 -> C2
+	H6 -> C1
+	H6 -> C2
+	H7 -> C1
+	H7 -> C2
+}

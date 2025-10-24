@@ -1,0 +1,230 @@
+/* ========== Admin Panel Modern Tema ========== */
+
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --card: #1e2633;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.05);
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.admin-container {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+}
+
+.admin-box {
+  width: min(1100px, 95%);
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.admin-back-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.admin-back-btn:hover {
+  background: var(--border-light);
+  color: var(--text);
+}
+
+/* 🔹 Bölüm kartı */
+.section {
+  background: var(--card);
+  border: 1px solid var(--border-light);
+  padding: 20px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.section h3 {
+  margin-top: 0;
+  font-size: 1.3rem;
+  color: var(--text);
+  margin-bottom: 16px;
+  border-left: 4px solid var(--accent);
+  padding-left: 10px;
+}
+
+/* 🔹 Form elemanları */
+input,
+textarea,
+select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* 🔹 Butonlar */
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  background: #475569;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: var(--danger);
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+/* 🔹 Konu seçim etiketleri */
+.topic-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.9rem;
+  margin: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.topic-tag input {
+  accent-color: var(--accent);
+}
+
+.topic-tag:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* 🔹 Soru listesi */
+.question-card {
+  background: #0f172a;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.question-card h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.choice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.choice.correct {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--success);
+}
+
+/* 🔹 Resim önizleme */
+.preview-image {
+  max-width: 280px;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* 🔹 Mesaj */
+.msg {
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+/* 🔹 Responsive */
+@media (max-width: 768px) {
+  .admin-box {
+    padding: 16px;
+  }
+
+  .admin-title {
+    font-size: 1.5rem;
+  }
+
+  .section {
+    padding: 16px;
+  }
+}

@@ -1,0 +1,148 @@
+/* =========================
+   Modern Global Styles – index.css
+   ========================= */
+
+/* Reset + Temel stiller */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Açık tema renkleri */
+:root {
+  --bg: #f5f7fb;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #111827;
+  --secondary: #2563eb;
+  --border: #e5e7eb;
+  --radius: 14px;
+  --shadow: 0 12px 32px rgba(0,0,0,0.08);
+  color-scheme: light;
+}
+
+/* (Opsiyonel) Karanlık tema otomatik uyum */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --primary: #3b82f6;
+    --secondary: #60a5fa;
+    --border: rgba(255, 255, 255, 0.12);
+    --shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+}
+
+/* Global arka plan ve yazı */
+body {
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Bağlantılar */
+a {
+  color: var(--secondary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Scrollbar (daha şık) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary);
+}
+
+/* Buton reset */
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Genel container spacing */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Responsive yazı boyutları */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+h1 { font-size: clamp(2rem, 5vw, 2.5rem); }
+h2 { font-size: clamp(1.75rem, 4vw, 2rem); }
+h3 { font-size: clamp(1.5rem, 3.5vw, 1.75rem); }
+
+/* Kart görünümü için global stil */
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 38px rgba(0,0,0,0.12);
+}
+
+/* Responsive düzen */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 12px;
+  }
+  h1 { font-size: 1.8rem; }
+}
+
+/* Küçük UI yardımcıları */
+.text-center { text-align: center; }
+.text-muted { color: var(--muted); }
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mb-1 { margin-bottom: .5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+
+/* Focus ring */
+:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.4);
+  outline-offset: 2px;
+}
+.option {
+  background: #1e2633;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+.option.correct {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--success);
+}
