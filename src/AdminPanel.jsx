@@ -37,6 +37,9 @@ export default function AdminPanel({ onBack }) {
 
   // --- ui ---
   const [msg, setMsg] = useState("");
+  
+  // --- döküman yükleme ---
+  const [uploadingKonuId, setUploadingKonuId] = useState(null);
 
   const errText = (e) =>
     e?.response?.data?.message || e?.response?.data || e?.message || "Hata";
@@ -88,6 +91,44 @@ export default function AdminPanel({ onBack }) {
       setYeniKonu("");
       fetchKonular(seciliDersId);
     } catch (e) { setMsg("Konu eklenemedi: " + errText(e)); }
+  }
+
+  async function uploadDokuman(konuId, file) {
+    if (!file) return;
+    
+    // PDF kontrolü
+    if (file.type !== "application/pdf") {
+      return setMsg("Sadece PDF dosyaları yüklenebilir!");
+    }
+    
+    // Boyut kontrolü (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return setMsg("PDF boyutu 10MB'dan küçük olmalıdır!");
+    }
+    
+    setUploadingKonuId(konuId);
+    setMsg("");
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("konuId", konuId);
+      formData.append("dokumanAdi", file.name);
+      
+      await api.post("/api/files/upload-dokuman", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      setMsg("✅ PDF başarıyla yüklendi!");
+      fetchKonular(seciliDersId); // Listeyi yenile
+      
+      // 3 saniye sonra mesajı temizle
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e) {
+      setMsg("❌ PDF yüklenemedi: " + errText(e));
+    } finally {
+      setUploadingKonuId(null);
+    }
   }
 
   async function fetchSorular() {
@@ -232,31 +273,106 @@ export default function AdminPanel({ onBack }) {
           {/* KONU YÖNETİMİ */}
           {seciliDersId && (
             <section style={{ border: "1px solid #eee", borderRadius: 12, padding: 12, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Konular (Soru için çoklu seç)</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {konular.map((k) => (
-                      <label key={k.id} style={{ border: "1px solid #e5e7eb", borderRadius: 999, padding: "4px 10px", display: "inline-flex", alignItems: "center", gap: 8 }}>
-                        <input
-                          type="checkbox"
-                          checked={seciliKonuIds.includes(k.id)}
-                          onChange={() =>
-                            setSeciliKonuIds((prev) =>
-                              prev.includes(k.id) ? prev.filter((x) => x !== k.id) : [...prev, k.id]
-                            )
-                          }
-                        />
-                        {k.ad}
-                      </label>
-                    ))}
-                  </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Konular (Soru için çoklu seç)</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {konular.map((k) => (
+                    <label key={k.id} style={{ border: "1px solid #e5e7eb", borderRadius: 999, padding: "4px 10px", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={seciliKonuIds.includes(k.id)}
+                        onChange={() =>
+                          setSeciliKonuIds((prev) =>
+                            prev.includes(k.id) ? prev.filter((x) => x !== k.id) : [...prev, k.id]
+                          )
+                        }
+                      />
+                      {k.ad}
+                    </label>
+                  ))}
                 </div>
+              </div>
 
-                <form onSubmit={addKonu} style={{ alignSelf: "end", display: "flex", gap: 8 }}>
-                  <input placeholder="Yeni konu adı" value={yeniKonu} onChange={(e) => setYeniKonu(e.target.value)} />
-                  <button type="submit">Konu Ekle</button>
-                </form>
+              <form onSubmit={addKonu} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <input 
+                  placeholder="Yeni konu adı" 
+                  value={yeniKonu} 
+                  onChange={(e) => setYeniKonu(e.target.value)} 
+                  style={{ flex: 1 }}
+                />
+                <button type="submit">Konu Ekle</button>
+              </form>
+
+              {/* KONU DÖKÜMAN YÖNETİMİ */}
+              <div style={{ borderTop: "2px solid #e5e7eb", paddingTop: 12 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>📚 Konu Dökümanları</div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {konular.map((k) => (
+                    <div 
+                      key={k.id} 
+                      style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "1fr auto auto", 
+                        gap: 8, 
+                        alignItems: "center",
+                        padding: "8px 12px",
+                        background: (k.dokumanUrl || k.dokuman_url) ? "#f0fdf4" : "#f9fafb",
+                        border: `1px solid ${(k.dokumanUrl || k.dokuman_url) ? "#86efac" : "#e5e7eb"}`,
+                        borderRadius: 8
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{k.ad}</div>
+                        {(k.dokumanUrl || k.dokuman_url) && (
+                          <div style={{ fontSize: "0.85rem", color: "#16a34a", marginTop: 2 }}>
+                            ✓ {k.dokumanAdi || k.dokuman_adi || "Döküman mevcut"}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {(k.dokumanUrl || k.dokuman_url) && (
+                        <a 
+                          href={fileUrl(k.dokumanUrl || k.dokuman_url)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            padding: "4px 12px",
+                            background: "#10b981",
+                            color: "white",
+                            borderRadius: 6,
+                            fontSize: "0.85rem",
+                            textDecoration: "none",
+                            fontWeight: 600
+                          }}
+                        >
+                          📄 Görüntüle
+                        </a>
+                      )}
+                      
+                      <label 
+                        style={{ 
+                          padding: "4px 12px",
+                          background: uploadingKonuId === k.id ? "#9ca3af" : "#f59e0b",
+                          color: "white",
+                          borderRadius: 6,
+                          cursor: uploadingKonuId === k.id ? "not-allowed" : "pointer",
+                          fontSize: "0.85rem",
+                          fontWeight: 600,
+                          display: "inline-block"
+                        }}
+                      >
+                        {uploadingKonuId === k.id ? "Yükleniyor..." : (k.dokumanUrl || k.dokuman_url) ? "🔄 Değiştir" : "📤 Yükle"}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          style={{ display: "none" }}
+                          onChange={(e) => uploadDokuman(k.id, e.target.files?.[0])}
+                          disabled={uploadingKonuId === k.id}
+                        />
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           )}

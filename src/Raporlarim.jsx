@@ -2,14 +2,12 @@
 import React, { useEffect, useState } from "react";
 import api from "./services/api";
 import "./AuthPage.css";
+import "./Raporlarim.css";
 
-export default function Raporlarim({ onBack }) {
+export default function Raporlarim({ onBack, onDetayAc }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
-  const [detayModal, setDetayModal] = useState(false);
-  const [detayVeri, setDetayVeri] = useState([]);
-  const [detayLoading, setDetayLoading] = useState(false);
 
   const errText = (e) =>
     e?.response?.data?.message ||
@@ -23,8 +21,15 @@ export default function Raporlarim({ onBack }) {
       try {
         setMsg("");
         setLoading(true);
-        const { data } = await api.get("/api/raporlar", { params: { limit: 20 } });
-        setList(Array.isArray(data) ? data : []);
+        const { data } = await api.get("/api/raporlar", { params: { limit: 100 } });
+        
+        
+        // Yeniden eskiye sıralama (finishedAt'e göre)
+        const sortedData = Array.isArray(data) 
+          ? data.sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))
+          : [];
+        
+        setList(sortedData);
       } catch (e) {
         setMsg("Oturumlar alınamadı: " + errText(e));
       } finally {
@@ -33,19 +38,10 @@ export default function Raporlarim({ onBack }) {
     })();
   }, []);
 
-  const openDetay = async (oturumId) => {
-    try {
-      setDetayLoading(true);
-      setMsg("");
-      const { data } = await api.get(`/api/raporlar/${oturumId}/detay`, {
-        params: { sadeceYanlis: true },
-      });
-      setDetayVeri(data?.items || []);
-      setDetayModal(true);
-    } catch (e) {
-      setMsg("Detay alınamadı: " + errText(e));
-    } finally {
-      setDetayLoading(false);
+  const openDetay = (oturumId) => {
+    // Detay sayfasını aç
+    if (onDetayAc) {
+      onDetayAc(oturumId);
     }
   };
 
@@ -76,98 +72,82 @@ export default function Raporlarim({ onBack }) {
             <p>Henüz oturum yok. Bir test çözmeyi deneyebilirsin.</p>
           )}
 
-          {list.map((row) => (
-            <div
-              key={row.oturumId}
-              className="rapor-card"
-            >
-              <div className="rapor-header">
-                <span><b>Tarih:</b> {fmt(row.finishedAt)}</span>
-                <span><b>Skor:</b> {row.score ?? 0}</span>
-              </div>
-              <div className="rapor-stats">
-                ✅ {row.correctCount ?? 0} | ❌ {row.wrongCount ?? 0} | 🧩 {row.totalCount ?? 0}
-                <span className="süre">⏱ {fmtMs(row.durationMs)}</span>
-              </div>
-              <button
-                onClick={() => openDetay(row.oturumId)}
-                className="detay-btn"
-              >
-                Detay
-              </button>
-            </div>
-          ))}
-
-          {/* === Popup Modal === */}
-          {detayModal && (
-            <div className="popup-arka">
-              <div className="popup-icerik">
-                <h3 className="popup-baslik">🧠 Yanlış Yapılan Sorular</h3>
-
-                {detayLoading ? (
-                  <p>Detaylar yükleniyor...</p>
-                ) : detayVeri.length === 0 ? (
-                  <p className="text-center">Tüm cevaplar doğru 🎉</p>
-                ) : (
-                  <div className="detay-tablo">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Ders</th>
-                          <th>Konu</th>
-                          <th>Soru</th>
-                          <th>Seçilen Şık</th>
-                          <th>Doğru Şık</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detayVeri.map((it, i) => {
-                          const s = it.soru;
-                          return (
-                            <tr key={it.id || i}>
-                              <td>{s?.dersAd || "-"}</td>
-                              <td>
-                                {Array.isArray(s?.konular) && s.konular.length
-                                  ? s.konular.map((k) => k.ad).join(", ")
-                                  : "-"}
-                              </td>
-                              <td>{s?.metin || "-"}</td>
-                              <td className="yanlis">
-                                {(() => {
-                                  const chosenId = it.secenekId;
-                                  const found = (s?.secenekler || []).find(
-                                    (x) => x.id === chosenId
-                                  );
-                                  return found?.metin || "-";
-                                })()}
-                              </td>
-                              <td className="dogru">
-                                {(() => {
-                                  const correct = (s?.secenekler || []).find(
-                                    (x) => x.dogru === true
-                                  );
-                                  return correct?.metin || "-";
-                                })()}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+          <div className="rapor-grid">
+            {list.map((row) => {
+              const successRate = row.totalCount > 0 
+                ? Math.round((row.correctCount / row.totalCount) * 100) 
+                : 0;
+              
+              // Puan hesaplama: Doğru: +4, Yanlış: -1, Boş: 0
+              const dogru = row.correctCount ?? 0;
+              const yanlis = row.wrongCount ?? 0;
+              const toplam = row.totalCount ?? 0;
+              const bos = toplam - dogru - yanlis;
+              
+              const puan = (dogru * 4) + (yanlis * -1) + (bos * 0);
+              
+              // Net hesaplama: Doğru - (Yanlış / 4)
+              const net = dogru - (yanlis / 4);
+              const netFormatted = net.toFixed(2);
+              
+              return (
+                <div key={row.oturumId} className="rapor-card">
+                  <div className="rapor-card-header">
+                    <div className="rapor-score">
+                      <span className="score-value">{puan}</span>
+                      <span className="score-label">Puan</span>
+                    </div>
+                    <div className="rapor-badge">
+                      <span className={`success-badge ${successRate >= 70 ? 'high' : successRate >= 40 ? 'medium' : 'low'}`}>
+                        %{successRate}
+                      </span>
+                    </div>
                   </div>
-                )}
 
-                <div className="popup-alt">
+                  <div className="rapor-stats-grid">
+                    <div className="stat-item success">
+                      <span className="stat-icon">✅</span>
+                      <span className="stat-value">{row.correctCount ?? 0}</span>
+                      <span className="stat-label">Doğru</span>
+                    </div>
+                    <div className="stat-item error">
+                      <span className="stat-icon">❌</span>
+                      <span className="stat-value">{row.wrongCount ?? 0}</span>
+                      <span className="stat-label">Yanlış</span>
+                    </div>
+                    <div className="stat-item net">
+                      <span className="stat-icon">📊</span>
+                      <span className="stat-value">{netFormatted}</span>
+                      <span className="stat-label">Net</span>
+                    </div>
+                    <div className="stat-item total">
+                      <span className="stat-icon">🧩</span>
+                      <span className="stat-value">{row.totalCount ?? 0}</span>
+                      <span className="stat-label">Toplam</span>
+                    </div>
+                  </div>
+
+                  <div className="rapor-meta">
+                    <div className="meta-item">
+                      <span className="meta-icon">📅</span>
+                      <span className="meta-text">{fmt(row.finishedAt)}</span>
+                    </div>
+                    <div className="meta-item">
+                      <span className="meta-icon">⏱️</span>
+                      <span className="meta-text">{fmtMs(row.durationMs)}</span>
+                    </div>
+                  </div>
+
                   <button
-                    onClick={() => setDetayModal(false)}
-                    className="kapat-btn"
+                    onClick={() => openDetay(row.oturumId)}
+                    className="rapor-detay-btn"
                   >
-                    Kapat
+                    <span>📋 Detaylı İncele</span>
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

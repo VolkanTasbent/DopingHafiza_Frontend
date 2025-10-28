@@ -5,6 +5,7 @@ import AuthPage from "./AuthPage";
 import Derslerim from "./Derslerim";
 import SoruCoz from "./SoruCoz";
 import Raporlarim from "./Raporlarim";
+import RaporDetay from "./RaporDetay";
 import AdminPanel from "./AdminPanel";
 import DersDetay from "./DersDetay";
 import Profilim from "./Profilim"; // ✅ yeni
@@ -18,6 +19,7 @@ export default function App() {
   const [loadingMe, setLoadingMe] = useState(!!localStorage.getItem("token"));
   const [seciliDers, setSeciliDers] = useState(null);
   const [seciliDersDetay, setSeciliDersDetay] = useState(null);
+  const [seciliRaporOturumId, setSeciliRaporOturumId] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -58,6 +60,7 @@ export default function App() {
     setMe(null);
     setSeciliDers(null);
     setSeciliDersDetay(null);
+    setSeciliRaporOturumId(null);
     setPage("auth");
   };
 
@@ -197,7 +200,25 @@ export default function App() {
 
           {page === "raporlar" && (
             <Section title="📊 Raporlarım" onBack={() => setPage("dersler")}>
-              <Raporlarim onBack={() => setPage("dersler")} />
+              <Raporlarim 
+                onBack={() => setPage("dersler")} 
+                onDetayAc={(oturumId) => {
+                  setSeciliRaporOturumId(oturumId);
+                  setPage("rapor-detay");
+                }}
+              />
+            </Section>
+          )}
+
+          {page === "rapor-detay" && seciliRaporOturumId && (
+            <Section title="🧠 Rapor Detayı" onBack={() => setPage("raporlar")}>
+              <RaporDetay 
+                oturumId={seciliRaporOturumId}
+                onBack={() => {
+                  setSeciliRaporOturumId(null);
+                  setPage("raporlar");
+                }}
+              />
             </Section>
           )}
 
