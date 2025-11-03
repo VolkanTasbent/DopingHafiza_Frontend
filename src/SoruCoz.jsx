@@ -76,10 +76,16 @@ export default function SoruCoz({ onBack, seciliDers }) {
     try {
       const params = { dersId: Number(dersId), limit: 100 };
       const { data } = await api.get("/api/sorular", { params });
-      setSorular(data || []);
+      // Deneme sınavı sorularını filtrele
+      const normalSorular = (data || []).filter(s => {
+        const denemeAdi = s.denemeAdi || s.deneme_adi || 
+                         (s.aciklama && s.aciklama.match(/\[Deneme[^\]]+\]/)?.[0]);
+        return !denemeAdi;
+      });
+      setSorular(normalSorular);
       setSecimler({});
       setCurrent(0);
-      if (!data?.length) {
+      if (!normalSorular.length) {
         setMsg("Bu filtrede soru bulunamadı.");
         setStep("select");
       } else {
@@ -95,7 +101,11 @@ export default function SoruCoz({ onBack, seciliDers }) {
   async function fetchDersler() {
     try {
       const { data } = await api.get("/api/ders");
-      setDersler(data || []);
+      // "Sosyal Bilimler" dersini filtrele
+      const filtrelenmis = (data || []).filter(d => 
+        (d.ad || '').toLowerCase() !== 'sosyal bilimler'
+      );
+      setDersler(filtrelenmis);
     } catch (e) {
       setMsg("Dersler alınamadı: " + errText(e));
     }
@@ -116,10 +126,16 @@ export default function SoruCoz({ onBack, seciliDers }) {
       const params = { dersId: Number(seciliDersId), limit: 100 };
       if (seciliKonuId) params.konuId = Number(seciliKonuId);
       const { data } = await api.get("/api/sorular", { params });
-      setSorular(data || []);
+      // Deneme sınavı sorularını filtrele
+      const normalSorular = (data || []).filter(s => {
+        const denemeAdi = s.denemeAdi || s.deneme_adi || 
+                         (s.aciklama && s.aciklama.match(/\[Deneme[^\]]+\]/)?.[0]);
+        return !denemeAdi;
+      });
+      setSorular(normalSorular);
       setSecimler({});
       setCurrent(0);
-      if (!data?.length) {
+      if (!normalSorular.length) {
         setMsg("Bu filtrede soru bulunamadı.");
         setStep("select");
       } else {

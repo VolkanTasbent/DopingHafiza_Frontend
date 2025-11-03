@@ -17,20 +17,20 @@ export default function Profilim({ onBack }) {
   }, []);
 
   const fetchUserData = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get("/api/users/me");
-      setUser(data);
+      try {
+        setLoading(true);
+        const { data } = await api.get("/api/users/me");
+        setUser(data);
       setEditForm({
         ad: data.ad || "",
         soyad: data.soyad || "",
         email: data.email || "",
       });
-    } catch (e) {
-      setMsg("Profil alınamadı: " + (e.response?.data || e.message));
-    } finally {
-      setLoading(false);
-    }
+      } catch (e) {
+        setMsg("Profil alınamadı: " + (e.response?.data || e.message));
+      } finally {
+        setLoading(false);
+      }
   };
 
   const handleImageClick = () => {
@@ -262,7 +262,7 @@ export default function Profilim({ onBack }) {
                 </button>
                 <button className="cancel-button" onClick={handleCancelEdit} disabled={loading}>
                   ✖️ İptal
-                </button>
+        </button>
               </div>
             </>
           )}

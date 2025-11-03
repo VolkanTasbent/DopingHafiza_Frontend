@@ -4,6 +4,7 @@ import api, { fileUrl } from "./services/api";
 import AuthPage from "./AuthPage";
 import Derslerim from "./Derslerim";
 import SoruCoz from "./SoruCoz";
+import DenemeSinavlari from "./DenemeSinavlari";
 import Raporlarim from "./Raporlarim";
 import RaporDetay from "./RaporDetay";
 import AdminPanel from "./AdminPanel";
@@ -120,6 +121,13 @@ export default function App() {
           </button>
 
           <button
+            className={`nav-link ${page === "deneme" ? "active" : ""}`}
+            onClick={() => setPage("deneme")}
+          >
+            <span>Deneme Sınavları</span>
+          </button>
+
+          <button
             className={`nav-link ${page === "raporlar" ? "active" : ""}`}
             onClick={() => setPage("raporlar")}
           >
@@ -187,6 +195,12 @@ export default function App() {
             onBack={() => setPage("dersler")}
             onFinish={() => setPage("raporlar")}
             seciliDers={seciliDers}
+          />
+        )}
+
+        {page === "deneme" && (
+          <DenemeSinavlari
+            onBack={() => setPage("dersler")}
           />
         )}
 

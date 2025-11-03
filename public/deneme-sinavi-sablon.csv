@@ -1,0 +1,6 @@
+soru_metni,sik_a,sik_b,sik_c,sik_d,sik_e,dogru_cevap,zorluk,konular,aciklama,ders_ad
+"2 + 2 işleminin sonucu kaçtır?",2,3,4,5,,C,1,"Temel İşlemler",Basit toplama,Matematik
+"5 x 6 işleminin sonucu kaçtır?",25,30,35,40,,B,2,"Temel İşlemler,Çarpma",Çarpma tablosu,Matematik
+"√16 işleminin sonucu kaçtır?",2,4,8,16,,B,2,"Kökler",,Matematik
+"3² + 4² = ?",7,25,49,81,,B,3,"Üslü Sayılar,Pisagor",Birden fazla konu içeren soru,Matematik
+"x² - 5x + 6 = 0 denkleminin kökleri toplamı kaçtır?",5,6,-5,-6,,A,3,"İkinci Dereceden Denklemler",,Matematik

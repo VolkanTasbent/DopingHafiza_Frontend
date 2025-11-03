@@ -1,0 +1,7 @@
+soru_metni,sik_a,sik_b,sik_c,sik_d,sik_e,dogru_cevap,zorluk,konular,aciklama,ders_ad
+"2 + 2 işleminin sonucu kaçtır?",2,3,4,5,,C,1,"Temel İşlemler",Bu basit bir toplama sorusudur,Matematik
+"Türkiye'nin başkenti neresidir?",İstanbul,Ankara,İzmir,Bursa,,B,1,"Türkiye Coğrafyası",,Coğrafya
+"Atomun çekirdeğinde hangi parçacıklar bulunur?","Elektron, proton","Proton, nötron","Elektron, nötron","Sadece proton",,B,2,"Atom Yapısı",,Fizik
+"Osmanlı İmparatorluğu hangi yüzyılda kurulmuştur?",12. yüzyıl,13. yüzyıl,14. yüzyıl,15. yüzyıl,,C,2,"Osmanlı Tarihi",,Tarih
+"x² - 4 = 0 denkleminin kökleri toplamı kaçtır?",0,2,4,-4,,A,3,"İkinci Dereceden Denklemler",,Matematik
+
