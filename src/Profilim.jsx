@@ -211,14 +211,16 @@ export default function Profilim({ onBack }) {
                 <span className="info-label">E-posta</span>
                 <span className="info-value">{user.email || "-"}</span>
               </div>
-              <div className="info-row">
-                <span className="info-label">Rol</span>
-                <span className="info-value">
-                  <span className={`role-badge ${user.role?.toLowerCase()}`}>
-                    {user.role || "-"}
+              {user.role === "ADMIN" && (
+                <div className="info-row">
+                  <span className="info-label">Rol</span>
+                  <span className="info-value">
+                    <span className={`role-badge ${user.role?.toLowerCase()}`}>
+                      {user.role || "-"}
+                    </span>
                   </span>
-                </span>
-              </div>
+                </div>
+              )}
 
               <button className="edit-button" onClick={() => setIsEditing(true)}>
                 ✏️ Profili Düzenle

@@ -5,7 +5,6 @@ import "./DersDetay.css";
 
 export default function DersDetay({ ders, onBack }) {
   const [konular, setKonular] = useState([]);
-  const [videolar, setVideolar] = useState([]);
   const [aktifTab, setAktifTab] = useState("konular");
   const [loading, setLoading] = useState(true);
   
@@ -19,7 +18,6 @@ export default function DersDetay({ ders, onBack }) {
   useEffect(() => {
     if (ders?.id) {
       fetchKonular();
-      fetchVideolar();
     }
   }, [ders]);
 
@@ -34,13 +32,8 @@ export default function DersDetay({ ders, onBack }) {
     }
   };
 
-  const fetchVideolar = async () => {
-    // Şimdilik örnek veri; backend'e video tablosu eklenince buradan çekilir
-    setVideolar([
-      { id: 1, baslik: "Giriş Videosu", url: "https://www.youtube.com/embed/5qap5aO4i9A" },
-      { id: 2, baslik: "Konu 1: Temel Kavramlar", url: "https://www.youtube.com/embed/f02mOEt11OQ" },
-    ]);
-  };
+  // Video'lu konuları filtrele
+  const videolar = konular.filter(k => k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url);
 
   const openPdfModal = (konu) => {
     setPdfModal({
@@ -58,7 +51,7 @@ export default function DersDetay({ ders, onBack }) {
     });
   };
 
-  if (loading) return <div className="ders-loading">⏳ Ders detayları yükleniyor...</div>;
+  if (loading) return <div className="ders-loading">Ders detayları yükleniyor...</div>;
 
   return (
     <div className="ders-detay">
@@ -74,9 +67,9 @@ export default function DersDetay({ ders, onBack }) {
             className={aktifTab === t ? "aktif" : ""}
             onClick={() => setAktifTab(t)}
           >
-            {t === "konular" && "📖 Konular"}
-            {t === "videolar" && "🎥 Videolar"}
-            {t === "istatistikler" && "📊 İstatistikler"}
+            {t === "konular" && "Konular"}
+            {t === "videolar" && "Videolar"}
+            {t === "istatistikler" && "İstatistikler"}
           </button>
         ))}
       </nav>
@@ -89,18 +82,40 @@ export default function DersDetay({ ders, onBack }) {
                 <div className="konu-card-header">
                   <h4>{k.ad}</h4>
                   {(k.dokumanUrl || k.dokuman_url) && (
-                    <span className="dokuman-badge">📄 PDF Var</span>
+                    <span className="dokuman-badge">PDF Var</span>
                   )}
                 </div>
                 <p>{k.aciklama || "Açıklama yakında"}</p>
                 <div className="konu-actions">
-                  <button className="konu-btn primary">📘 Bu Konudan Başla</button>
+                  {(k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) && (
+                    <button 
+                      className="konu-btn primary"
+                      onClick={() => {
+                        setAktifTab("videolar");
+                        // Video kartını scroll et (video ID ile)
+                        setTimeout(() => {
+                          const videoWrapper = document.querySelector(`[data-konu-id="${k.id}"]`);
+                          if (videoWrapper) {
+                            videoWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Kartı vurgula
+                            videoWrapper.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.5)';
+                            videoWrapper.style.borderRadius = '12px';
+                            setTimeout(() => {
+                              videoWrapper.style.boxShadow = '';
+                            }, 2000);
+                          }
+                        }, 100);
+                      }}
+                    >
+                      Konu Anlatım Videosuna Git
+                    </button>
+                  )}
                   {(k.dokumanUrl || k.dokuman_url) && (
                     <button 
                       className="konu-btn secondary"
                       onClick={() => openPdfModal(k)}
                     >
-                      📄 Döküman Görüntüle
+                      Konu Anlatıma Git
                     </button>
                   )}
                 </div>
@@ -110,17 +125,75 @@ export default function DersDetay({ ders, onBack }) {
         )}
 
         {aktifTab === "videolar" && (
-          <div className="video-grid">
-            {videolar.map((v) => (
-              <div key={v.id} className="video-card">
-                <iframe
-                  src={v.url}
-                  title={v.baslik}
-                  allowFullScreen
-                ></iframe>
-                <p>{v.baslik}</p>
+          <div className="video-section">
+            {videolar.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                {videolar.map((k) => {
+                  const videoUrl = k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url;
+                  if (!videoUrl) return null;
+                  
+                  // Eğer URL bir dosya yolu ise (örn: /files/...)
+                  const finalVideoUrl = videoUrl.startsWith('/files/') 
+                    ? fileUrl(videoUrl) 
+                    : videoUrl;
+                  
+                  // YouTube embed URL'i mi kontrol et
+                  const isYoutubeEmbed = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+                  let embedUrl = finalVideoUrl;
+                  
+                  if (isYoutubeEmbed) {
+                    // YouTube URL'ini embed formatına çevir
+                    const youtubeId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                    if (youtubeId) {
+                      embedUrl = `https://www.youtube.com/embed/${youtubeId}`;
+                    }
+                  }
+                  
+                  return (
+                    <div key={k.id} className="video-konu-wrapper" data-konu-id={k.id}>
+                      <div style={{ 
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        padding: '16px 24px',
+                        borderRadius: '12px 12px 0 0',
+                        marginBottom: '0'
+                      }}>
+                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>{k.ad}</h3>
+                        {k.aciklama && (
+                          <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.9 }}>{k.aciklama}</p>
+                        )}
+                      </div>
+                      <div className="video-card" style={{ 
+                        borderRadius: '0 0 12px 12px',
+                        padding: '0',
+                        overflow: 'hidden'
+                      }}>
+                        {isYoutubeEmbed || videoUrl.includes('embed') ? (
+                          <iframe
+                            src={embedUrl}
+                            title={k.ad}
+                            allowFullScreen
+                            style={{ width: '100%', height: '400px', border: 'none', display: 'block' }}
+                          ></iframe>
+                        ) : (
+                          <video 
+                            src={finalVideoUrl} 
+                            controls 
+                            style={{ width: '100%', height: '400px', display: 'block' }}
+                          >
+                            Tarayıcınız video oynatmayı desteklemiyor.
+                          </video>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            ) : (
+              <div className="empty-state" style={{ textAlign: 'center', padding: '40px' }}>
+                <p style={{ fontSize: '16px', color: '#6b7280' }}>Henüz konu anlatım videosu eklenmemiş</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -128,9 +201,9 @@ export default function DersDetay({ ders, onBack }) {
           <div className="istatistikler">
             <h4>İstatistikler - {ders.ad}</h4>
             <ul>
-              <li>📘 Toplam Konu: {konular.length}</li>
-              <li>🎯 Doğruluk Oranı: %87</li>
-              <li>🕒 Ortalama Süre: 12dk</li>
+              <li>Toplam Konu: {konular.length}</li>
+              <li>Doğruluk Oranı: %87</li>
+              <li>Ortalama Süre: 12dk</li>
             </ul>
           </div>
         )}
@@ -141,7 +214,7 @@ export default function DersDetay({ ders, onBack }) {
         <div className="pdf-modal-overlay" onClick={closePdfModal}>
           <div className="pdf-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="pdf-modal-header">
-              <h3>📄 {pdfModal.adi}</h3>
+              <h3>{pdfModal.adi}</h3>
               <button className="pdf-modal-close" onClick={closePdfModal}>
                 ✕
               </button>
@@ -156,7 +229,6 @@ export default function DersDetay({ ders, onBack }) {
                 gap: '24px',
                 padding: '40px'
               }}>
-                <div style={{ fontSize: '5rem' }}>📄</div>
                 <h3 style={{ fontSize: '1.5rem', color: '#111827', margin: 0 }}>
                   {pdfModal.adi}
                 </h3>
@@ -189,7 +261,7 @@ export default function DersDetay({ ders, onBack }) {
                     e.currentTarget.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.4)';
                   }}
                 >
-                  🔍 PDF'i Görüntüle
+                  PDF'i Görüntüle
                 </a>
                 <p style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
                   Dosya boyutu değişiklik gösterebilir
@@ -203,7 +275,7 @@ export default function DersDetay({ ders, onBack }) {
                 rel="noopener noreferrer"
                 className="pdf-download-btn"
               >
-                ⬇️ PDF'i İndir
+                PDF'i İndir
               </a>
               <button onClick={closePdfModal} className="pdf-close-btn">
                 Kapat

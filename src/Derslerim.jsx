@@ -27,38 +27,98 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
   }, []);
 
   if (loading) {
-    return <div className="ders-loading">⏳ Dersler yükleniyor...</div>;
+    return (
+      <div className="ders-loading-wrapper">
+        <div className="ders-loading">
+          <div className="loading-spinner"></div>
+          <p>Dersler yükleniyor...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="dersler-container">
-      <header className="ders-header">
-        <h1>📚 Derslerim</h1>
-        <div className="istatistikler">
-          <div>✅ Doğru: {stats.correctAnswers}</div>
-          <div>📊 Oran: %{stats.successRate}</div>
-          <div>🧠 Çözülen: {stats.totalSolved}</div>
+      {/* Hero Section */}
+      <div className="dersler-hero">
+        <div className="hero-content">
+          <h1 className="hero-title">Derslerim</h1>
+          <p className="hero-subtitle">Eğitim yolculuğunuza devam edin ve bilginizi test edin</p>
         </div>
-      </header>
-
-      <div className="ders-grid">
-        {dersler.map((ders) => (
-          <div key={ders.id} className="ders-card">
-            <div className="ders-banner">
-              <div className="ders-icon">{ders.ad.charAt(0).toUpperCase()}</div>
-              <h3>{ders.ad}</h3>
-              <p>{ders.aciklama || "Ders açıklaması yakında"}</p>
-            </div>
-            <div className="ders-buttons">
-              <button className="btn-primary" onClick={() => onStartQuiz?.(ders.id, ders.ad)}>
-                🚀 Teste Başla
-              </button>
-              <button className="btn-secondary" onClick={() => onDersDetay?.(ders)}>
-                🎬 Detay
-              </button>
+        
+        {/* Stats Cards */}
+        <div className="stats-grid">
+          <div className="stat-card stat-success">
+            <div className="stat-icon stat-icon-check"></div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.correctAnswers || 0}</div>
+              <div className="stat-label">Doğru Cevap</div>
             </div>
           </div>
-        ))}
+          
+          <div className="stat-card stat-primary">
+            <div className="stat-icon stat-icon-chart"></div>
+            <div className="stat-content">
+              <div className="stat-value">%{stats.successRate || 0}</div>
+              <div className="stat-label">Başarı Oranı</div>
+            </div>
+          </div>
+          
+          <div className="stat-card stat-info">
+            <div className="stat-icon stat-icon-brain"></div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.totalSolved || 0}</div>
+              <div className="stat-label">Çözülen Soru</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dersler Grid */}
+      <div className="ders-grid-section">
+        <h2 className="section-title">Tüm Dersler</h2>
+        <div className="ders-grid">
+          {dersler.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon"></div>
+              <h3>Henüz ders eklenmemiş</h3>
+              <p>Yakında dersler burada görünecek</p>
+            </div>
+          ) : (
+            dersler.map((ders) => (
+              <div key={ders.id} className="ders-card">
+                <div className="ders-card-header">
+                  <div className="ders-icon-wrapper">
+                    <div className="ders-icon">{ders.ad.charAt(0).toUpperCase()}</div>
+                  </div>
+                  <div className="ders-card-badge">Ders</div>
+                </div>
+                
+                <div className="ders-card-body">
+                  <h3 className="ders-card-title">{ders.ad}</h3>
+                  <p className="ders-card-description">
+                    {ders.aciklama || "Ders açıklaması yakında eklenecek"}
+                  </p>
+                </div>
+                
+                <div className="ders-card-footer">
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => onStartQuiz?.(ders.id, ders.ad)}
+                  >
+                    <span>Teste Başla</span>
+                  </button>
+                  <button 
+                    className="btn-secondary" 
+                    onClick={() => onDersDetay?.(ders)}
+                  >
+                    <span>Detaylar</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

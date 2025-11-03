@@ -391,56 +391,45 @@ export default function SoruCoz({ onBack, seciliDers }) {
 
         {/* Result State */}
         {step === "result" && result && (() => {
-          // Puan hesaplama: Doğru: +4, Yanlış: -1, Boş: 0
           const dogru = result.correct ?? 0;
           const yanlis = result.wrong ?? 0;
           const toplam = result.total ?? 0;
           const bos = toplam - dogru - yanlis;
-          const puan = (dogru * 4) + (yanlis * -1) + (bos * 0);
           const net = (dogru - (yanlis / 4)).toFixed(2);
           
           return (
             <div className="result-state">
               <div className="result-header">
-                <div className="result-icon">
-                  {result.correct / result.total >= 0.7 ? '🎉' : 
-                   result.correct / result.total >= 0.4 ? '👍' : '💪'}
-                </div>
                 <h2 className="result-title">Test Tamamlandı!</h2>
                 <p className="result-subtitle">
                   {result.correct / result.total >= 0.7 
-                    ? 'Harika bir performans! 🌟'
+                    ? 'Harika bir performans!'
                     : result.correct / result.total >= 0.4
-                    ? 'İyi bir başlangıç! Devam et! 📚'
-                    : 'Çalışmaya devam et! Sen yaparsın! 💪'}
+                    ? 'İyi bir başlangıç! Devam et!'
+                    : 'Çalışmaya devam et! Sen yaparsın!'}
                 </p>
               </div>
 
               <div className="result-stats">
                 <div className="result-stat-card">
-                  <div className="result-stat-icon">✅</div>
                   <div className="result-stat-value">{dogru}</div>
                   <div className="result-stat-label">Doğru</div>
                 </div>
                 <div className="result-stat-card">
-                  <div className="result-stat-icon">❌</div>
                   <div className="result-stat-value">{yanlis}</div>
                   <div className="result-stat-label">Yanlış</div>
                 </div>
+                <div className="result-stat-card">
+                  <div className="result-stat-value">{bos}</div>
+                  <div className="result-stat-label">Boş</div>
+                </div>
                 <div className="result-stat-card highlight">
-                  <div className="result-stat-icon">📊</div>
                   <div className="result-stat-value">{net}</div>
                   <div className="result-stat-label">Net</div>
                 </div>
                 <div className="result-stat-card">
-                  <div className="result-stat-icon">🧩</div>
                   <div className="result-stat-value">{toplam}</div>
-                  <div className="result-stat-label">Toplam</div>
-                </div>
-                <div className="result-stat-card">
-                  <div className="result-stat-icon">⭐</div>
-                  <div className="result-stat-value">{puan}</div>
-                  <div className="result-stat-label">Puan</div>
+                  <div className="result-stat-label">Soru Sayısı</div>
                 </div>
               </div>
 
@@ -456,7 +445,7 @@ export default function SoruCoz({ onBack, seciliDers }) {
                   }}
                   className="new-test-btn"
                 >
-                  🔄 Yeni Test Başlat
+                  Yeni Test Başlat
                 </button>
               </div>
             </div>

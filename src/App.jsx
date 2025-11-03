@@ -1,6 +1,6 @@
 // src/App.jsx
 import { useEffect, useState } from "react";
-import api from "./services/api";
+import api, { fileUrl } from "./services/api";
 import AuthPage from "./AuthPage";
 import Derslerim from "./Derslerim";
 import SoruCoz from "./SoruCoz";
@@ -89,170 +89,139 @@ export default function App() {
   return (
     <div>
       {/* Üst Navigasyon */}
-      <nav className="nav">
-        <div className="brand">🧠 Hafıza / Quiz</div>
+      <nav className="nav-modern">
+        <div className="nav-brand">
+          <div className="brand-logo">📚</div>
+          <div className="brand-text">
+            <div className="brand-title">Hafıza Akademi</div>
+            <div className="brand-subtitle">Öğrenme Platformu</div>
+          </div>
+        </div>
 
-        <div className="nav-buttons">
+        <div className="nav-menu">
           <button
-            className={`btn-ghost ${page === "dersler" ? "active" : ""}`}
+            className={`nav-link ${page === "dersler" ? "active" : ""}`}
             onClick={() => {
               setSeciliDers(null);
               setSeciliDersDetay(null);
               setPage("dersler");
             }}
           >
-            Derslerim
+            <span>Derslerim</span>
           </button>
 
           <button
-            className={`btn-ghost ${page === "coz" ? "active" : ""}`}
+            className={`nav-link ${page === "coz" ? "active" : ""}`}
             onClick={() => {
-              if (!seciliDers) {
-                alert("Lütfen önce bir ders seçin!");
-                return;
-              }
               setPage("coz");
             }}
-            disabled={!seciliDers}
           >
-            Soru Çöz {seciliDers && `- ${seciliDers.ad}`}
+            <span>Soru Çöz{seciliDers && ` - ${seciliDers.ad}`}</span>
           </button>
 
           <button
-            className={`btn-ghost ${page === "raporlar" ? "active" : ""}`}
+            className={`nav-link ${page === "raporlar" ? "active" : ""}`}
             onClick={() => setPage("raporlar")}
           >
-            Raporlarım
+            <span>Raporlarım</span>
           </button>
 
           <button
-            className={`btn-ghost ${page === "profil" ? "active" : ""}`}
+            className={`nav-link ${page === "profil" ? "active" : ""}`}
             onClick={() => setPage("profil")}
           >
-            Profilim
+            <span>Profilim</span>
           </button>
 
           {me?.role === "ADMIN" && (
             <button
-              className={`btn-ghost ${page === "admin" ? "active" : ""}`}
+              className={`nav-link ${page === "admin" ? "active" : ""}`}
               onClick={() => setPage("admin")}
             >
-              Admin Panel
+              <span>Admin Panel</span>
             </button>
           )}
         </div>
 
-        <div className="spacer" />
-        <div className="user-info">
+        <div className="nav-user">
           {seciliDers && (
-            <span
-              className="pill"
-              style={{ background: "#e3f2fd", color: "#1976d2" }}
-            >
-              📚 {seciliDers.ad}
-            </span>
+            <div className="nav-badge">
+              <span className="badge-text">{seciliDers.ad}</span>
+            </div>
           )}
-          <span className="pill">
-            {me?.ad} {me?.soyad}
-          </span>
-          <button className="btn-danger" onClick={logout}>
-            Çıkış
+          <div className="user-dropdown">
+            <div className="user-avatar">
+              {me?.avatar_url ? (
+                <img src={fileUrl(me.avatar_url) || me.avatar_url} alt="Avatar" />
+              ) : (
+                <span>{me?.ad?.charAt(0)?.toUpperCase() || "U"}</span>
+              )}
+            </div>
+            <div className="user-name">
+              <div className="name-text">{me?.ad} {me?.soyad}</div>
+            </div>
+          </div>
+          <button className="btn-logout" onClick={logout}>
+            <span>Çıkış</span>
           </button>
         </div>
       </nav>
 
       {/* Sayfa İçerikleri */}
-      <main className="auth-container" style={{ paddingTop: 24 }}>
-        <div className="auth-box">
-          {page === "dersler" && (
-            <Section title="📘 Derslerim">
-              <Derslerim
-                onStartQuiz={(dersId, dersAd) => {
-                  setSeciliDers({ id: dersId, ad: dersAd });
-                  setPage("coz");
-                }}
-                onDersDetay={(ders) => {
-                  setSeciliDersDetay(ders);
-                  setPage("dersdetay");
-                }}
-              />
-            </Section>
-          )}
+      <main className="main-content">
+        {page === "dersler" && (
+          <Derslerim
+            onStartQuiz={(dersId, dersAd) => {
+              setSeciliDers({ id: dersId, ad: dersAd });
+              setPage("coz");
+            }}
+            onDersDetay={(ders) => {
+              setSeciliDersDetay(ders);
+              setPage("dersdetay");
+            }}
+          />
+        )}
 
-          {page === "coz" && (
-            <Section
-              title={`📝 Soru Çöz - ${seciliDers?.ad || "Ders Seçilmedi"}`}
-              onBack={() => setPage("dersler")}
-            >
-              <SoruCoz
-                onBack={() => setPage("dersler")}
-                onFinish={() => setPage("raporlar")}
-                seciliDers={seciliDers}
-              />
-            </Section>
-          )}
+        {page === "coz" && (
+          <SoruCoz
+            onBack={() => setPage("dersler")}
+            onFinish={() => setPage("raporlar")}
+            seciliDers={seciliDers}
+          />
+        )}
 
-          {page === "dersdetay" && (
-            <Section title="📘 Ders Detayı" onBack={() => setPage("dersler")}>
-              <DersDetay onBack={() => setPage("dersler")} ders={seciliDersDetay} />
-            </Section>
-          )}
+        {page === "dersdetay" && (
+          <DersDetay onBack={() => setPage("dersler")} ders={seciliDersDetay} />
+        )}
 
-          {page === "raporlar" && (
-            <Section title="📊 Raporlarım" onBack={() => setPage("dersler")}>
-              <Raporlarim 
-                onBack={() => setPage("dersler")} 
-                onDetayAc={(oturumId) => {
-                  setSeciliRaporOturumId(oturumId);
-                  setPage("rapor-detay");
-                }}
-              />
-            </Section>
-          )}
+        {page === "raporlar" && (
+          <Raporlarim 
+            onBack={() => setPage("dersler")} 
+            onDetayAc={(oturumId) => {
+              setSeciliRaporOturumId(oturumId);
+              setPage("rapor-detay");
+            }}
+          />
+        )}
 
-          {page === "rapor-detay" && seciliRaporOturumId && (
-            <Section title="🧠 Rapor Detayı" onBack={() => setPage("raporlar")}>
-              <RaporDetay 
-                oturumId={seciliRaporOturumId}
-                onBack={() => {
-                  setSeciliRaporOturumId(null);
-                  setPage("raporlar");
-                }}
-              />
-            </Section>
-          )}
+        {page === "rapor-detay" && seciliRaporOturumId && (
+          <RaporDetay 
+            oturumId={seciliRaporOturumId}
+            onBack={() => {
+              setSeciliRaporOturumId(null);
+              setPage("raporlar");
+            }}
+          />
+        )}
 
-          {page === "profil" && (
-            <Section title="👤 Profilim" onBack={() => setPage("dersler")}>
-              <Profilim onBack={() => setPage("dersler")} />
-            </Section>
-          )}
+        {page === "profil" && (
+          <Profilim onBack={() => setPage("dersler")} />
+        )}
 
-          {page === "admin" && (
-            <Section title="🧩 Admin Panel" onBack={() => setPage("dersler")}>
-              <AdminPanel onBack={() => setPage("dersler")} />
-            </Section>
-          )}
-        </div>
+        {page === "admin" && (
+          <AdminPanel onBack={() => setPage("dersler")} />
+        )}
       </main>
     </div>
-  );
-}
-
-function Section({ title, onBack, children }) {
-  return (
-    <>
-      <div className="auth-header">
-        <h2 className="auth-title">{title}</h2>
-        {onBack && (
-          <div className="row">
-            <button className="btn-ghost" onClick={onBack}>
-              ← Geri
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="auth-form">{children}</div>
-    </>
   );
 }
