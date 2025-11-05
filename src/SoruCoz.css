@@ -664,3 +664,210 @@
   }
 }
 
+/* Deneme Sınavı - Optik Form Stilleri */
+.deneme-test-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+.deneme-test-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.deneme-optik-form-container {
+  position: sticky;
+  top: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.optik-form-header {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.optik-form-header h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.optik-form-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.optik-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.optik-stat-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.optik-stat-dot.answered-dot {
+  background: #10b981;
+}
+
+.optik-stat-dot.empty-dot {
+  background: #ef4444;
+}
+
+.optik-stat-dot.flagged-dot {
+  background: #f59e0b;
+}
+
+.optik-form-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.optik-form-item {
+  aspect-ratio: 1;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  position: relative;
+  background: white;
+  padding: 0;
+}
+
+.optik-form-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.optik-form-item.optik-answered {
+  background: #d1fae5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.optik-form-item.optik-empty {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.optik-form-item.optik-current {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.optik-form-item.optik-flagged {
+  border-width: 3px;
+}
+
+.optik-form-item.optik-flagged .optik-flag-icon {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 0.75rem;
+}
+
+.optik-number {
+  font-size: 0.875rem;
+}
+
+.optik-form-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.legend-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.legend-box.optik-answered {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+.legend-box.optik-empty {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.legend-box.optik-current {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+}
+
+.legend-box.optik-flagged {
+  border-width: 3px;
+  border-color: #f59e0b;
+}
+
+/* Responsive: Optik Form */
+@media (max-width: 1024px) {
+  .deneme-test-container {
+    grid-template-columns: 1fr;
+  }
+
+  .deneme-optik-form-container {
+    position: relative;
+    top: 0;
+    max-height: none;
+  }
+
+  .optik-form-grid {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .optik-form-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+

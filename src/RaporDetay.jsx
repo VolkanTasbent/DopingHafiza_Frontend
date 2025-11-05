@@ -26,9 +26,27 @@ export default function RaporDetay({ oturumId, onBack }) {
     if (tumSorular.length > 0) {
       const yanlislar = tumSorular.filter(item => {
         if (!item.soru || !item.soru.secenekler || !Array.isArray(item.soru.secenekler)) return false;
-        const secilen = item.soru.secenekler.find(s => s.id === item.secenekId);
+        
+        const secenekId = item.secenekId;
+        let secilen = item.soru.secenekler.find(s => s.id === secenekId);
+        
+        // Eğer ID ile bulunamazsa ve secenekId bir sayı ise (index + 1 formatında), index ile bul
+        if (!secilen && secenekId && (typeof secenekId === 'number' || /^\d+$/.test(String(secenekId)))) {
+          const index = typeof secenekId === 'number' ? secenekId - 1 : parseInt(secenekId, 10) - 1;
+          if (index >= 0 && index < item.soru.secenekler.length) {
+            secilen = item.soru.secenekler[index];
+          }
+        }
+        
         const dogru = item.soru.secenekler.find(s => s.dogru === true || s.dogru === 1);
-        return !secilen || secilen.id !== dogru?.id;
+        
+        // Eğer seçenek ID'leri null ise, index karşılaştırması yap
+        if (!secilen || !dogru) return false;
+        if (secilen.id === null && dogru.id === null) {
+          return item.soru.secenekler.indexOf(secilen) !== item.soru.secenekler.indexOf(dogru);
+        }
+        
+        return secilen.id !== dogru.id;
       });
       
       setDetayVeri(sadeceyanlisGoster ? yanlislar : tumSorular);
@@ -48,10 +66,26 @@ export default function RaporDetay({ oturumId, onBack }) {
           return false;
         }
         
-        const secilen = item.soru.secenekler.find(s => s.id === item.secenekId);
+        const secenekId = item.secenekId;
+        let secilen = item.soru.secenekler.find(s => s.id === secenekId);
+        
+        // Eğer ID ile bulunamazsa ve secenekId bir sayı ise (index + 1 formatında), index ile bul
+        if (!secilen && secenekId && (typeof secenekId === 'number' || /^\d+$/.test(String(secenekId)))) {
+          const index = typeof secenekId === 'number' ? secenekId - 1 : parseInt(secenekId, 10) - 1;
+          if (index >= 0 && index < item.soru.secenekler.length) {
+            secilen = item.soru.secenekler[index];
+          }
+        }
+        
         const dogru = item.soru.secenekler.find(s => s.dogru === true || s.dogru === 1);
         
-        return !secilen || secilen.id !== dogru?.id;
+        // Eğer seçenek ID'leri null ise, index karşılaştırması yap
+        if (!secilen || !dogru) return false;
+        if (secilen.id === null && dogru.id === null) {
+          return item.soru.secenekler.indexOf(secilen) !== item.soru.secenekler.indexOf(dogru);
+        }
+        
+        return secilen.id !== dogru.id;
       });
       
       setTumSorular(tumItems);
@@ -66,9 +100,27 @@ export default function RaporDetay({ oturumId, onBack }) {
 
   const yanlisSayisi = tumSorular.filter(item => {
     if (!item.soru || !item.soru.secenekler || !Array.isArray(item.soru.secenekler)) return false;
-    const secilen = item.soru.secenekler.find(s => s.id === item.secenekId);
+    
+    const secenekId = item.secenekId;
+    let secilen = item.soru.secenekler.find(s => s.id === secenekId);
+    
+    // Eğer ID ile bulunamazsa ve secenekId bir sayı ise (index + 1 formatında), index ile bul
+    if (!secilen && secenekId && (typeof secenekId === 'number' || /^\d+$/.test(String(secenekId)))) {
+      const index = typeof secenekId === 'number' ? secenekId - 1 : parseInt(secenekId, 10) - 1;
+      if (index >= 0 && index < item.soru.secenekler.length) {
+        secilen = item.soru.secenekler[index];
+      }
+    }
+    
     const dogru = item.soru.secenekler.find(s => s.dogru === true || s.dogru === 1);
-    return !secilen || secilen.id !== dogru?.id;
+    
+    // Eğer seçenek ID'leri null ise, index karşılaştırması yap
+    if (!secilen || !dogru) return false;
+    if (secilen.id === null && dogru.id === null) {
+      return item.soru.secenekler.indexOf(secilen) !== item.soru.secenekler.indexOf(dogru);
+    }
+    
+    return secilen.id !== dogru.id;
   }).length;
 
   return (
@@ -141,29 +193,83 @@ export default function RaporDetay({ oturumId, onBack }) {
             {detayVeri.map((it, i) => {
               const s = it.soru;
               const chosenId = it.secenekId;
-              const chosen = (s?.secenekler || []).find(x => x.id === chosenId);
-              const correct = (s?.secenekler || []).find(x => x.dogru === true);
-              const isCorrect = chosen?.id === correct?.id;
-              const isBlank = !chosen;
+              
+              // Deneme sınavı soruları için özel mantık: seçenek ID'leri null olabilir
+              // Bu durumda seçenek sırasını (index) kullan
+              let chosen = null;
+              let correct = null;
+              
+              if (s?.secenekler && Array.isArray(s.secenekler)) {
+                // Önce ID ile eşleştirme dene
+                chosen = s.secenekler.find(x => x.id === chosenId);
+                correct = s.secenekler.find(x => x.dogru === true || x.dogru === 1);
+                
+                // Eğer ID ile bulunamazsa ve chosenId bir sayı ise (index + 1 formatında), index ile bul
+                if (!chosen && chosenId !== null && chosenId !== undefined) {
+                  if (typeof chosenId === 'number' || /^\d+$/.test(String(chosenId))) {
+                    const index = typeof chosenId === 'number' ? chosenId - 1 : parseInt(chosenId, 10) - 1;
+                    if (index >= 0 && index < s.secenekler.length) {
+                      chosen = s.secenekler[index];
+                    }
+                  }
+                }
+                
+                // Doğru cevabı bul (eğer hala bulunamadıysa)
+                if (!correct) {
+                  correct = s.secenekler.find(x => x.dogru === true || x.dogru === 1);
+                }
+              }
+              
+              const isBlank = !chosen || chosenId === null || chosenId === undefined;
+              
+              // Doğru cevap kontrolü: seçenek ID'leri null ise index karşılaştırması yap
+              let isCorrect = false;
+              if (!isBlank && chosen && correct) {
+                // Seçeneklerin ID'leri null mu kontrol et
+                const chosenHasNullId = chosen.id === null || chosen.id === undefined;
+                const correctHasNullId = correct.id === null || correct.id === undefined;
+                
+                if (!chosenHasNullId && !correctHasNullId) {
+                  // Normal sorular: ID karşılaştırması
+                  isCorrect = chosen.id === correct.id;
+                } else {
+                  // Deneme sınavı soruları: index karşılaştırması
+                  const chosenIndex = s.secenekler.indexOf(chosen);
+                  const correctIndex = s.secenekler.indexOf(correct);
+                  isCorrect = chosenIndex === correctIndex && chosenIndex !== -1;
+                }
+              }
+              
+              // Debug: İlk 3 soru için detaylı log
+              if (i < 3 && detayVeri.length > 0 && s?.secenekler) {
+                console.log(`RaporDetay - Soru ${i + 1} analizi:`, {
+                  soruId: s?.id,
+                  chosenId: chosenId,
+                  chosenIdType: typeof chosenId,
+                  chosen: chosen ? { 
+                    index: s.secenekler.indexOf(chosen), 
+                    metin: chosen.metin?.substring(0, 50), 
+                    id: chosen.id 
+                  } : null,
+                  correct: correct ? { 
+                    index: s.secenekler.indexOf(correct), 
+                    metin: correct.metin?.substring(0, 50), 
+                    id: correct.id,
+                    dogru: correct.dogru
+                  } : null,
+                  isCorrect: isCorrect,
+                  isBlank: isBlank,
+                  secenekler: s.secenekler.map((sec, idx) => ({ 
+                    index: idx, 
+                    id: sec.id, 
+                    metin: sec.metin?.substring(0, 30), 
+                    dogru: sec.dogru 
+                  }))
+                });
+              }
               
               // Video URL'ini bul - tüm olası alan adlarını kontrol et
               const videoUrl = s?.videoUrl || s?.video_url || s?.cozumUrl || s?.cozum_url || s?.cozumVideosuUrl || s?.cozum_videosu_url;
-              
-              // Debug için console.log (kaldırılabilir)
-              if (i === 0 && detayVeri.length > 0) {
-                console.log("Soru verisi (ilk soru):", {
-                  soru: s,
-                  videoUrl: videoUrl,
-                  tümAlanlar: {
-                    videoUrl: s?.videoUrl,
-                    video_url: s?.video_url,
-                    cozumUrl: s?.cozumUrl,
-                    cozum_url: s?.cozum_url,
-                    cozumVideosuUrl: s?.cozumVideosuUrl,
-                    cozum_videosu_url: s?.cozum_videosu_url
-                  }
-                });
-              }
               
               return (
                 <div key={it.id || i} className="soru-detay-modern-card">

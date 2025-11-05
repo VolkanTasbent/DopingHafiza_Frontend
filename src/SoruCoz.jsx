@@ -75,13 +75,52 @@ export default function SoruCoz({ onBack, seciliDers }) {
   async function autoGetirSorular(dersId) {
     try {
       const params = { dersId: Number(dersId), limit: 100 };
+      // Deneme sınavı sorularını hariç tutmak için parametre ekle
+      params.excludeDenemeSinavi = true;
+      
       const { data } = await api.get("/api/sorular", { params });
-      // Deneme sınavı sorularını filtrele
+      
+      // Debug: İlk sorunun yapısını kontrol et
+      if (data && data.length > 0) {
+        console.log("AutoGetirSorular - Backend'den gelen ilk soru örneği:", {
+          id: data[0].id,
+          denemeAdi: data[0].denemeAdi,
+          deneme_adi: data[0].deneme_adi,
+          denemeSinaviId: data[0].denemeSinaviId,
+          deneme_sinavi_id: data[0].deneme_sinavi_id,
+          denemeSinavi: data[0].denemeSinavi,
+          deneme_sinavi: data[0].deneme_sinavi,
+          aciklama: data[0].aciklama,
+          tümAlanlar: Object.keys(data[0])
+        });
+      }
+      
+      // Deneme sınavı sorularını filtrele - tüm olası alanları kontrol et
       const normalSorular = (data || []).filter(s => {
-        const denemeAdi = s.denemeAdi || s.deneme_adi || 
-                         (s.aciklama && s.aciklama.match(/\[Deneme[^\]]+\]/)?.[0]);
-        return !denemeAdi;
+        // 1. Deneme adı kontrolü
+        const denemeAdi = s.denemeAdi || s.deneme_adi || s.denemeAd || s.deneme_ad;
+        if (denemeAdi) return false;
+        
+        // 2. Deneme sınavı ID kontrolü - tüm olası alan adları
+        if (s.denemeSinaviId || s.deneme_sinavi_id || s.denemeSinaviId || s.deneme_sinavi_Id) return false;
+        
+        // 3. Deneme sınavı objesi kontrolü
+        if (s.denemeSinavi || s.deneme_sinavi) return false;
+        
+        // 4. Açıklamada "[Deneme" içeren soruları filtrele
+        if (s.aciklama && typeof s.aciklama === 'string' && s.aciklama.includes('[Deneme')) return false;
+        
+        // 5. Açıklamada "Deneme" kelimesi içeren soruları da kontrol et (daha geniş)
+        if (s.aciklama && typeof s.aciklama === 'string' && /deneme/i.test(s.aciklama)) return false;
+        
+        // 6. Deneme sınavı soruları tablosunda kayıtlı olup olmadığını kontrol et
+        if (s.isDenemeSoru === true || s.is_deneme_soru === true) return false;
+        
+        return true;
       });
+      
+      console.log(`AutoGetirSorular - Toplam ${data?.length || 0} soru, ${normalSorular.length} normal soru, ${(data?.length || 0) - normalSorular.length} deneme sınavı sorusu filtrelendi`);
+      
       setSorular(normalSorular);
       setSecimler({});
       setCurrent(0);
@@ -125,13 +164,71 @@ export default function SoruCoz({ onBack, seciliDers }) {
     try {
       const params = { dersId: Number(seciliDersId), limit: 100 };
       if (seciliKonuId) params.konuId = Number(seciliKonuId);
+      // Deneme sınavı sorularını hariç tutmak için parametre ekle
+      params.excludeDenemeSinavi = true;
+      
       const { data } = await api.get("/api/sorular", { params });
-      // Deneme sınavı sorularını filtrele
+      
+      // Debug: İlk sorunun yapısını kontrol et
+      if (data && data.length > 0) {
+        console.log("Backend'den gelen ilk soru örneği:", {
+          id: data[0].id,
+          denemeAdi: data[0].denemeAdi,
+          deneme_adi: data[0].deneme_adi,
+          denemeSinaviId: data[0].denemeSinaviId,
+          deneme_sinavi_id: data[0].deneme_sinavi_id,
+          denemeSinavi: data[0].denemeSinavi,
+          deneme_sinavi: data[0].deneme_sinavi,
+          aciklama: data[0].aciklama,
+          tümAlanlar: Object.keys(data[0])
+        });
+      }
+      
+      // Deneme sınavı sorularını filtrele - tüm olası alanları kontrol et
       const normalSorular = (data || []).filter(s => {
-        const denemeAdi = s.denemeAdi || s.deneme_adi || 
-                         (s.aciklama && s.aciklama.match(/\[Deneme[^\]]+\]/)?.[0]);
-        return !denemeAdi;
+        // 1. Deneme adı kontrolü
+        const denemeAdi = s.denemeAdi || s.deneme_adi || s.denemeAd || s.deneme_ad;
+        if (denemeAdi) {
+          console.log("Deneme adı bulundu, filtrele:", s.id, denemeAdi);
+          return false;
+        }
+        
+        // 2. Deneme sınavı ID kontrolü - tüm olası alan adları
+        if (s.denemeSinaviId || s.deneme_sinavi_id || s.denemeSinaviId || s.deneme_sinavi_Id) {
+          console.log("Deneme sınavı ID bulundu, filtrele:", s.id, s.denemeSinaviId || s.deneme_sinavi_id);
+          return false;
+        }
+        
+        // 3. Deneme sınavı objesi kontrolü
+        if (s.denemeSinavi || s.deneme_sinavi) {
+          console.log("Deneme sınavı objesi bulundu, filtrele:", s.id);
+          return false;
+        }
+        
+        // 4. Açıklamada "[Deneme" içeren soruları filtrele
+        if (s.aciklama && typeof s.aciklama === 'string' && s.aciklama.includes('[Deneme')) {
+          console.log("Açıklamada [Deneme bulundu, filtrele:", s.id);
+          return false;
+        }
+        
+        // 5. Açıklamada "Deneme" kelimesi içeren soruları da kontrol et (daha geniş)
+        if (s.aciklama && typeof s.aciklama === 'string' && /deneme/i.test(s.aciklama)) {
+          console.log("Açıklamada 'deneme' kelimesi bulundu, filtrele:", s.id);
+          return false;
+        }
+        
+        // 6. Deneme sınavı soruları tablosunda kayıtlı olup olmadığını kontrol et
+        // Backend'den gelen sorularda bu bilgi varsa kullan
+        if (s.isDenemeSoru === true || s.is_deneme_soru === true) {
+          console.log("isDenemeSoru flag'i bulundu, filtrele:", s.id);
+          return false;
+        }
+        
+        return true;
       });
+      
+      console.log(`Toplam ${data?.length || 0} soru, ${normalSorular.length} normal soru, ${(data?.length || 0) - normalSorular.length} deneme sınavı sorusu filtrelendi`);
+      
       setSorular(normalSorular);
       setSecimler({});
       setCurrent(0);

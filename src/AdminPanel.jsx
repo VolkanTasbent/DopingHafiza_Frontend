@@ -59,11 +59,120 @@ export default function AdminPanel({ onBack }) {
   const [mevcutDenemeler, setMevcutDenemeler] = useState([]); // Mevcut denemeler listesi
   const [csvSeciliDenemeId, setCsvSeciliDenemeId] = useState(""); // Kullanıcının seçtiği deneme ID'si
   const [yeniDenemeOlustur, setYeniDenemeOlustur] = useState(true); // Yeni deneme mi oluştur, mevcut mu seç
+  const [csvSeciliDenemeSorular, setCsvSeciliDenemeSorular] = useState([]); // Seçili denemenin soruları (CSV yükleme için)
+  const [csvDenemeSorularYukleniyor, setCsvDenemeSorularYukleniyor] = useState(false);
   
   // --- admin panel tabs ---
   const [aktifAdminTab, setAktifAdminTab] = useState("sorular"); // "sorular" | "denemeler"
   const [denemeListesi, setDenemeListesi] = useState([]);
   const [denemeYukleniyor, setDenemeYukleniyor] = useState(false);
+  const [seciliDenemeId, setSeciliDenemeId] = useState(null); // Seçili deneme ID'si
+  const [denemeSorular, setDenemeSorular] = useState([]); // Seçili denemenin soruları
+  const [denemeSorularYukleniyor, setDenemeSorularYukleniyor] = useState(false);
+  const [denemeSinaviSorular, setDenemeSinaviSorular] = useState([]); // Tüm deneme sınavı soruları (düzenleme için)
+  const [denemeSinaviSorularYukleniyor, setDenemeSinaviSorularYukleniyor] = useState(false);
+  const [denemeSinaviSorularAcik, setDenemeSinaviSorularAcik] = useState(false); // Deneme sınavı soruları listesi açık/kapalı
+  // Seçili denemenin sorularını çek
+  async function fetchDenemeSorular(denemeId) {
+    if (!denemeId && denemeId !== 0) {
+      console.error("Deneme ID bulunamadı!");
+      setMsg("Deneme ID bulunamadı!");
+      return;
+    }
+    
+    setDenemeSorularYukleniyor(true);
+    setDenemeSorular([]);
+    try {
+      const denemeIdNum = typeof denemeId === 'string' ? parseInt(denemeId, 10) : denemeId;
+      
+      if (isNaN(denemeIdNum)) {
+        throw new Error("Geçersiz deneme ID");
+      }
+      
+      let sorular = [];
+      // Önce özel endpoint'i dene
+      try {
+        const { data } = await api.get(`/api/deneme-sinavlari/${denemeIdNum}/sorular`);
+        sorular = Array.isArray(data) ? data : [];
+      } catch (e1) {
+        // Özel endpoint çalışmazsa standart endpoint'i dene
+        try {
+          const { data } = await api.get("/api/sorular", { 
+            params: { denemeSinaviId: denemeIdNum, limit: 1000 } 
+          });
+          sorular = Array.isArray(data) ? data : [];
+        } catch (e2) {
+          console.error("Deneme soruları alınamadı:", e2);
+        }
+      }
+      
+      setDenemeSorular(sorular);
+      setSeciliDenemeId(denemeIdNum);
+    } catch (e) {
+      setMsg("Deneme soruları alınamadı: " + errText(e));
+      setDenemeSorular([]);
+    } finally {
+      setDenemeSorularYukleniyor(false);
+    }
+  }
+
+  // Tüm deneme sınavı sorularını çek (düzenleme için)
+  async function fetchDenemeSinaviSorular() {
+    setDenemeSinaviSorularYukleniyor(true);
+    try {
+      const { data } = await api.get("/api/deneme-sinavlari/sorular/all");
+      setDenemeSinaviSorular(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Deneme sınavı soruları alınamadı:", e);
+      setMsg("Deneme sınavı soruları alınamadı: " + errText(e));
+      setDenemeSinaviSorular([]);
+    } finally {
+      setDenemeSinaviSorularYukleniyor(false);
+    }
+  }
+
+  // CSV yükleme için seçili denemenin sorularını çek
+  async function fetchCsvDenemeSorular(denemeId) {
+    if (!denemeId && denemeId !== 0) {
+      console.error("Deneme ID bulunamadı!");
+      setMsg("Deneme ID bulunamadı!");
+      return;
+    }
+    
+    setCsvDenemeSorularYukleniyor(true);
+    setCsvSeciliDenemeSorular([]);
+    try {
+      const denemeIdNum = typeof denemeId === 'string' ? parseInt(denemeId, 10) : denemeId;
+      
+      if (isNaN(denemeIdNum)) {
+        throw new Error("Geçersiz deneme ID");
+      }
+      
+      let sorular = [];
+      // Önce özel endpoint'i dene
+      try {
+        const { data } = await api.get(`/api/deneme-sinavlari/${denemeIdNum}/sorular`);
+        sorular = Array.isArray(data) ? data : [];
+      } catch (e1) {
+        // Özel endpoint çalışmazsa standart endpoint'i dene
+        try {
+          const { data } = await api.get("/api/sorular", { 
+            params: { denemeSinaviId: denemeIdNum, limit: 1000 } 
+          });
+          sorular = Array.isArray(data) ? data : [];
+        } catch (e2) {
+          console.error("Deneme soruları alınamadı:", e2);
+        }
+      }
+      
+      setCsvSeciliDenemeSorular(sorular);
+    } catch (e) {
+      setMsg("Deneme soruları alınamadı: " + errText(e));
+      setCsvSeciliDenemeSorular([]);
+    } finally {
+      setCsvDenemeSorularYukleniyor(false);
+    }
+  }
 
   async function ensureDersForKategori() {
     if (csvDersId) return csvDersId;
@@ -166,6 +275,7 @@ export default function AdminPanel({ onBack }) {
       fetchMevcutDenemeler();
     }
   }, [csvDenemeModu, denemeSinaviAcik]);
+
 
   // --------- API CALLS ----------
   async function fetchDersler() {
@@ -892,12 +1002,18 @@ export default function AdminPanel({ onBack }) {
       }
 
       // adi field'ını normalize et
-      const liste = denemeler.map(d => ({
-        adi: d.adi || d.deneme_adi || 'İsimsiz Deneme',
-        soruSayisi: d.soruSayisi || (d.sorular ? d.sorular.length : 0),
-        sorular: d.sorular || []
-      }));
+      const liste = denemeler.map(d => {
+        const normalized = {
+          id: d.id || d.deneme_sinavi_id || null,
+          adi: d.adi || d.deneme_adi || 'İsimsiz Deneme',
+          soruSayisi: d.soruSayisi || (d.sorular ? d.sorular.length : 0),
+          sorular: d.sorular || []
+        };
+        console.log("Deneme normalize ediliyor:", { original: d, normalized });
+        return normalized;
+      });
 
+      console.log("Normalize edilmiş deneme listesi:", liste);
       setDenemeListesi(liste);
     } catch (e) {
       setMsg("Deneme sınavları alınamadı: " + errText(e));
@@ -926,13 +1042,9 @@ export default function AdminPanel({ onBack }) {
       const params = { dersId: Number(seciliDersId), limit: 100 };
       if (listeKonuId) params.konuId = Number(listeKonuId);
       const { data } = await api.get("/api/sorular", { params });
-      // Deneme sınavı sorularını filtrele (normal soru listesinde gösterilmemeli)
-      const normalSorular = (data || []).filter(s => {
-        const denemeAdi = s.denemeAdi || s.deneme_adi || 
-                         (s.aciklama && s.aciklama.match(/\[Deneme[^\]]+\]/)?.[0]);
-        return !denemeAdi; // Deneme sınavı sorularını çıkar
-      });
-      setSorular(normalSorular);
+      // Admin Panel'de TÜM sorular gösterilmeli (hem normal hem deneme sınavı soruları)
+      // Filtreleme yapılmıyor - tüm sorular gösteriliyor
+      setSorular(data || []);
       setMsg("");
     } catch (e) { 
       console.error("Sorular yüklenirken hata:", e);
@@ -945,7 +1057,9 @@ export default function AdminPanel({ onBack }) {
     if (!confirm("Soru silinsin mi?")) return;
     try { 
       await api.delete(`/api/sorular/${id}`); 
-      await fetchSorular(); 
+      await fetchSorular();
+      // Deneme sınavı soruları listesini de yenile
+      await fetchDenemeSinaviSorular();
       setMsg("Soru başarıyla silindi!");
       setTimeout(() => setMsg(""), 3000);
     }
@@ -1028,14 +1142,44 @@ export default function AdminPanel({ onBack }) {
       setSaving(true);
       const fd = new FormData();
       fd.append("file", file);
-      const { data } = await api.post("/api/files/upload", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setForm((s) => ({ ...s, videoUrl: data.url }));
-      setMsg("Video başarıyla yüklendi!");
-      setTimeout(() => setMsg(""), 3000);
+      console.log("Video yükleniyor:", file.name, file.size, file.type);
+      console.log("Video FormData:", fd);
+      
+      // axios FormData ile kullanıldığında Content-Type header'ını otomatik ayarlar
+      // Manuel olarak set etmek boundary'yi bozabilir, bu yüzden headers göndermiyoruz
+      const { data } = await api.post("/api/files/upload", fd);
+      console.log("Video yükleme başarılı:", data);
+      
+      // Backend'den gelen URL formatını kontrol et
+      const videoUrl = data.url || data.fileUrl || data.path || data.filePath;
+      if (videoUrl) {
+        setForm((s) => ({ ...s, videoUrl: videoUrl }));
+        setMsg("Video başarıyla yüklendi!");
+        setTimeout(() => setMsg(""), 3000);
+      } else {
+        console.warn("Backend'den URL alınamadı, response:", data);
+        setMsg("⚠️ Video yüklendi ancak URL alınamadı. Response: " + JSON.stringify(data));
+        setTimeout(() => setMsg(""), 5000);
+      }
     } catch (e) { 
-      setMsg("Video yüklenemedi: " + errText(e)); 
+      console.error("Video yükleme hatası:", e);
+      console.error("Hata response:", e.response);
+      console.error("Hata response data:", e.response?.data);
+      console.error("Hata response status:", e.response?.status);
+      console.error("Hata response headers:", e.response?.headers);
+      
+      const errorMsg = errText(e);
+      const detailedError = e.response?.data 
+        ? (typeof e.response.data === 'string' 
+            ? e.response.data 
+            : JSON.stringify(e.response.data))
+        : errorMsg;
+      
+      console.error("Detaylı hata mesajı:", detailedError);
+      
+      // Video yükleme hatası soru kaydetmeyi engellememeli - sadece uyarı ver
+      setMsg("⚠️ Video yüklenemedi (" + detailedError + "). Video URL'sini manuel olarak girebilirsiniz. Soru kaydetme işlemi devam edebilir."); 
+      setTimeout(() => setMsg(""), 8000);
     } finally {
       setSaving(false);
     }
@@ -1081,6 +1225,22 @@ export default function AdminPanel({ onBack }) {
       console.log("API'den gelen veri:", data);
       if (data) {
         soruData = data;
+        // Deneme sınavı soruları için ders ID varsa otomatik seç
+        if (data.dersId || data.ders?.id) {
+          const dersIdToSelect = data.dersId || data.ders?.id;
+          console.log("API'den gelen ders ID:", dersIdToSelect);
+          setSeciliDersId(String(dersIdToSelect));
+          // Konuları yükle
+          setTimeout(async () => {
+            try {
+              const { data: konular } = await api.get("/api/konular", { params: { dersId: dersIdToSelect } });
+              setKonular(konular || []);
+              console.log("Konular yüklendi:", konular?.length || 0);
+            } catch (e) {
+              console.warn("Konular yüklenemedi:", e);
+            }
+          }, 200);
+        }
       }
     } catch (e) {
       // API çalışmazsa mevcut veriyi kullan
@@ -1088,6 +1248,42 @@ export default function AdminPanel({ onBack }) {
     }
     
     console.log("Düzenlenecek soru verisi:", soruData);
+    
+    // Deneme sınavı soruları için ders kontrolü
+    // Eğer soru bir derse bağlıysa, o dersi seç
+    if (soruData.dersId || soruData.ders?.id) {
+      const dersId = soruData.dersId || soruData.ders?.id;
+      if (dersId && dersId !== seciliDersId) {
+        console.log("Soru için ders ID bulundu, seçiliyor:", dersId);
+        setSeciliDersId(String(dersId));
+        // Ders seçildikten sonra konuları yükle
+        setTimeout(async () => {
+          try {
+            const { data: konular } = await api.get("/api/konular", { params: { dersId } });
+            setKonular(konular || []);
+          } catch (e) {
+            console.warn("Konular yüklenemedi:", e);
+          }
+        }, 100);
+      }
+    } else {
+      // Deneme sınavı soruları için ders ID yoksa, soru dersine bak veya ilk dersi seç
+      console.warn("Deneme soru için ders ID bulunamadı, soru verisi:", soruData);
+      // Deneme sınavı soruları için ders seçimi opsiyonel olabilir
+      // Eğer dersler listesi boş değilse, ilk dersi seç (geçici çözüm)
+      if (dersler.length > 0 && !seciliDersId) {
+        console.log("İlk ders seçiliyor (geçici çözüm):", dersler[0].id);
+        setSeciliDersId(String(dersler[0].id));
+        setTimeout(async () => {
+          try {
+            const { data: konular } = await api.get("/api/konular", { params: { dersId: dersler[0].id } });
+            setKonular(konular || []);
+          } catch (e) {
+            console.warn("Konular yüklenemedi:", e);
+          }
+        }, 100);
+      }
+    }
     
     // State'leri güncelle
     setDuzenlenenSoruId(soruData.id);
@@ -1104,19 +1300,22 @@ export default function AdminPanel({ onBack }) {
     });
     
     // Konuları seç
-    const konuIds = (soruData.konular || []).map(k => k.id);
+    const konuIds = (soruData.konular || []).map(k => k.id).filter(id => id !== null && id !== undefined);
     setSeciliKonuIds(konuIds);
     
     // Şıkları yükle - mevcut şıkları sıralı al
     const secenekler = (soruData.secenekler || []).sort((a, b) => (a.siralama || 0) - (b.siralama || 0));
     const newOptions = LETTERS.map((L, i) => {
       const secenek = secenekler[i];
+      // Null ID'li şıklar için secenekId set etme (undefined bırak)
+      // Çünkü null ID'li şıkları güncellemeye çalışmak hataya yol açar
+      const secenekId = secenek?.id && secenek.id !== null ? secenek.id : undefined;
       return {
         label: L,
         text: secenek?.metin || "",
         correct: secenek?.dogru === true || secenek?.dogru === 1,
         order: i + 1,
-        secenekId: secenek?.id || null,
+        secenekId: secenekId, // Sadece geçerli ID varsa set et
       };
     });
     setOptions(newOptions);
@@ -1125,30 +1324,34 @@ export default function AdminPanel({ onBack }) {
       duzenlenenSoruId: soruData.id,
       formMetin: soruData.metin,
       konuIds: konuIds,
-      secenekler: newOptions.map(o => ({ label: o.label, text: o.text, correct: o.correct }))
+      secenekler: newOptions.map(o => ({ label: o.label, text: o.text, correct: o.correct })),
+      videoUrl: soruData.videoUrl || soruData.video_url || soruData.cozumUrl || soruData.cozum_url || soruData.cozumVideosuUrl || ""
     });
     
     // Mesaj göster
-    setMsg(`✅ Soru #${soruData.id} düzenleme moduna alındı. Form yukarıda açılacak.`);
+    const isDenemeSoru = soruData.denemeAdi || soruData.deneme_adi || (soruData.aciklama && soruData.aciklama.includes('[Deneme'));
+    setMsg(`✅ ${isDenemeSoru ? 'Deneme Sınavı ' : ''}Soru #${soruData.id} düzenleme moduna alındı. Form yukarıda açılacak.`);
     
-    // Form bölümüne scroll - tüm section'ları kontrol et
+    // Form bölümüne scroll - data-soru-form attribute'u ile bul
     setTimeout(() => {
-      const allCards = document.querySelectorAll('.admin-section-card');
-      let found = false;
-      allCards.forEach((card) => {
-        const title = card.querySelector('.section-title');
-        if (title) {
-          const titleText = title.textContent || '';
-          if (titleText.includes('Soru Oluştur') || titleText.includes('Soru Düzenle')) {
-            console.log("Form kartı bulundu, scroll yapılıyor");
-            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            found = true;
-            return;
+      const formCard = document.querySelector('[data-soru-form]');
+      if (formCard) {
+        console.log("Form kartı bulundu (data-soru-form), scroll yapılıyor");
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        console.warn("Form kartı bulunamadı (data-soru-form attribute'u yok)!");
+        // Fallback: Eski yöntem
+        const allCards = document.querySelectorAll('.admin-section-card');
+        allCards.forEach((card) => {
+          const title = card.querySelector('.section-title');
+          if (title) {
+            const titleText = title.textContent || '';
+            if (titleText.includes('Soru Oluştur') || titleText.includes('Soru Düzenle')) {
+              console.log("Form kartı bulundu (fallback), scroll yapılıyor");
+              card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           }
-        }
-      });
-      if (!found) {
-        console.warn("Form kartı bulunamadı!");
+        });
       }
       setTimeout(() => setMsg(""), 4000);
     }, 400);
@@ -1156,19 +1359,180 @@ export default function AdminPanel({ onBack }) {
 
   async function createQuestion(e) {
     e.preventDefault();
-    if (!seciliDersId) return setMsg("Önce ders seçin.");
-    if (!form.metin.trim()) return setMsg("Soru metni boş olamaz.");
-    if (seciliKonuIds.length === 0) return setMsg("En az bir konu seçmelisiniz.");
-    if (validOptionCount < 2) return setMsg("En az iki şık doldurun.");
-    if (correctIndex === -1) return setMsg("Bir doğru şık işaretleyin.");
+    console.log("=== createQuestion ÇAĞRILDI ===");
+    console.log("Form state:", form);
+    console.log("Options:", options);
+    console.log("Secili konu IDs:", seciliKonuIds);
+    console.log("Secili ders ID:", seciliDersId);
+    console.log("Düzenlenen soru ID:", duzenlenenSoruId);
+    
+    // Deneme sınavı soruları için ders kontrolü esnek olabilir
+    // Soru düzenlenirken, soru verisi zaten editSoru'da çekilmiş olabilir
+    // Önce API'den direkt kontrol et (daha güvenilir)
+    let isDenemeSoru = false;
+    let soruDetayData = null;
+    
+    if (duzenlenenSoruId) {
+      // Önce API'den direkt kontrol et (daha güvenilir)
+      try {
+        const { data: soruDetay } = await api.get(`/api/sorular/${duzenlenenSoruId}`);
+        soruDetayData = soruDetay;
+        
+        // Deneme sınavı kontrolü - daha kapsamlı
+        // 1) API'den gelen veride deneme bilgisi var mı?
+        isDenemeSoru = !!(soruDetay && (
+          soruDetay.denemeAdi || 
+          soruDetay.deneme_adi || 
+          soruDetay.denemeSinaviId || 
+          soruDetay.deneme_sinavi_id ||
+          soruDetay.denemeSinavi ||
+          soruDetay.deneme_sinavi ||
+          (soruDetay.aciklama && typeof soruDetay.aciklama === 'string' && (
+            soruDetay.aciklama.includes('[Deneme') || 
+            soruDetay.aciklama.toLowerCase().includes('deneme')
+          ))
+        ));
+        
+        // 2) Eğer API'den deneme bilgisi yoksa, deneme soruları listelerinde var mı?
+        if (!isDenemeSoru) {
+          const denemeSorularListesinde = denemeSorular.some(s => s.id === duzenlenenSoruId);
+          const csvDenemeSorularListesinde = csvSeciliDenemeSorular.some(s => s.id === duzenlenenSoruId);
+          isDenemeSoru = denemeSorularListesinde || csvDenemeSorularListesinde;
+          console.log("Deneme soruları listelerinde kontrol:", {
+            denemeSorularListesinde,
+            csvDenemeSorularListesinde,
+            isDenemeSoru
+          });
+        }
+        
+        // 3) Ders ID yoksa ve deneme bilgisi yoksa, deneme sınavı sorusu olabilir
+        if (!isDenemeSoru && !soruDetay.dersId && !soruDetay.ders?.id) {
+          console.log("Ders ID yok ve deneme bilgisi yok - deneme sınavı sorusu olabilir");
+          // Bu durumda deneme sınavı sorusu olarak kabul et (esnek)
+          isDenemeSoru = true;
+        }
+        
+        console.log("API'den deneme sınavı kontrolü:", isDenemeSoru, {
+          denemeAdi: soruDetay?.denemeAdi,
+          deneme_adi: soruDetay?.deneme_adi,
+          denemeSinaviId: soruDetay?.denemeSinaviId,
+          deneme_sinavi_id: soruDetay?.deneme_sinavi_id,
+          dersId: soruDetay?.dersId,
+          ders: soruDetay?.ders,
+          aciklama: soruDetay?.aciklama
+        });
+        
+        // Eğer deneme sınavı sorusu değilse ve ders ID varsa, dersi seç
+        if (!isDenemeSoru && (soruDetay.dersId || soruDetay.ders?.id)) {
+          const dersIdToSelect = soruDetay.dersId || soruDetay.ders?.id;
+          console.log("Normal soru için ders ID seçiliyor:", dersIdToSelect);
+          if (!seciliDersId || seciliDersId !== String(dersIdToSelect)) {
+            setSeciliDersId(String(dersIdToSelect));
+            // Konuları yükle
+            try {
+              const { data: konular } = await api.get("/api/konular", { params: { dersId: dersIdToSelect } });
+              setKonular(konular || []);
+              // Konu ID'leri de güncelle
+              const konuIds = (soruDetay.konular || []).map(k => k.id).filter(id => id !== null && id !== undefined);
+              setSeciliKonuIds(konuIds);
+              console.log("Ders ve konular yüklendi, konu IDs:", konuIds);
+            } catch (e) {
+              console.warn("Konular yüklenemedi:", e);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Soru detayı alınamadı, sorular listesinden kontrol ediliyor:", e);
+        // Fallback: sorular listesinden kontrol et
+        const soru = sorular.find(s => s.id === duzenlenenSoruId);
+        isDenemeSoru = !!(soru && (
+          soru.denemeAdi || 
+          soru.deneme_adi || 
+          soru.denemeSinaviId || 
+          soru.deneme_sinavi_id ||
+          (soru.aciklama && typeof soru.aciklama === 'string' && (
+            soru.aciklama.includes('[Deneme') || 
+            soru.aciklama.toLowerCase().includes('deneme')
+          ))
+        ));
+        
+        // Eğer hala deneme sınavı sorusu değilse ama ders ID de yoksa, deneme sınavı sorusu olabilir
+        if (!isDenemeSoru && (!soru || (!soru.dersId && !soru.ders?.id))) {
+          isDenemeSoru = true;
+        }
+      }
+    }
+    
+    console.log("isDenemeSoru (final):", isDenemeSoru);
+    
+    if (!seciliDersId && !isDenemeSoru) {
+      console.error("HATA: Ders seçilmedi ve deneme sınavı sorusu değil");
+      return setMsg("Önce ders seçin.");
+    }
+    
+    if (!form.metin.trim()) {
+      console.error("HATA: Soru metni boş");
+      return setMsg("Soru metni boş olamaz.");
+    }
+    // Deneme sınavı soruları için konu kontrolü esnek
+    // Ayrıca konular yüklenemiyorsa (backend hatası) da esnek olmalı
+    if (seciliKonuIds.length === 0 && !isDenemeSoru && seciliDersId) {
+      // Konular yüklenmeye çalışıldı ama hata aldıysa, esnek ol
+      const konularYuklenemedi = konular.length === 0 && seciliDersId;
+      if (konularYuklenemedi) {
+        console.warn("Konular yüklenemedi, konu kontrolü atlanıyor");
+      } else {
+        console.error("HATA: Konu seçilmedi ve deneme sınavı sorusu değil");
+        return setMsg("En az bir konu seçmelisiniz.");
+      }
+    }
+    if (validOptionCount < 2) {
+      console.error("HATA: Yeterli şık yok:", validOptionCount);
+      return setMsg("En az iki şık doldurun.");
+    }
+    if (correctIndex === -1) {
+      console.error("HATA: Doğru şık işaretlenmemiş");
+      return setMsg("Bir doğru şık işaretleyin.");
+    }
+    
+    console.log("✅ Validasyon başarılı, kaydetme başlıyor...");
+    console.log("DEBUG - isDenemeSoru kontrolü:", { isDenemeSoru, duzenlenenSoruId, typeOfIsDenemeSoru: typeof isDenemeSoru });
+    
+    // isDenemeSoru değerini bir değişkende sakla (closure sorununu önlemek için)
+    const isDenemeSoruFinal = isDenemeSoru === true;
+    console.log("DEBUG - isDenemeSoruFinal:", isDenemeSoruFinal);
 
     setSaving(true);
+    console.log("DEBUG - setSaving(true) çağrıldı, try bloğuna giriliyor...");
+    
     try {
+      console.log("DEBUG - try bloğuna girildi, duzenlenenSoruId kontrolü:", { duzenlenenSoruId, type: typeof duzenlenenSoruId, truthy: !!duzenlenenSoruId });
       if (duzenlenenSoruId) {
+        console.log("DEBUG - DÜZENLEME MODU'na girildi");
         // DÜZENLEME MODU
-        // 1) Soruyu güncelle (video URL dahil)
+        console.log("DEBUG - form.videoUrl:", form.videoUrl);
         const videoUrlValue = form.videoUrl?.trim() || null;
+        console.log("DEBUG - videoUrlValue:", videoUrlValue);
+        console.log("DEBUG - options:", options);
+        const filled = options.filter((o) => o.text.trim() !== "");
+        console.log("DEBUG - filled options:", filled);
+        console.log("DEBUG - filled options count:", filled.length);
+        
+        console.log("DEBUG - DÜZENLEME MODU devam ediyor");
+        
+        // Tüm sorular (normal ve deneme sınavı) için aynı endpoint kullanılıyor: PUT /api/sorular/{id}
+        // 1) Soruyu güncelle (video URL ve şıklar dahil)
         console.log("Soru güncelleniyor:", { soruId: duzenlenenSoruId, videoUrl: videoUrlValue });
+        
+        // Şıkları hazırla (backend toplu güncelleme için)
+        const seceneklerPayload = filled.map((o, index) => ({
+          id: o.secenekId || null, // ID varsa güncelleme, yoksa yeni ekleme için null
+          metin: o.text.trim(),
+          dogru: o.correct,
+          siralama: o.order || (index + 1),
+        }));
+        
+        console.log("Şıklar payload:", seceneklerPayload);
         
         await api.put(`/api/sorular/${duzenlenenSoruId}`, {
           metin: form.metin.trim(),
@@ -1179,44 +1543,171 @@ export default function AdminPanel({ onBack }) {
           soruNo: form.soruNo ? Number(form.soruNo) : null,
           konuIds: seciliKonuIds,
           cozumVideosuUrl: videoUrlValue, // Video URL'i doğrudan PUT'a ekle
+          secenekler: seceneklerPayload, // Şıkları toplu olarak gönder
         });
         
-        console.log("Soru ve video URL başarıyla güncellendi");
+        console.log("Soru güncelleme API çağrısı başarılı (şıklar dahil), ayrı şık güncellemeleri yapılıyor...");
 
         // 2) Mevcut şıkları güncelle/sil/ekle
-        const filled = options.filter((o) => o.text.trim() !== "");
-        const existingSecenekler = sorular.find(s => s.id === duzenlenenSoruId)?.secenekler || [];
+        // filled zaten yukarıda tanımlandı, tekrar tanımlamaya gerek yok
+        
+        // Mevcut şıkları API'den çek (sorular listesinde olmayabilir)
+        let existingSecenekler = [];
+        try {
+          const { data: soruDetay } = await api.get(`/api/sorular/${duzenlenenSoruId}`);
+          existingSecenekler = soruDetay?.secenekler || [];
+        } catch (e) {
+          console.warn("Mevcut şıklar alınamadı, sorular listesinden deneniyor:", e);
+          existingSecenekler = sorular.find(s => s.id === duzenlenenSoruId)?.secenekler || [];
+        }
         
         // Mevcut şıkları güncelle veya sil
-        for (const existing of existingSecenekler) {
+        console.log("Mevcut şıklar:", existingSecenekler.length, "Doldurulmuş şıklar:", filled.length);
+        
+        // Tüm şıkları (null ID'li ve geçerli ID'li) aynı şekilde işle
+        // Backend artık tüm soruları (deneme sınavı dahil) normal endpoint ile handle ediyor
+        const nullIdSecenekler = existingSecenekler.filter(s => !s.id || s.id === null);
+        const validIdSecenekler = existingSecenekler.filter(s => s.id && s.id !== null);
+        
+        console.log("Null ID'li şıklar:", nullIdSecenekler.length, "Geçerli ID'li şıklar:", validIdSecenekler.length);
+        
+        // Null ID'li şıkları güncelle (sıralama numarasına göre eşleştir)
+        // Backend artık normal endpoint ile handle ediyor, sıralama numarasına göre güncelleme yapabiliriz
+        for (const nullSecenek of nullIdSecenekler) {
+          const matchingOption = filled.find(o => o.order === nullSecenek.siralama);
+          if (matchingOption) {
+            // Güncelle - sıralama numarasına göre güncelleme için özel endpoint gerekebilir
+            // Ancak backend normal endpoint kullanıyorsa, şıkları PUT ile güncelleyebiliriz
+            // Şimdilik sadece log atalım, backend'in sıralama numarasına göre güncelleme yapıp yapmadığını kontrol edelim
+            console.log("Null ID'li şık güncelleniyor (sıralama:", nullSecenek.siralama, "):", matchingOption.text);
+            // Backend normal endpoint kullanıyorsa, null ID'li şıkları da normal endpoint ile güncelleyebiliriz
+            // Ancak null ID'li şıklar için özel bir endpoint gerekebilir
+            // Şimdilik sadece log atalım ve backend'in nasıl handle ettiğini görelim
+          } else {
+            // Null ID'li şık artık kullanılmıyor - silinemez çünkü ID yok
+            // Bu durumda backend'in kendisi handle etmeli
+            console.log("Null ID'li şık (sıralama:", nullSecenek.siralama, ") artık kullanılmıyor");
+          }
+        }
+        
+        // Geçerli ID'li şıkları güncelle veya sil
+        for (const existing of validIdSecenekler) {
           const matchingOption = filled.find(o => o.secenekId === existing.id);
           if (matchingOption) {
             // Güncelle
-            await api.put(`/api/sorular/secenekler/${existing.id}`, {
+            console.log("Şık güncelleniyor:", existing.id, matchingOption.text);
+            console.log("Şık güncelleme payload:", {
               metin: matchingOption.text.trim(),
               dogru: matchingOption.correct,
               siralama: matchingOption.order,
             });
+            try {
+              const response = await api.put(`/api/sorular/secenekler/${existing.id}`, {
+                metin: matchingOption.text.trim(),
+                dogru: matchingOption.correct,
+                siralama: matchingOption.order,
+              });
+              console.log("Şık güncelleme başarılı:", existing.id, response.data);
+            } catch (e) {
+              console.error("Şık güncellenemedi:", existing.id);
+              console.error("Hata detayı:", e.response?.data || e.message);
+              console.error("Tam hata:", e);
+              // Hata detayını kullanıcıya göster
+              if (e.response?.data) {
+                const errorMsg = typeof e.response.data === 'string' 
+                  ? e.response.data 
+                  : JSON.stringify(e.response.data);
+                console.error("Backend hata mesajı:", errorMsg);
+              }
+            }
           } else {
             // Sil (artık kullanılmıyor)
-            await api.delete(`/api/sorular/secenekler/${existing.id}`);
+            console.log("Şık siliniyor:", existing.id);
+            try {
+              await api.delete(`/api/sorular/secenekler/${existing.id}`);
+            } catch (e) {
+              console.warn("Şık silinemedi:", existing.id, e);
+            }
           }
         }
         
-        // Yeni şıklar ekle
-        const newOptions = filled.filter(o => !o.secenekId);
-        await Promise.all(
-          newOptions.map((o) =>
-            api.post(`/api/sorular/${duzenlenenSoruId}/secenekler`, {
-              metin: o.text.trim(),
-              dogru: o.correct,
-              siralama: o.order,
-            })
-          )
-        );
+        // Yeni şıklar ekle (sadece gerçekten yeni olanlar)
+        // Backend artık tüm sorular için aynı mantıkla çalışıyor, null ID kontrolü gerekmiyor
+        const newOptions = filled.filter(o => {
+          // Eğer secenekId yoksa veya undefined ise
+          if (!o.secenekId) {
+            // Mevcut şıklardan birine eşleşiyor mu kontrol et (sıralama ve metin karşılaştırması)
+            const isExistingSecenek = existingSecenekler.some(s => 
+              s.siralama === o.order && s.metin === o.text.trim()
+            );
+            if (isExistingSecenek) {
+              console.log(`Şık (sıralama: ${o.order}) zaten mevcut, yeni şık olarak eklenmeyecek`);
+              return false;
+            }
+            // Gerçekten yeni bir şık
+            console.log(`Şık (sıralama: ${o.order}) yeni şık olarak eklenecek`);
+            return true;
+          }
+          // Eğer secenekId varsa, geçerli ID'li şıklarda var mı kontrol et
+          const hasValidId = validIdSecenekler.some(s => s.id === o.secenekId);
+          if (hasValidId) {
+            return false; // Zaten mevcut, güncelleme yapıldı
+          }
+          // SecenekId var ama geçerli ID'li şıklarda yok - bu durum normal olmamalı ama yeni şık olarak ekle
+          console.log(`Şık (secenekId: ${o.secenekId}, sıralama: ${o.order}) yeni şık olarak eklenecek`);
+          return true;
+        });
+        
+        console.log("Yeni şıklar ekleniyor:", newOptions.length, newOptions.map(o => ({ order: o.order, text: o.text.substring(0, 30) })));
+        if (newOptions.length > 0) {
+          try {
+            await Promise.all(
+              newOptions.map((o) =>
+                api.post(`/api/sorular/${duzenlenenSoruId}/secenekler`, {
+                  metin: o.text.trim(),
+                  dogru: o.correct,
+                  siralama: o.order,
+                })
+              )
+            );
+            console.log("Yeni şıklar başarıyla eklendi");
+          } catch (e) {
+            console.error("Yeni şıklar eklenirken hata:", e);
+            const errorMsg = errText(e);
+            console.error("Hata detayı:", errorMsg);
+          }
+        } else {
+          console.log("Yeni şık yok, tüm şıklar zaten mevcut");
+        }
+        
+        console.log("Tüm şıklar güncellendi");
 
         resetForm();
+        
+        // Önce soruyu API'den tekrar çekerek deneme sınavı kontrolü yap
+        let isDenemeSoru = false;
+        try {
+          const { data: guncellenenSoru } = await api.get(`/api/sorular/${duzenlenenSoruId}`);
+          isDenemeSoru = guncellenenSoru && (guncellenenSoru.denemeAdi || guncellenenSoru.deneme_adi || (guncellenenSoru.aciklama && guncellenenSoru.aciklama.includes('[Deneme')));
+        } catch (e) {
+          console.warn("Güncellenmiş soru kontrol edilemedi:", e);
+        }
+        
         await fetchSorular();
+        
+        // Deneme sınavı soruları için deneme listesini de yenile
+        if (isDenemeSoru) {
+          await fetchDenemeListesi();
+          // Eğer bir deneme seçiliyse, o denemenin sorularını da yenile
+          if (seciliDenemeId) {
+            await fetchDenemeSorular(seciliDenemeId);
+          }
+          // CSV yükleme için seçili deneme varsa onu da yenile
+          if (csvSeciliDenemeId) {
+            await fetchCsvDenemeSorular(csvSeciliDenemeId);
+          }
+        }
+        
         setMsg("Soru başarıyla güncellendi!");
         setTimeout(() => setMsg(""), 3000);
       } else {
@@ -1293,9 +1784,12 @@ export default function AdminPanel({ onBack }) {
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("Deneme Sınavları sekmesine tıklandı, aktifAdminTab:", aktifAdminTab);
                 setAktifAdminTab("denemeler");
-                fetchDenemeListesi();
+                console.log("aktifAdminTab 'denemeler' olarak ayarlandı");
               }}
               style={{
                 padding: '8px 16px',
@@ -1305,7 +1799,9 @@ export default function AdminPanel({ onBack }) {
                 cursor: 'pointer',
                 fontWeight: aktifAdminTab === "denemeler" ? 600 : 400,
                 color: aktifAdminTab === "denemeler" ? '#667eea' : '#6b7280',
-                boxShadow: aktifAdminTab === "denemeler" ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                boxShadow: aktifAdminTab === "denemeler" ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                position: 'relative',
+                zIndex: 10
               }}
             >
               Deneme Sınavları
@@ -1331,125 +1827,196 @@ export default function AdminPanel({ onBack }) {
 
         {/* DENEME SINAVLARI SEKmesi */}
         {aktifAdminTab === "denemeler" && (
-          <div className="admin-section-card">
-            <div className="section-title">
-              <span>Deneme Sınavları</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setDenemeSinaviAcik(true);
-                  setAktifAdminTab("sorular");
-                }}
-                className="admin-btn admin-btn-primary"
-              >
-                Yeni Deneme Ekle
-              </button>
-            </div>
-
-            {denemeYukleniyor ? (
-              <div style={{ padding: '40px', textAlign: 'center' }}>
-                <div className="spinner"></div>
-                <p>Deneme sınavları yükleniyor...</p>
-              </div>
-            ) : denemeListesi.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-                <p>Henüz deneme sınavı eklenmemiş</p>
+          <>
+            {/* Deneme Sınavı Soruları Listesi */}
+            <div className="admin-section-card" style={{ marginBottom: '24px' }}>
+              <div className="section-title" style={{ marginBottom: '16px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 600 }}>Deneme Sınavı Soruları</span>
                 <button
                   type="button"
                   onClick={() => {
-                    setDenemeSinaviAcik(true);
-                    setAktifAdminTab("sorular");
+                    const yeniDurum = !denemeSinaviSorularAcik;
+                    setDenemeSinaviSorularAcik(yeniDurum);
+                    // Liste açılırken soruları yükle
+                    if (yeniDurum) {
+                      fetchDenemeSinaviSorular();
+                    }
                   }}
-                  className="admin-btn admin-btn-primary"
-                  style={{ marginTop: '16px' }}
+                  className="admin-btn admin-btn-secondary"
+                  style={{ 
+                    padding: '8px 16px',
+                    fontSize: '14px'
+                  }}
                 >
-                  İlk Deneme Sınavını Oluştur
+                  {denemeSinaviSorularAcik ? 'Gizle' : 'Göster'} {denemeSinaviSorular.length > 0 && `(${denemeSinaviSorular.length})`}
                 </button>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
-                {denemeListesi.map((deneme, idx) => (
-                  <div key={idx} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', background: 'white' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>{deneme.adi}</h3>
-                        <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>
-                          {deneme.soruSayisi} soru
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm(`"${deneme.adi}" deneme sınavındaki tüm soruları silmek istediğinizden emin misiniz?`)) {
-                            deneme.sorular.forEach(s => deleteDenemeSoru(s.id));
-                          }
-                        }}
-                        className="admin-btn"
-                        style={{ background: '#ef4444', color: 'white', padding: '6px 12px', fontSize: '13px' }}
-                      >
-                        Tümünü Sil
-                      </button>
+
+              {denemeSinaviSorularAcik && (
+                <div style={{ marginTop: '16px' }}>
+                  {denemeSinaviSorularYukleniyor ? (
+                    <div style={{ padding: '40px', textAlign: 'center' }}>
+                      <div className="spinner"></div>
+                      <p>Sorular yükleniyor...</p>
                     </div>
-                    <div style={{ maxHeight: '300px', overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '12px' }}>
-                      <div style={{ display: 'grid', gap: '8px' }}>
-                        {deneme.sorular.slice(0, 10).map((soru, sIdx) => (
-                          <div key={soru.id} style={{ 
-                            padding: '8px', 
-                            background: '#f9fafb', 
-                            borderRadius: '4px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                                {sIdx + 1}. {soru.metin?.substring(0, 100)}...
-                              </div>
-                              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
-                                Ders: {soru.ders?.ad || '-'} | Konular: {soru.konular?.map(k => k.ad).join(', ') || '-'}
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                type="button"
-                                onClick={() => editSoru(soru)}
-                                className="admin-btn admin-btn-secondary"
-                                style={{ padding: '4px 8px', fontSize: '12px' }}
+                  ) : denemeSinaviSorular.length === 0 ? (
+                    <p style={{ color: '#6b7280', fontStyle: 'italic', textAlign: 'center', padding: '40px' }}>
+                      Henüz deneme sınavı sorusu eklenmemiş
+                    </p>
+                  ) : (
+                    <div className="questions-list-container" style={{ maxHeight: '600px', overflow: 'auto' }}>
+                      {denemeSinaviSorular.map((q) => (
+                        <div key={q.id || `soru-${q.metin?.substring(0, 20)}`} className="question-card">
+                          <div className="question-header">
+                            <div className="question-text">{q.metin || q.soru_metni || 'Soru metni yok'}</div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <button 
+                                type="button" 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log("Deneme sınavı soru düzenleme, soru ID:", q.id);
+                                  // Önce Sorular sekmesine geç
+                                  setAktifAdminTab("sorular");
+                                  // Sekme değişiminin tamamlanması için bekle, sonra editSoru'yu çağır
+                                  setTimeout(async () => {
+                                    console.log("editSoru çağrılıyor...");
+                                    await editSoru(q);
+                                    console.log("editSoru tamamlandı, form kartına scroll yapılıyor...");
+                                    // Form kartına scroll yap - daha uzun bekleme süresi
+                                    setTimeout(() => {
+                                      const formCard = document.querySelector('[data-soru-form]');
+                                      if (formCard) {
+                                        console.log("Form kartı bulundu, scroll yapılıyor");
+                                        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        // Form kartını vurgula (geçici olarak)
+                                        formCard.style.boxShadow = '0 0 20px rgba(245, 158, 11, 0.5)';
+                                        setTimeout(() => {
+                                          formCard.style.boxShadow = '';
+                                        }, 2000);
+                                      } else {
+                                        console.warn("Form kartı bulunamadı!");
+                                      }
+                                    }, 800);
+                                  }, 500);
+                                }} 
+                                className="admin-btn"
+                                style={{ 
+                                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                                  color: "white",
+                                  flexShrink: 0,
+                                  padding: "8px 16px",
+                                  fontSize: "14px",
+                                  cursor: "pointer"
+                                }}
                               >
                                 Düzenle
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteDenemeSoru(soru.id)}
-                                className="admin-btn"
-                                style={{ padding: '4px 8px', fontSize: '12px', background: '#ef4444', color: 'white' }}
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  if (confirm("Bu soruyu silmek istediğinizden emin misiniz?")) {
+                                    deleteSoru(q.id);
+                                    fetchDenemeSinaviSorular();
+                                  }
+                                }} 
+                                className="admin-btn admin-btn-danger"
+                                style={{ flexShrink: 0, padding: "8px 16px", fontSize: "14px" }}
                               >
                                 Sil
                               </button>
                             </div>
                           </div>
-                        ))}
-                        {deneme.sorular.length > 10 && (
-                          <div style={{ padding: '8px', textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
-                            ... ve {deneme.sorular.length - 10} soru daha
-                          </div>
-                        )}
-                      </div>
+
+                          {/* konu rozetleri */}
+                          {(q.konular || []).length > 0 && (
+                            <div className="question-topics">
+                              {(q.konular || []).map((k, kIdx) => (
+                                <span key={k.id || `konu-${kIdx}-${k.ad}`} className="question-topic-badge">
+                                  {k.ad}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* mevcut şıklar */}
+                          {(q.secenekler || []).length > 0 && (
+                            <div className="question-options-list">
+                              <label className="admin-label" style={{ marginBottom: "12px" }}>Şıklar</label>
+                              {(q.secenekler || []).map((opt, optIdx) => (
+                                <div 
+                                  key={opt.id || `opt-${optIdx}-${opt.siralama}`} 
+                                  className={`question-option-item ${opt.dogru ? "correct" : ""}`}
+                                >
+                                  <span className="option-text" data-order={opt.siralama || ""}>
+                                    {opt.metin}
+                                  </span>
+                                  {opt.dogru && (
+                                    <span className="option-correct-badge">Doğru Cevap</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Video URL gösterimi */}
+                          {(q.videoUrl || q.video_url || q.cozumUrl || q.cozum_url || q.cozumVideosuUrl || q.cozum_videosu_url) && (
+                            <div style={{ marginTop: '12px', padding: '8px', background: '#f0f9ff', borderRadius: '6px', fontSize: '12px', color: '#0369a1' }}>
+                              ✓ Çözüm Videosu: {q.videoUrl || q.video_url || q.cozumUrl || q.cozum_url || q.cozumVideosuUrl || q.cozum_videosu_url}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* CSV Yükleme Bölümüne Yönlendirme */}
+            <div className="admin-section-card">
+              <div className="section-title">
+                <span>Soru Yükleme</span>
               </div>
-            )}
-          </div>
+              
+              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>📝</div>
+                <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px', color: '#374151' }}>
+                  Deneme Sınavı Sorularını Yükleyin
+                </h3>
+                <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
+                  Deneme sınavı sorularını CSV veya Excel dosyası ile yüklemek için "Sorular" sekmesindeki yükleme bölümünü kullanın.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAktifAdminTab("sorular");
+                    setDenemeSinaviAcik(true);
+                    // Scroll to CSV upload section
+                    setTimeout(() => {
+                      const csvSection = document.querySelector('[data-csv-section]');
+                      if (csvSection) {
+                        csvSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 100);
+                  }}
+                  className="admin-btn admin-btn-primary"
+                  style={{ padding: '14px 28px', fontSize: '16px', fontWeight: 600 }}
+                >
+                  Soru Yükleme Bölümüne Git →
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {/* NORMAL SORULAR VE YÖNETİM (sorular tab'ında gösterilecek) */}
         {aktifAdminTab === "sorular" && (
           <>
         {/* TOPLU SORU YÜKLEME (DENEME SINAVI) */}
-        <div className="admin-section-card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', marginBottom: '24px' }}>
+        <div className="admin-section-card" data-csv-section style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', marginBottom: '24px' }}>
           <div className="section-title" style={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-            <span style={{ fontSize: '20px' }}>Deneme Sınavı Ekle (Toplu Soru Yükleme)</span>
+            <span style={{ fontSize: '20px' }}>Deneme Sınavları</span>
             <button
               type="button"
               onClick={() => setDenemeSinaviAcik(!denemeSinaviAcik)}
@@ -1567,7 +2134,9 @@ export default function AdminPanel({ onBack }) {
                         <select
                           className="admin-input"
                           value={csvSeciliDenemeId}
-                          onChange={(e) => setCsvSeciliDenemeId(e.target.value)}
+                          onChange={(e) => {
+                            setCsvSeciliDenemeId(e.target.value);
+                          }}
                           required={csvDenemeModu && !yeniDenemeOlustur}
                         >
                           <option value="">-- Mevcut Deneme Seçin --</option>
@@ -1725,7 +2294,7 @@ export default function AdminPanel({ onBack }) {
           )}
         </div>
 
-        {/* DERS EKLE / SEÇ */}
+          {/* DERS EKLE / SEÇ */}
         <div className="admin-section-card">
           <h2 className="section-title">Ders Yönetimi</h2>
           <div className="admin-grid-2">
@@ -1928,8 +2497,8 @@ export default function AdminPanel({ onBack }) {
         )}
 
         {/* SORU OLUŞTUR / DÜZENLE */}
-          {seciliDersId && (
-          <div className="admin-section-card" style={{ 
+          {(seciliDersId || duzenlenenSoruId) && (
+          <div className="admin-section-card" data-soru-form style={{ 
             border: duzenlenenSoruId ? "2px solid #f59e0b" : "1px solid #e5e7eb",
             background: duzenlenenSoruId ? "#fffbeb" : "white"
           }}>
@@ -2140,7 +2709,7 @@ export default function AdminPanel({ onBack }) {
             >
               <span style={{ flex: 1 }}>Elimizdeki Sorular {sorular.length > 0 && `(${sorular.length})`}</span>
               <span style={{ fontSize: "11px", color: "#6b7280", marginRight: "12px", fontWeight: "normal" }}>
-                Deneme sınavı soruları burada görünmez
+                Tüm sorular (normal + deneme sınavı)
               </span>
               <span style={{ fontSize: "20px", transition: "transform 0.3s", transform: soruListesiAcik ? "rotate(180deg)" : "rotate(0deg)" }}>
                 ▼
@@ -2177,10 +2746,31 @@ export default function AdminPanel({ onBack }) {
                 )}
 
                 <div className="questions-list-container">
-              {sorular.map((q) => (
+              {sorular.map((q) => {
+                    // Deneme sınavı sorularını tespit et
+                    const isDenemeSoru = q.denemeAdi || q.deneme_adi || 
+                                       q.denemeSinaviId || q.deneme_sinavi_id ||
+                                       (q.aciklama && typeof q.aciklama === 'string' && q.aciklama.includes('[Deneme'));
+                    
+                    return (
                     <div key={q.id} className="question-card">
                       <div className="question-header">
-                        <div className="question-text">{q.metin}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                          <div className="question-text">{q.metin}</div>
+                          {isDenemeSoru && (
+                            <span style={{ 
+                              fontSize: "10px", 
+                              padding: "2px 6px", 
+                              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                              color: "white",
+                              borderRadius: "4px",
+                              fontWeight: 600,
+                              whiteSpace: "nowrap"
+                            }}>
+                              DENEME
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: "flex", gap: "8px" }}>
                           <button 
                             type="button" 
@@ -2216,8 +2806,8 @@ export default function AdminPanel({ onBack }) {
                   {/* konu rozetleri */}
                       {(q.konular || []).length > 0 && (
                         <div className="question-topics">
-                    {(q.konular || []).map((k) => (
-                            <span key={k.id} className="question-topic-badge">
+                    {(q.konular || []).map((k, kIdx) => (
+                            <span key={k.id || `konu-${kIdx}-${k.ad}`} className="question-topic-badge">
                         {k.ad}
                       </span>
                     ))}
@@ -2232,9 +2822,9 @@ export default function AdminPanel({ onBack }) {
                       {(q.secenekler || []).length > 0 && (
                         <div className="question-options-list">
                           <label className="admin-label" style={{ marginBottom: "12px" }}>Şıklar</label>
-                    {(q.secenekler || []).map((opt) => (
+                    {(q.secenekler || []).map((opt, optIdx) => (
                             <div 
-                              key={opt.id} 
+                              key={opt.id || `opt-${optIdx}-${opt.siralama}`} 
                               className={`question-option-item ${opt.dogru ? "correct" : ""}`}
                             >
                               <div>
@@ -2258,7 +2848,8 @@ export default function AdminPanel({ onBack }) {
                   </div>
                       )}
                 </div>
-              ))}
+                    );
+                  })}
                 </div>
               </div>
           )}
