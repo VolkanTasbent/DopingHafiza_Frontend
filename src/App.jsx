@@ -11,6 +11,9 @@ import AdminPanel from "./AdminPanel";
 import DersDetay from "./DersDetay";
 import Profilim from "./Profilim"; // ✅ yeni
 import "./App.css";
+import Grafiklerim from "./Grafiklerim";
+import "chart.js"
+
 
 export default function App() {
   const [page, setPage] = useState(
@@ -149,6 +152,13 @@ export default function App() {
               <span>Admin Panel</span>
             </button>
           )}
+          <button
+  className={`nav-link ${page === "grafikler" ? "active" : ""}`}
+  onClick={() => setPage("grafikler")}
+>
+  <span>Grafiklerim</span>
+</button>
+
         </div>
 
         <div className="nav-user">
@@ -232,9 +242,18 @@ export default function App() {
           <Profilim onBack={() => setPage("dersler")} />
         )}
 
+    {
+  page === "grafikler" && (
+    <Grafiklerim onBack={() => setPage("raporlar")} />
+  )
+}
+
+
+
         {page === "admin" && (
           <AdminPanel onBack={() => setPage("dersler")} />
         )}
+
       </main>
     </div>
   );

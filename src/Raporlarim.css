@@ -1145,3 +1145,80 @@
     font-size: 14px;
   }
 }
+.grafik-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.grafik-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}/* ——————————————————————————————
+   RAPOR GRAFİK SAYFASI TASARIMI
+—————————————————————————————— */
+
+/* Grafik paneli genel alan */
+.rapor-grafik-panel {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Grid: Masaüstü 3 sütun — Tablet 2 — Mobil 1 */
+.rapor-grafik-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+/* Her bir grafik kutusu */
+.grafik-box {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.08);
+  min-height: 380px;        /* 📌 Yükseklik sabitlendi */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Grafik başlığı */
+.grafik-box h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #111827;
+}
+
+/* Canvas’ın taşmasını engelle */
+.grafik-box canvas {
+  max-height: 260px !important;
+  width: 100% !important;
+}
+
+/* Daha düzenli görünüm için */
+.grafik-box p.grafik-note {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Mobil uyum */
+@media (max-width: 600px) {
+  .grafik-box {
+    min-height: 340px;
+    padding: 16px;
+  }
+
+  .grafik-box canvas {
+    max-height: 220px !important;
+  }
+}
