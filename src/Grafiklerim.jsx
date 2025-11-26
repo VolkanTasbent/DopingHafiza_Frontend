@@ -33,7 +33,13 @@ export default function Grafiklerim({ onBack }) {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState("all");
-  const [dersFilter, setDersFilter] = useState("all");
+  
+  // Tüm ders seçim state'leri
+  const [selectedDers, setSelectedDers] = useState("all");
+  const [selectedKonuDers, setSelectedKonuDers] = useState("all");
+  const [selectedYanlisDers, setSelectedYanlisDers] = useState("all");
+  const [selectedBosDers, setSelectedBosDers] = useState("all");
+  const [selectedPieDers, setSelectedPieDers] = useState("all"); // Yeni: Pie chart için ders seçimi
 
   // Tüm hesaplamalar
   const grafikVerileri = useMemo(() => {
@@ -46,18 +52,22 @@ export default function Grafiklerim({ onBack }) {
         totalDogru: 0,
         totalYanlis: 0,
         totalBos: 0,
-        netLabels: [],
-        netValues: [],
         konuData: [],
         dersData: [],
+        dersler: [],
+        filteredDersData: [],
         wrongKonular: [],
+        bosKonular: [],
         zorlukData: [],
         timeLabels: [],
         timeValues: [],
         denemeLabels: [],
         denemeBasari: [],
-        dersList: [],
-        hasItems: false
+        hasItems: false,
+        // Pie chart için ders bazlı veriler
+        pieDogru: 0,
+        pieYanlis: 0,
+        pieBos: 0
       };
     }
 
@@ -98,81 +108,26 @@ export default function Grafiklerim({ onBack }) {
       return parseFloat((dogru - (yanlis / 4)).toFixed(2));
     });
 
-    // 4. Konu Bazlı Başarı
+    // 4. Konu Bazlı Başarı - DERS BAZLI FİLTRELEME İÇİN GÜNCELLENDİ
     const konuMap = new Map();
     const hasItems = filtered.some(rapor => rapor.items && rapor.items.length > 0);
-    
-    if (hasItems) {
-      sortedRaporlar.forEach((r) => {
-        if (r.items && Array.isArray(r.items)) {
-          r.items.forEach((q) => {
-            const dogruMu = q.dogruMu !== undefined ? q.dogruMu : 
-                           q.correct !== undefined ? q.correct : false;
-            const bosMu = q.secenekId === null || q.secenekId === undefined;
-            
-            const konular = q.soru?.konular || [];
-            
-            if (konular && konular.length > 0) {
-              konular.forEach((k) => {
-                if (k && k.ad) {
-                  const konuAdi = k.ad.trim();
-                  if (!konuMap.has(konuAdi)) {
-                    konuMap.set(konuAdi, { dogru: 0, yanlis: 0, bos: 0 });
-                  }
-                  const konuData = konuMap.get(konuAdi);
-                  
-                  if (bosMu) {
-                    konuData.bos++;
-                  } else if (dogruMu) {
-                    konuData.dogru++;
-                  } else {
-                    konuData.yanlis++;
-                  }
-                }
-              });
-            } else {
-              // Konu bilgisi yoksa
-              const konuAdi = "Konu Belirtilmemiş";
-              if (!konuMap.has(konuAdi)) {
-                konuMap.set(konuAdi, { dogru: 0, yanlis: 0, bos: 0 });
-              }
-              const konuData = konuMap.get(konuAdi);
-              
-              if (bosMu) {
-                konuData.bos++;
-              } else if (dogruMu) {
-                konuData.dogru++;
-              } else {
-                konuData.yanlis++;
-              }
-            }
-          });
-        }
-      });
-    }
 
-    // Konu verilerini sırala ve temizle
-    const konuData = Array.from(konuMap.entries())
-      .map(([konu, data]) => ({
-        konu,
-        ...data,
-        total: data.dogru + data.yanlis + data.bos,
-        basariOrani: data.dogru + data.yanlis > 0 ? 
-          Math.round((data.dogru / (data.dogru + data.yanlis)) * 100) : 0
-      }))
-      .filter(item => item.total > 0)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 15);
-
-    // 5. Ders Bazlı Başarı
+    // 5. DERS BAZLI PERFORMANS
     const dersMap = new Map();
+
     if (hasItems) {
       sortedRaporlar.forEach((r) => {
         if (r.items && Array.isArray(r.items)) {
           r.items.forEach((q) => {
-            const dersAdi = q.soru?.ders?.ad || "Ders Belirtilmemiş";
-            const dogruMu = q.dogruMu !== undefined ? q.dogruMu : 
-                           q.correct !== undefined ? q.correct : false;
+            // BACKEND'DEN GELEN DERS BİLGİSİNİ AL
+            let dersAdi = "Genel";
+            
+            if (q.soru && q.soru.dersAd) {
+              dersAdi = q.soru.dersAd;
+            }
+            
+            // ✅ BACKEND'DE dogru FIELD'INI KULLAN
+            const dogruMu = q.dogru !== undefined ? q.dogru : false;
             const bosMu = q.secenekId === null || q.secenekId === undefined;
             
             if (!dersMap.has(dersAdi)) {
@@ -187,36 +142,149 @@ export default function Grafiklerim({ onBack }) {
             } else {
               dersData.yanlis++;
             }
+
+            // Konu bazlı veri toplama - DERS BAZLI
+            const konular = q.soru?.konular || [];
+            
+            if (konular && konular.length > 0) {
+              konular.forEach((k) => {
+                if (k && k.ad) {
+                  const konuAdi = k.ad.trim();
+                  const konuKey = `${konuAdi}||${dersAdi}`; // Konu + Ders kombinasyonu
+                  
+                  if (!konuMap.has(konuKey)) {
+                    konuMap.set(konuKey, { 
+                      konu: konuAdi, 
+                      ders: dersAdi,
+                      dogru: 0, 
+                      yanlis: 0, 
+                      bos: 0 
+                    });
+                  }
+                  const konuData = konuMap.get(konuKey);
+                  
+                  if (bosMu) {
+                    konuData.bos++;
+                  } else if (dogruMu) {
+                    konuData.dogru++;
+                  } else {
+                    konuData.yanlis++;
+                  }
+                }
+              });
+            } else {
+              // Konu bilgisi yoksa
+              const konuAdi = "Konu Belirtilmemiş";
+              const konuKey = `${konuAdi}||${dersAdi}`;
+              
+              if (!konuMap.has(konuKey)) {
+                konuMap.set(konuKey, { 
+                  konu: konuAdi, 
+                  ders: dersAdi,
+                  dogru: 0, 
+                  yanlis: 0, 
+                  bos: 0 
+                });
+              }
+              const konuData = konuMap.get(konuKey);
+              
+              if (bosMu) {
+                konuData.bos++;
+              } else if (dogruMu) {
+                konuData.dogru++;
+              } else {
+                konuData.yanlis++;
+              }
+            }
           });
         }
       });
     }
 
-    const dersData = Array.from(dersMap.entries())
-      .map(([ders, data]) => ({
-        ders,
+    // Tüm dersleri listele
+    const dersler = Array.from(dersMap.keys()).sort();
+
+    // Pie chart için ders bazlı veriler
+    let pieDogru = totalDogru;
+    let pieYanlis = totalYanlis;
+    let pieBos = totalBos;
+
+    if (selectedPieDers !== "all" && hasItems) {
+      const selectedDersData = dersMap.get(selectedPieDers);
+      if (selectedDersData) {
+        pieDogru = selectedDersData.dogru;
+        pieYanlis = selectedDersData.yanlis;
+        pieBos = selectedDersData.bos;
+      } else {
+        pieDogru = 0;
+        pieYanlis = 0;
+        pieBos = 0;
+      }
+    }
+
+    // Seçilen derse göre filtrelenmiş data
+    let filteredDersData = [];
+    if (selectedDers === "all") {
+      filteredDersData = Array.from(dersMap.entries())
+        .map(([ders, data]) => ({
+          ders,
+          ...data,
+          total: data.dogru + data.yanlis + data.bos,
+          basariOrani: data.dogru + data.yanlis > 0 ? 
+            Math.round((data.dogru / (data.dogru + data.yanlis)) * 100) : 0
+        }))
+        .filter(item => item.total > 0)
+        .sort((a, b) => b.total - a.total);
+    } else {
+      const selectedData = dersMap.get(selectedDers);
+      if (selectedData) {
+        filteredDersData = [{
+          ders: selectedDers,
+          ...selectedData,
+          total: selectedData.dogru + selectedData.yanlis + selectedData.bos,
+          basariOrani: selectedData.dogru + selectedData.yanlis > 0 ? 
+            Math.round((selectedData.dogru / (selectedData.dogru + selectedData.yanlis)) * 100) : 0
+        }];
+      }
+    }
+
+    // Tüm konu verileri
+    const allKonuData = Array.from(konuMap.values())
+      .map(data => ({
         ...data,
         total: data.dogru + data.yanlis + data.bos,
         basariOrani: data.dogru + data.yanlis > 0 ? 
           Math.round((data.dogru / (data.dogru + data.yanlis)) * 100) : 0
       }))
-      .filter(item => item.total > 0)
-      .sort((a, b) => b.total - a.total);
+      .filter(item => item.total > 0);
 
-    // 6. En Çok Yanlış Yapılan Konular
-    const wrongKonular = Array.from(konuMap.entries())
-      .map(([konu, data]) => ({
-        konu,
-        yanlis: data.yanlis,
-        dogru: data.dogru,
-        bos: data.bos,
-        total: data.dogru + data.yanlis + data.bos
-      }))
+    // Ders seçimine göre filtrelenmiş konu verileri
+    const getFilteredKonuData = (selectedDersFilter) => {
+      let filtered = allKonuData;
+      
+      if (selectedDersFilter !== "all") {
+        filtered = allKonuData.filter(item => item.ders === selectedDersFilter);
+      }
+      
+      return filtered.sort((a, b) => b.total - a.total);
+    };
+
+    // 6. En Çok Soru Çözülen Konular (İlk 15)
+    const konuData = getFilteredKonuData(selectedKonuDers).slice(0, 15);
+
+    // 7. En Çok Yanlış Yapılan Konular
+    const wrongKonular = getFilteredKonuData(selectedYanlisDers)
       .filter(item => item.yanlis > 0)
       .sort((a, b) => b.yanlis - a.yanlis)
       .slice(0, 10);
 
-    // 7. Zorluk Seviyesi
+    // 8. En Çok Boş Bırakılan Konular
+    const bosKonular = getFilteredKonuData(selectedBosDers)
+      .filter(item => item.bos > 0)
+      .sort((a, b) => b.bos - a.bos)
+      .slice(0, 10);
+
+    // 9. Zorluk Seviyesi
     const zorlukMap = { 
       kolay: { dogru: 0, yanlis: 0, bos: 0 }, 
       orta: { dogru: 0, yanlis: 0, bos: 0 }, 
@@ -227,8 +295,7 @@ export default function Grafiklerim({ onBack }) {
       sortedRaporlar.forEach((r) => {
         if (r.items && Array.isArray(r.items)) {
           r.items.forEach((q) => {
-            const dogruMu = q.dogruMu !== undefined ? q.dogruMu : 
-                           q.correct !== undefined ? q.correct : false;
+            const dogruMu = q.dogru !== undefined ? q.dogru : false;
             const bosMu = q.secenekId === null || q.secenekId === undefined;
             
             const zorluk = (q.soru?.zorluk || "orta").toString().toLowerCase();
@@ -258,20 +325,29 @@ export default function Grafiklerim({ onBack }) {
       { zorluk: "Zor", ...zorlukMap.zor }
     ];
 
-    // 8. Süre Analizi
+    // 10. Süre Analizi
     const timeLabels = sortedRaporlar.map((x, i) => {
-      return x.title || x.name || x.denemeAdi || `Oturum ${i + 1}`;
+      const dateStr = x.finishedAt ? new Date(x.finishedAt).toLocaleDateString("tr-TR") : "";
+      const baseName = x.denemeAdi || x.title || x.name || `Oturum ${i + 1}`;
+      return dateStr ? `${baseName} (${dateStr})` : baseName;
     });
 
     const timeValues = sortedRaporlar.map((x) => {
+      if (x.durationMs && x.durationMs > 0) {
+        return Math.round(x.durationMs / 1000);
+      }
+      
       if (x.items && Array.isArray(x.items) && hasItems) {
         const totalMs = x.items.reduce((t, i) => t + (i.elapsedMs || 0), 0);
-        return Math.round(totalMs / 1000);
+        if (totalMs > 0) {
+          return Math.round(totalMs / 1000);
+        }
       }
-      return Math.round((x.durationMs || 0) / 1000);
+      
+      return 0;
     });
 
-    // 9. Oturum Bazlı Başarı
+    // 11. Oturum Bazlı Başarı
     const denemeLabels = sortedRaporlar.map((r, i) => {
       const dateStr = r.finishedAt
         ? new Date(r.finishedAt).toLocaleDateString("tr-TR")
@@ -288,22 +364,6 @@ export default function Grafiklerim({ onBack }) {
       return total > 0 ? Math.round((dogru / total) * 100) : 0;
     });
 
-    // 10. Ders Listesi
-    const dersList = hasItems ? [
-      ...new Set(
-        Array.from(dersMap.keys()).filter(ders => ders !== "Ders Belirtilmemiş")
-      ),
-    ] : [];
-
-    console.log("📈 Hesaplanan grafik verileri:", {
-      totalDogru,
-      totalYanlis,
-      totalBos,
-      konuSayisi: konuData.length,
-      dersSayisi: dersData.length,
-      hasItems
-    });
-
     return {
       lineLabels,
       lineData,
@@ -313,17 +373,29 @@ export default function Grafiklerim({ onBack }) {
       netLabels: lineLabels,
       netValues,
       konuData,
-      dersData,
+      dersData: Array.from(dersMap.entries()).map(([ders, data]) => ({
+        ders,
+        ...data,
+        total: data.dogru + data.yanlis + data.bos,
+        basariOrani: data.dogru + data.yanlis > 0 ? 
+          Math.round((data.dogru / (data.dogru + data.yanlis)) * 100) : 0
+      })),
+      dersler,
+      filteredDersData,
       wrongKonular,
+      bosKonular,
       zorlukData,
       timeLabels,
       timeValues,
       denemeLabels,
       denemeBasari,
-      dersList,
-      hasItems
+      hasItems,
+      // Pie chart için ders bazlı veriler
+      pieDogru,
+      pieYanlis,
+      pieBos
     };
-  }, [filtered, raporlar]);
+  }, [filtered, selectedDers, selectedKonuDers, selectedYanlisDers, selectedBosDers, selectedPieDers]);
 
   useEffect(() => {
     loadData();
@@ -331,17 +403,38 @@ export default function Grafiklerim({ onBack }) {
 
   useEffect(() => {
     applyFilters();
-  }, [raporlar, dateFilter, dersFilter]);
+  }, [raporlar, dateFilter]);
 
   const loadData = async () => {
     try {
-      // Önce yeni endpoint'i dene
+      console.log("🔄 Grafikler için veri yükleniyor...");
       const { data } = await api.get("/api/raporlar/grafikler", { 
         params: { limit: 200 } 
       });
       
-      console.log("📊 Grafik endpoint'inden veriler:", data);
+      console.log("📊 Grafik endpoint'inden gelen veri yapısı:", {
+        toplamRapor: data.length,
+        ilkRapor: data[0] ? {
+          oturumId: data[0].oturumId,
+          finishedAt: data[0].finishedAt,
+          correctCount: data[0].correctCount,
+          wrongCount: data[0].wrongCount,
+          emptyCount: data[0].emptyCount,
+          itemsVarMi: !!data[0].items,
+          itemsUzunluk: data[0].items ? data[0].items.length : 0,
+          ilkItemVarsa: data[0].items && data[0].items[0] ? {
+            soruId: data[0].items[0].soru?.id,
+            dersAd: data[0].items[0].soru?.dersAd,
+            dogru: data[0].items[0].dogru,
+            konular: data[0].items[0].soru?.konular,
+          } : 'item yok'
+        } : 'veri yok'
+      });
       
+      // Items kontrolü yap
+      const itemsOlanRaporlar = data.filter(rapor => rapor.items && rapor.items.length > 0);
+      console.log("📦 Items içeren raporlar:", itemsOlanRaporlar.length);
+
       const processedData = data.map(rapor => {
         let finishedAtDate = null;
         if (rapor.finishedAt) {
@@ -363,10 +456,10 @@ export default function Grafiklerim({ onBack }) {
       
       setRaporlar(processedData);
     } catch (e) {
-      console.error("Grafik endpoint başarısız, eski endpoint deneniyor:", e);
+      console.error("❌ Grafik endpoint başarısız, eski endpoint deneniyor:", e);
       
-      // Fallback: Eski endpoint
       try {
+        console.log("🔄 Eski endpoint deneniyor...");
         const { data } = await api.get("/api/raporlar", { params: { limit: 200 } });
         
         const processedData = data.map(rapor => {
@@ -390,7 +483,7 @@ export default function Grafiklerim({ onBack }) {
         
         setRaporlar(processedData);
       } catch (fallbackError) {
-        console.error("Tüm endpoint'ler başarısız:", fallbackError);
+        console.error("❌ Tüm endpoint'ler başarısız:", fallbackError);
       }
     } finally {
       setLoading(false);
@@ -400,7 +493,6 @@ export default function Grafiklerim({ onBack }) {
   const applyFilters = () => {
     let arr = [...raporlar];
 
-    // Tarih filtresi
     if (dateFilter !== "all") {
       const now = Date.now();
       const days = dateFilter === "7" ? 7 : 30;
@@ -411,15 +503,6 @@ export default function Grafiklerim({ onBack }) {
         const reportTime = new Date(r.finishedAt).getTime();
         return now - reportTime <= threshold;
       });
-    }
-
-    // Ders filtresi
-    if (dersFilter !== "all" && grafikVerileri.hasItems) {
-      arr = arr.filter((r) =>
-        (r.items || []).some((i) => 
-          i.soru?.ders?.ad === dersFilter
-        )
-      );
     }
     
     setFiltered(arr);
@@ -449,14 +532,19 @@ export default function Grafiklerim({ onBack }) {
     netValues,
     konuData,
     dersData,
+    dersler,
+    filteredDersData,
     wrongKonular,
+    bosKonular,
     zorlukData,
     timeLabels,
     timeValues,
     denemeLabels,
     denemeBasari,
-    dersList,
-    hasItems
+    hasItems,
+    pieDogru,
+    pieYanlis,
+    pieBos
   } = grafikVerileri;
 
   if (loading) {
@@ -544,7 +632,7 @@ export default function Grafiklerim({ onBack }) {
         )}
       </div>
 
-      {/* FİLTRE BAR */}
+      {/* FİLTRE BAR - SADECE TARİH FİLTRESİ */}
       <div className="filter-bar">
         <div className="filter-group">
           <label>Tarih</label>
@@ -557,23 +645,6 @@ export default function Grafiklerim({ onBack }) {
             <option value="30">Son 30 Gün</option>
           </select>
         </div>
-
-        {hasItems && dersList.length > 0 && (
-          <div className="filter-group">
-            <label>Ders</label>
-            <select
-              value={dersFilter}
-              onChange={(e) => setDersFilter(e.target.value)}
-            >
-              <option value="all">Tüm Dersler</option>
-              {dersList.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* GRAFİKLER */}
@@ -612,19 +683,57 @@ export default function Grafiklerim({ onBack }) {
           )}
         </div>
 
-        {/* 2 - Doğru/Yanlış/Boş Dağılımı */}
+        {/* 2 - Doğru/Yanlış/Boş Dağılımı - DERS SEÇİMLİ */}
         <div className="grafik-box" id="dybChartBox">
           <div className="grafik-head">
-            <h3>Doğru - Yanlış - Boş Dağılımı</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <h3>Doğru - Yanlış - Boş Dağılımı</h3>
+              {hasItems && dersler.length > 0 && (
+                <div className="filter-group" style={{ margin: 0 }}>
+                  <select
+                    value={selectedPieDers}
+                    onChange={(e) => setSelectedPieDers(e.target.value)}
+                    style={{ padding: '5px 10px', fontSize: '14px' }}
+                  >
+                    <option value="all">Tüm Dersler</option>
+                    {dersler.map(ders => (
+                      <option key={ders} value={ders}>{ders}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
             <button onClick={() => exportPng("dybChartBox")}>İndir</button>
           </div>
-          {(totalDogru > 0 || totalYanlis > 0 || totalBos > 0) ? (
+
+          {hasItems && dersler.length > 0 && (
+            <div style={{ 
+              background: selectedPieDers === "all" ? '#e8f5e8' : '#dbeafe',
+              padding: '10px', 
+              marginBottom: '15px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              border: selectedPieDers === "all" ? '1px solid #c8e6c9' : '1px solid #93c5fd',
+              textAlign: 'center'
+            }}>
+              <strong>
+                {selectedPieDers === "all" 
+                  ? "📊 Tüm Dersler - Doğru/Yanlış/Boş Dağılımı" 
+                  : `📊 ${selectedPieDers} - Doğru/Yanlış/Boş Dağılımı`}
+              </strong>
+              <div style={{ marginTop: '5px', fontSize: '11px', color: '#666' }}>
+                Toplam {pieDogru + pieYanlis + pieBos} soru
+              </div>
+            </div>
+          )}
+
+          {(pieDogru > 0 || pieYanlis > 0 || pieBos > 0) ? (
             <Pie
               data={{
                 labels: ["Doğru", "Yanlış", "Boş"],
                 datasets: [
                   {
-                    data: [totalDogru, totalYanlis, totalBos],
+                    data: [pieDogru, pieYanlis, pieBos],
                     backgroundColor: ["#10b981", "#ef4444", "#6b7280"],
                   },
                 ],
@@ -697,7 +806,7 @@ export default function Grafiklerim({ onBack }) {
             <h3>Çözüm Süreleri</h3>
             <button onClick={() => exportPng("sureChartBox")}>İndir</button>
           </div>
-          {timeValues.length > 0 ? (
+          {timeValues.some(v => v > 0) ? (
             <Line
               data={{
                 labels: timeLabels,
@@ -710,36 +819,88 @@ export default function Grafiklerim({ onBack }) {
                   },
                 ],
               }}
+              options={{
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Saniye'
+                    }
+                  },
+                },
+              }}
             />
           ) : (
-            <p className="grafik-note">Süre verisi bulunamadı</p>
+            <div>
+              <p className="grafik-note">Süre verisi bulunamadı</p>
+              <p style={{ fontSize: '12px', color: '#666', textAlign: 'center' }}>
+                Oturumlarda süre bilgisi (durationMs) kaydedilmemiş
+              </p>
+            </div>
           )}
         </div>
 
-        {/* 6 - Ders Bazlı Performans */}
-        {hasItems && dersData.length > 0 && (
+        {/* 6 - Ders Bazlı Performans Dağılımı - DERS SEÇİMLİ */}
+        {hasItems && filteredDersData.length > 0 && (
           <div className="grafik-box" id="dersChartBox">
             <div className="grafik-head">
-              <h3>Ders Bazlı Performans</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <h3>Ders Bazlı Performans Dağılımı</h3>
+                <div className="filter-group" style={{ margin: 0 }}>
+                  <select
+                    value={selectedDers}
+                    onChange={(e) => setSelectedDers(e.target.value)}
+                    style={{ padding: '5px 10px', fontSize: '14px' }}
+                  >
+                    <option value="all">Tüm Dersler</option>
+                    {dersler.map(ders => (
+                      <option key={ders} value={ders}>{ders}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <button onClick={() => exportPng("dersChartBox")}>İndir</button>
             </div>
+
+            {/* Ders Bilgisi */}
+            <div style={{ 
+              background: selectedDers === "all" ? '#e8f5e8' : '#dbeafe',
+              padding: '10px', 
+              marginBottom: '15px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              border: selectedDers === "all" ? '1px solid #c8e6c9' : '1px solid #93c5fd',
+              textAlign: 'center'
+            }}>
+              <strong>
+                {selectedDers === "all" 
+                  ? "📊 Tüm Derslerin Performans Dağılımı" 
+                  : `📊 ${selectedDers} Dersi Performansı`}
+              </strong>
+              <div style={{ marginTop: '5px', fontSize: '11px', color: '#666' }}>
+                Toplam {filteredDersData.reduce((sum, d) => sum + d.total, 0)} soru
+                {selectedDers === "all" && `, ${filteredDersData.length} ders`}
+              </div>
+            </div>
+
             <Bar
               data={{
-                labels: dersData.map(d => d.ders),
+                labels: filteredDersData.map(d => d.ders),
                 datasets: [
                   {
                     label: "Doğru",
-                    data: dersData.map(d => d.dogru),
+                    data: filteredDersData.map(d => d.dogru),
                     backgroundColor: "#10b981",
                   },
                   {
                     label: "Yanlış",
-                    data: dersData.map(d => d.yanlis),
+                    data: filteredDersData.map(d => d.yanlis),
                     backgroundColor: "#ef4444",
                   },
                   {
                     label: "Boş",
-                    data: dersData.map(d => d.bos),
+                    data: filteredDersData.map(d => d.bos),
                     backgroundColor: "#6b7280",
                   },
                 ],
@@ -751,20 +912,130 @@ export default function Grafiklerim({ onBack }) {
                   },
                   y: {
                     stacked: true,
+                    beginAtZero: true,
                   },
                 },
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      afterLabel: function(context) {
+                        const data = filteredDersData[context.dataIndex];
+                        return `Başarı: ${data.basariOrani}%`;
+                      }
+                    }
+                  }
+                }
               }}
             />
+
+            {/* Detaylı İstatistikler */}
+            <div style={{ 
+              marginTop: '15px', 
+              padding: '15px', 
+              background: 'white', 
+              borderRadius: '8px',
+              fontSize: '14px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <h4 style={{ 
+                margin: '0 0 12px 0', 
+                fontSize: '16px', 
+                color: '#1e293b',
+                fontWeight: '600',
+                borderBottom: '2px solid #f1f5f9',
+                paddingBottom: '8px'
+              }}>
+                📊 İstatistikler
+              </h4>
+              {filteredDersData.map(ders => (
+                <div key={ders.ders} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '8px',
+                  padding: '10px 12px',
+                  background: '#f8fafc',
+                  borderRadius: '6px',
+                  border: '1px solid #f1f5f9'
+                }}>
+                  <span style={{ 
+                    fontWeight: '600', 
+                    color: '#1e293b',
+                    fontSize: '14px'
+                  }}>
+                    {ders.ders}
+                  </span>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <span style={{ 
+                      color: '#374151',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>
+                      <span style={{ color: '#059669' }}>{ders.dogru}✅</span>{' '}
+                      <span style={{ color: '#dc2626' }}>{ders.yanlis}❌</span>{' '}
+                      <span style={{ color: '#6b7280' }}>{ders.bos}⚪</span>
+                    </span>
+                    <span style={{ 
+                      color: ders.basariOrani >= 70 ? '#059669' : ders.basariOrani >= 50 ? '#d97706' : '#dc2626',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      background: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      border: `1px solid ${ders.basariOrani >= 70 ? '#a7f3d0' : ders.basariOrani >= 50 ? '#fde68a' : '#fecaca'}`
+                    }}>
+                      %{ders.basariOrani}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* 7 - Konu Bazlı Performans */}
+        {/* 7 - En Çok Soru Çözülen Konular (İlk 15) - DERS SEÇİMLİ */}
         {hasItems && konuData.length > 0 && (
           <div className="grafik-box" id="konuChartBox">
             <div className="grafik-head">
-              <h3>En Çok Soru Çözülen Konular (İlk 15)</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <h3>En Çok Soru Çözülen Konular (İlk 15)</h3>
+                <div className="filter-group" style={{ margin: 0 }}>
+                  <select
+                    value={selectedKonuDers}
+                    onChange={(e) => setSelectedKonuDers(e.target.value)}
+                    style={{ padding: '5px 10px', fontSize: '14px' }}
+                  >
+                    <option value="all">Tüm Dersler</option>
+                    {dersler.map(ders => (
+                      <option key={ders} value={ders}>{ders}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <button onClick={() => exportPng("konuChartBox")}>İndir</button>
             </div>
+
+            <div style={{ 
+              background: selectedKonuDers === "all" ? '#e8f5e8' : '#dbeafe',
+              padding: '10px', 
+              marginBottom: '15px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              border: selectedKonuDers === "all" ? '1px solid #c8e6c9' : '1px solid #93c5fd',
+              textAlign: 'center'
+            }}>
+              <strong>
+                {selectedKonuDers === "all" 
+                  ? "📚 Tüm Derslerde En Çok Çözülen Konular" 
+                  : `📚 ${selectedKonuDers} Dersinde En Çok Çözülen Konular`}
+              </strong>
+            </div>
+
             <Bar
               data={{
                 labels: konuData.map(k => k.konu),
@@ -801,13 +1072,44 @@ export default function Grafiklerim({ onBack }) {
           </div>
         )}
 
-        {/* 8 - En Çok Yanlış Yapılan Konular */}
+        {/* 8 - En Çok Yanlış Yapılan Konular - DERS SEÇİMLİ */}
         {hasItems && wrongKonular.length > 0 && (
           <div className="grafik-box" id="wrongChartBox">
             <div className="grafik-head">
-              <h3>En Çok Yanlış Yapılan Konular</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <h3>En Çok Yanlış Yapılan Konular</h3>
+                <div className="filter-group" style={{ margin: 0 }}>
+                  <select
+                    value={selectedYanlisDers}
+                    onChange={(e) => setSelectedYanlisDers(e.target.value)}
+                    style={{ padding: '5px 10px', fontSize: '14px' }}
+                  >
+                    <option value="all">Tüm Dersler</option>
+                    {dersler.map(ders => (
+                      <option key={ders} value={ders}>{ders}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <button onClick={() => exportPng("wrongChartBox")}>İndir</button>
             </div>
+
+            <div style={{ 
+              background: selectedYanlisDers === "all" ? '#ffe4e6' : '#fee2e2',
+              padding: '10px', 
+              marginBottom: '15px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              border: selectedYanlisDers === "all" ? '1px solid #fecaca' : '1px solid #fca5a5',
+              textAlign: 'center'
+            }}>
+              <strong>
+                {selectedYanlisDers === "all" 
+                  ? "❌ Tüm Derslerde En Çok Yanlış Yapılan Konular" 
+                  : `❌ ${selectedYanlisDers} Dersinde En Çok Yanlış Yapılan Konular`}
+              </strong>
+            </div>
+
             <Bar
               data={{
                 labels: wrongKonular.map(x => x.konu),
@@ -824,7 +1126,61 @@ export default function Grafiklerim({ onBack }) {
           </div>
         )}
 
-        {/* 9 - Zorluk Seviyesi */}
+        {/* 9 - En Çok Boş Bırakılan Konular - DERS SEÇİMLİ */}
+        {hasItems && bosKonular.length > 0 && (
+          <div className="grafik-box" id="bosChartBox">
+            <div className="grafik-head">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <h3>En Çok Boş Bırakılan Konular</h3>
+                <div className="filter-group" style={{ margin: 0 }}>
+                  <select
+                    value={selectedBosDers}
+                    onChange={(e) => setSelectedBosDers(e.target.value)}
+                    style={{ padding: '5px 10px', fontSize: '14px' }}
+                  >
+                    <option value="all">Tüm Dersler</option>
+                    {dersler.map(ders => (
+                      <option key={ders} value={ders}>{ders}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <button onClick={() => exportPng("bosChartBox")}>İndir</button>
+            </div>
+
+            <div style={{ 
+              background: selectedBosDers === "all" ? '#f3f4f6' : '#e5e7eb',
+              padding: '10px', 
+              marginBottom: '15px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              border: selectedBosDers === "all" ? '1px solid #d1d5db' : '1px solid #9ca3af',
+              textAlign: 'center'
+            }}>
+              <strong>
+                {selectedBosDers === "all" 
+                  ? "⚪ Tüm Derslerde En Çok Boş Bırakılan Konular" 
+                  : `⚪ ${selectedBosDers} Dersinde En Çok Boş Bırakılan Konular`}
+              </strong>
+            </div>
+
+            <Bar
+              data={{
+                labels: bosKonular.map(x => x.konu),
+                datasets: [
+                  {
+                    label: "Boş",
+                    data: bosKonular.map(x => x.bos),
+                    backgroundColor: "#6b7280",
+                  },
+                ],
+              }}
+              options={{ indexAxis: "y" }}
+            />
+          </div>
+        )}
+
+        {/* 10 - Zorluk Seviyesi */}
         {hasItems && (zorlukData[0].dogru > 0 || zorlukData[0].yanlis > 0 || zorlukData[0].bos > 0 ||
                      zorlukData[1].dogru > 0 || zorlukData[1].yanlis > 0 || zorlukData[1].bos > 0 ||
                      zorlukData[2].dogru > 0 || zorlukData[2].yanlis > 0 || zorlukData[2].bos > 0) && (
