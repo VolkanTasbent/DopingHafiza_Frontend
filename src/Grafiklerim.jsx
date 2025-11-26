@@ -33,13 +33,15 @@ export default function Grafiklerim({ onBack }) {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   
   // Tüm ders seçim state'leri
   const [selectedDers, setSelectedDers] = useState("all");
   const [selectedKonuDers, setSelectedKonuDers] = useState("all");
   const [selectedYanlisDers, setSelectedYanlisDers] = useState("all");
   const [selectedBosDers, setSelectedBosDers] = useState("all");
-  const [selectedPieDers, setSelectedPieDers] = useState("all"); // Yeni: Pie chart için ders seçimi
+  const [selectedPieDers, setSelectedPieDers] = useState("all");
 
   // Tüm hesaplamalar
   const grafikVerileri = useMemo(() => {
@@ -64,7 +66,6 @@ export default function Grafiklerim({ onBack }) {
         denemeLabels: [],
         denemeBasari: [],
         hasItems: false,
-        // Pie chart için ders bazlı veriler
         pieDogru: 0,
         pieYanlis: 0,
         pieBos: 0
@@ -390,7 +391,6 @@ export default function Grafiklerim({ onBack }) {
       denemeLabels,
       denemeBasari,
       hasItems,
-      // Pie chart için ders bazlı veriler
       pieDogru,
       pieYanlis,
       pieBos
@@ -403,7 +403,7 @@ export default function Grafiklerim({ onBack }) {
 
   useEffect(() => {
     applyFilters();
-  }, [raporlar, dateFilter]);
+  }, [raporlar, dateFilter, startDate, endDate]);
 
   const loadData = async () => {
     try {
@@ -493,9 +493,21 @@ export default function Grafiklerim({ onBack }) {
   const applyFilters = () => {
     let arr = [...raporlar];
 
-    if (dateFilter !== "all") {
+    if (dateFilter === "custom" && startDate && endDate) {
+      // Özel tarih aralığı filtresi
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Günün sonuna kadar
+
+      arr = arr.filter((r) => {
+        if (!r.finishedAt) return false;
+        const reportTime = new Date(r.finishedAt);
+        return reportTime >= start && reportTime <= end;
+      });
+    } else if (dateFilter !== "all" && dateFilter !== "custom") {
+      // Sabit tarih filtreleri (7 gün, 30 gün)
       const now = Date.now();
-      const days = dateFilter === "7" ? 7 : 30;
+      const days = parseInt(dateFilter);
       const threshold = days * 24 * 60 * 60 * 1000;
 
       arr = arr.filter((r) => {
@@ -506,6 +518,12 @@ export default function Grafiklerim({ onBack }) {
     }
     
     setFiltered(arr);
+  };
+
+  const clearDateRange = () => {
+    setStartDate("");
+    setEndDate("");
+    setDateFilter("all");
   };
 
   const exportPng = async (id) => {
@@ -632,20 +650,77 @@ export default function Grafiklerim({ onBack }) {
         )}
       </div>
 
-      {/* FİLTRE BAR - SADECE TARİH FİLTRESİ */}
+      {/* FİLTRE BAR - GELİŞMİŞ TARİH FİLTRESİ */}
       <div className="filter-bar">
         <div className="filter-group">
-          <label>Tarih</label>
+          <label>Tarih Aralığı</label>
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
           >
-            <option value="all">Tümü</option>
+            <option value="all">Tüm Zamanlar</option>
             <option value="7">Son 7 Gün</option>
             <option value="30">Son 30 Gün</option>
+            <option value="custom">Özel Tarih Aralığı</option>
           </select>
         </div>
+
+        {dateFilter === "custom" && (
+          <>
+            <div className="filter-group">
+              <label>Başlangıç</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ padding: '5px 10px', fontSize: '14px' }}
+              />
+            </div>
+            <div className="filter-group">
+              <label>Bitiş</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ padding: '5px 10px', fontSize: '14px' }}
+              />
+            </div>
+            <div className="filter-group">
+              <button 
+                onClick={clearDateRange}
+                style={{ 
+                  padding: '5px 10px', 
+                  fontSize: '14px',
+                  background: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Temizle
+              </button>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Tarih aralığı bilgisi */}
+      {dateFilter === "custom" && startDate && endDate && (
+        <div style={{ 
+          background: '#dbeafe', 
+          padding: '10px', 
+          margin: '10px 0', 
+          borderRadius: '8px',
+          border: '1px solid #93c5fd',
+          textAlign: 'center'
+        }}>
+          <strong>📅 Seçilen Tarih Aralığı:</strong> {new Date(startDate).toLocaleDateString('tr-TR')} - {new Date(endDate).toLocaleDateString('tr-TR')}
+          <span style={{ marginLeft: '10px', color: '#6366f1', fontSize: '12px' }}>
+            ({filtered.length} oturum bulundu)
+          </span>
+        </div>
+      )}
 
       {/* GRAFİKLER */}
       <div className="grafik-panel">
