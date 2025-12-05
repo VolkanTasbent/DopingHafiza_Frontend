@@ -1,6 +1,7 @@
 // src/App.jsx
 import { useEffect, useState } from "react";
 import api, { fileUrl } from "./services/api";
+
 import AuthPage from "./AuthPage";
 import Derslerim from "./Derslerim";
 import SoruCoz from "./SoruCoz";
@@ -9,11 +10,16 @@ import Raporlarim from "./Raporlarim";
 import RaporDetay from "./RaporDetay";
 import AdminPanel from "./AdminPanel";
 import DersDetay from "./DersDetay";
-import Profilim from "./Profilim"; // ✅ yeni
-import "./App.css";
+import Profilim from "./Profilim";
 import Grafiklerim from "./Grafiklerim";
-import "chart.js"
+import Gamification from "./Gamification";
+import DailyTasks from "./DailyTasks";
+import BadgeCollection from "./BadgeCollection";
+import FlashCard from "./FlashCard";
+import Dashboard from "./Dashboard";
 
+
+import "./App.css";
 
 export default function App() {
   const [page, setPage] = useState(
@@ -21,12 +27,17 @@ export default function App() {
   );
   const [me, setMe] = useState(null);
   const [loadingMe, setLoadingMe] = useState(!!localStorage.getItem("token"));
+
   const [seciliDers, setSeciliDers] = useState(null);
   const [seciliDersDetay, setSeciliDersDetay] = useState(null);
   const [seciliRaporOturumId, setSeciliRaporOturumId] = useState(null);
 
+  // -----------------------------------
+  // ME BİLGİ ÇEKME
+  // -----------------------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       setMe(null);
       setLoadingMe(false);
@@ -59,6 +70,9 @@ export default function App() {
     };
   }, [page]);
 
+  // -----------------------------------
+  // LOGOUT
+  // -----------------------------------
   const logout = () => {
     localStorage.removeItem("token");
     setMe(null);
@@ -68,6 +82,9 @@ export default function App() {
     setPage("auth");
   };
 
+  // -----------------------------------
+  // LOADING SCREEN
+  // -----------------------------------
   if (loadingMe) {
     return (
       <div className="auth-container center">
@@ -79,6 +96,9 @@ export default function App() {
     );
   }
 
+  // -----------------------------------
+  // AUTH SAYFASI
+  // -----------------------------------
   if (page === "auth") {
     return (
       <AuthPage
@@ -90,171 +110,199 @@ export default function App() {
     );
   }
 
+  // -----------------------------------
+  // ANA UYGULAMA (LAYOUT DEĞİŞTİRİLMİŞ)
+  // -----------------------------------
   return (
-    <div>
-      {/* Üst Navigasyon */}
-      <nav className="nav-modern">
-        <div className="nav-brand">
-          <div className="brand-logo">📚</div>
-          <div className="brand-text">
-            <div className="brand-title">Hafıza Akademi</div>
-            <div className="brand-subtitle">Öğrenme Platformu</div>
-          </div>
+    <div className="app-container">
+      
+      {/* ====== SOL SİDEBAR ====== */}
+      <aside className="sidebar">
+        <div className="logo-box">
+          <span className="logo-icon">📚</span>
+          <span className="logo-text">Hafıza Akademi</span>
         </div>
 
-        <div className="nav-menu">
+        <div className="menu">
           <button
-            className={`nav-link ${page === "dersler" ? "active" : ""}`}
-            onClick={() => {
-              setSeciliDers(null);
-              setSeciliDersDetay(null);
-              setPage("dersler");
-            }}
+            className={`menu-item ${page === "dersler" ? "active" : ""}`}
+            onClick={() => setPage("dersler")}
           >
-            <span>Derslerim</span>
+            📘 Derslerim
           </button>
 
           <button
-            className={`nav-link ${page === "coz" ? "active" : ""}`}
-            onClick={() => {
-              setPage("coz");
-            }}
+            className={`menu-item ${page === "coz" ? "active" : ""}`}
+            onClick={() => setPage("coz")}
           >
-            <span>Soru Çöz{seciliDers && ` - ${seciliDers.ad}`}</span>
+            📝 Soru Çöz
           </button>
 
           <button
-            className={`nav-link ${page === "deneme" ? "active" : ""}`}
+            className={`menu-item ${page === "deneme" ? "active" : ""}`}
             onClick={() => setPage("deneme")}
           >
-            <span>Deneme Sınavları</span>
+            📊 Deneme Sınavları
           </button>
 
           <button
-            className={`nav-link ${page === "raporlar" ? "active" : ""}`}
+            className={`menu-item ${page === "raporlar" ? "active" : ""}`}
             onClick={() => setPage("raporlar")}
           >
-            <span>Raporlarım</span>
+            📈 Raporlarım
           </button>
 
           <button
-            className={`nav-link ${page === "profil" ? "active" : ""}`}
-            onClick={() => setPage("profil")}
+            className={`menu-item ${page === "grafikler" ? "active" : ""}`}
+            onClick={() => setPage("grafikler")}
           >
-            <span>Profilim</span>
+            📉 Grafiklerim
+          </button>
+
+          <button
+            className={`menu-item ${page === "tasks" ? "active" : ""}`}
+            onClick={() => setPage("tasks")}
+          >
+            🎯 Görevler
+          </button>
+
+          <button
+            className={`menu-item ${page === "badges" ? "active" : ""}`}
+            onClick={() => setPage("badges")}
+          >
+            🏅 Rozet Koleksiyonu
           </button>
 
           {me?.role === "ADMIN" && (
             <button
-              className={`nav-link ${page === "admin" ? "active" : ""}`}
+              className={`menu-item ${page === "admin" ? "active" : ""}`}
               onClick={() => setPage("admin")}
             >
-              <span>Admin Panel</span>
+              🛠 Admin Panel
             </button>
           )}
-          <button
-  className={`nav-link ${page === "grafikler" ? "active" : ""}`}
-  onClick={() => setPage("grafikler")}
->
-  <span>Grafiklerim</span>
-</button>
-
         </div>
+      </aside>
 
-        <div className="nav-user">
-          {seciliDers && (
-            <div className="nav-badge">
-              <span className="badge-text">{seciliDers.ad}</span>
-            </div>
-          )}
-          <div className="user-dropdown">
-            <div className="user-avatar">
-              {me?.avatar_url ? (
-                <img src={fileUrl(me.avatar_url) || me.avatar_url} alt="Avatar" />
-              ) : (
-                <span>{me?.ad?.charAt(0)?.toUpperCase() || "U"}</span>
-              )}
-            </div>
-            <div className="user-name">
-              <div className="name-text">{me?.ad} {me?.soyad}</div>
-            </div>
+      {/* ====== ANA BÖLÜM ====== */}
+      <div className="main-area">
+
+        {/* ====== ÜST BAR ====== */}
+        <header className="topbar">
+          <div className="search">
+            <input type="text" placeholder="Ders, ünite veya konu ara..." />
           </div>
-          <button className="btn-logout" onClick={logout}>
-            <span>Çıkış</span>
-          </button>
-        </div>
-      </nav>
 
-      {/* Sayfa İçerikleri */}
-      <main className="main-content">
-        {page === "dersler" && (
-          <Derslerim
-            onStartQuiz={(dersId, dersAd) => {
-              setSeciliDers({ id: dersId, ad: dersAd });
-              setPage("coz");
-            }}
-            onDersDetay={(ders) => {
-              setSeciliDersDetay(ders);
-              setPage("dersdetay");
-            }}
-          />
-        )}
+          <div className="topbar-right">
+            <div 
+              className="user-info" 
+              onClick={() => setPage("profil")}
+              style={{ cursor: "pointer" }}
+            >
+              <div className="avatar">
+                {me?.avatar_url ? (
+                  <img src={fileUrl(me.avatar_url)} alt="avatar" />
+                ) : (
+                  me?.ad?.charAt(0)
+                )}
+              </div>
+              <span>{me?.ad} {me?.soyad}</span>
+            </div>
 
-        {page === "coz" && (
-          <SoruCoz
-            onBack={() => setPage("dersler")}
-            onFinish={() => setPage("raporlar")}
-            seciliDers={seciliDers}
-          />
-        )}
+            <button className="logout-btn" onClick={logout}>
+              Çıkış
+            </button>
+          </div>
+        </header>
 
-        {page === "deneme" && (
-          <DenemeSinavlari
-            onBack={() => setPage("dersler")}
-          />
-        )}
+        {/* ====== SAYFA İÇERİK ====== */}
+        <main className="content">
 
-        {page === "dersdetay" && (
-          <DersDetay onBack={() => setPage("dersler")} ders={seciliDersDetay} />
-        )}
-
-        {page === "raporlar" && (
-          <Raporlarim 
-            onBack={() => setPage("dersler")} 
-            onDetayAc={(oturumId) => {
-              setSeciliRaporOturumId(oturumId);
-              setPage("rapor-detay");
-            }}
-          />
-        )}
-
-        {page === "rapor-detay" && seciliRaporOturumId && (
-          <RaporDetay 
-            oturumId={seciliRaporOturumId}
-            onBack={() => {
-              setSeciliRaporOturumId(null);
-              setPage("raporlar");
-            }}
-          />
-        )}
-
-        {page === "profil" && (
-          <Profilim onBack={() => setPage("dersler")} />
-        )}
-
-    {
-  page === "grafikler" && (
-    <Grafiklerim onBack={() => setPage("raporlar")} />
-  )
-}
+{page === "dersler" && (
+  <>
+    <Dashboard me={me} onNavigate={setPage} />
+    <Derslerim
+      onStartQuiz={(dersId, dersAd) => {
+        setSeciliDers({ id: dersId, ad: dersAd });
+        setPage("coz");
+      }}
+      onDersDetay={(ders) => {
+        setSeciliDersDetay(ders);
+        setPage("dersdetay");
+      }}
+      onStartFlashCard={(ders) => {
+        setSeciliDers(ders);
+        setPage("flash");
+      }}
+    />
+  </>
+)}
 
 
+          {page === "coz" && (
+            <SoruCoz
+              onBack={() => setPage("dersler")}
+              onFinish={() => setPage("raporlar")}
+              seciliDers={seciliDers}
+            />
+          )}
 
-        {page === "admin" && (
-          <AdminPanel onBack={() => setPage("dersler")} />
-        )}
+          {page === "deneme" && (
+            <DenemeSinavlari onBack={() => setPage("dersler")} />
+          )}
 
-      </main>
+          {page === "raporlar" && (
+            <Raporlarim
+              onBack={() => setPage("dersler")}
+              onDetayAc={(id) => {
+                setSeciliRaporOturumId(id);
+                setPage("rapor-detay");
+              }}
+            />
+          )}
+
+          {page === "rapor-detay" && (
+            <RaporDetay
+              oturumId={seciliRaporOturumId}
+              onBack={() => setPage("raporlar")}
+            />
+          )}
+
+          {page === "dersdetay" && (
+            <DersDetay
+              onBack={() => setPage("dersler")}
+              ders={seciliDersDetay}
+            />
+          )}
+
+          {page === "profil" && <Profilim onBack={() => setPage("dersler")} />}
+
+          {page === "grafikler" && (
+            <Grafiklerim onBack={() => setPage("raporlar")} />
+          )}
+
+          {page === "admin" && <AdminPanel onBack={() => setPage("dersler")} />}
+
+          {page === "game" && <Gamification onBack={() => setPage("dersler")} />}
+
+          {page === "tasks" && (
+            <DailyTasks onBack={() => setPage("game")} />
+          )}
+
+          {page === "badges" && (
+            <BadgeCollection onBack={() => setPage("dersler")} />
+          )}
+
+          {page === "flash" && (
+            <FlashCard
+              onBack={() => setPage("dersler")}
+              seciliDers={seciliDers}
+              me={me}
+            />
+          )}
+
+        </main>
+      </div>
     </div>
   );
 }

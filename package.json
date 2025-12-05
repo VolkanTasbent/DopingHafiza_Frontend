@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "axios": "^1.12.2",
+    "canvas-confetti": "^1.9.4",
     "chart.js": "^4.5.1",
     "html2canvas": "^1.4.1",
     "react": "^19.1.1",

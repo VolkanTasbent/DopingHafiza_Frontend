@@ -1,0 +1,152 @@
+
+.gami-container {
+  padding: 30px;
+  max-width: 700px;
+  margin: auto;
+}
+
+.gami-title {
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.level-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.xp-bar {
+  width: 100%;
+  height: 14px;
+  background: #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #6366f1);
+}
+
+.daily-card {
+  margin-top: 25px;
+  background: #f3f4f6;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.daily-done {
+  margin-top: 10px;
+  padding: 10px;
+  background: #10b981;
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.daily-progress {
+  margin-top: 10px;
+  padding: 10px;
+  background: #d1d5db;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.badge-section {
+  margin-top: 30px;
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.badge-item {
+  background: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  text-align: center;
+  font-weight: bold;
+}
+
+.back-btn {
+  margin-top: 40px;
+  background: #4f46e5;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+/* --- LEVEL UP OVERLAY --- */
+.levelup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.4s ease;
+}
+
+/* --- LEVEL UP BOX --- */
+.levelup-box {
+  background: white;
+  padding: 40px 50px;
+  border-radius: 20px;
+  text-align: center;
+  position: relative;
+  animation: popIn 0.5s ease forwards;
+  box-shadow: 0 0 40px rgba(255,255,255,0.3);
+}
+
+.levelup-title {
+  font-size: 40px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.levelup-text {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+/* --- POP ANİMASYONU --- */
+@keyframes popIn {
+  0% { transform: scale(0.2); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* --- FADEİN --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- BURST (KONFETİ) --- */
+.burst {
+  position: absolute;
+  inset: -50px;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #ffda79 2px, transparent 2px),
+                    radial-gradient(circle, #74c0fc 3px, transparent 3px),
+                    radial-gradient(circle, #b197fc 2px, transparent 2px),
+                    radial-gradient(circle, #ff8787 3px, transparent 3px);
+  background-size: 40px 40px, 50px 50px, 35px 35px, 55px 55px;
+  animation: burstAnim 1.2s ease forwards;
+}
+
+@keyframes burstAnim {
+  0% { transform: scale(0.1) rotate(0deg); opacity: 1; }
+  100% { transform: scale(2.5) rotate(360deg); opacity: 0; }
+}

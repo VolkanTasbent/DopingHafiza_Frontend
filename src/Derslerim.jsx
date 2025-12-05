@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import api from "./services/api";
 import "./Derslerim.css";
 
-export default function Derslerim({ onStartQuiz, onDersDetay }) {
+export default function Derslerim({ onStartQuiz, onDersDetay, onStartFlashCard }) {
   const [dersler, setDersler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
@@ -13,10 +13,14 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
       try {
         const { data } = await api.get("/api/ders");
         setDersler(data || []);
+
         const rapor = await api.get("/api/raporlar", { params: { limit: 100 } });
+
         const totalSolved = rapor.data.reduce((s, r) => s + (r.totalCount || 0), 0);
         const correctAnswers = rapor.data.reduce((s, r) => s + (r.correctCount || 0), 0);
-        const successRate = totalSolved > 0 ? Math.round((correctAnswers / totalSolved) * 100) : 0;
+        const successRate =
+          totalSolved > 0 ? Math.round((correctAnswers / totalSolved) * 100) : 0;
+
         setStats({ totalSolved, correctAnswers, successRate });
       } catch (err) {
         console.error("Dersler alınamadı:", err);
@@ -39,14 +43,16 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
 
   return (
     <div className="dersler-container">
-      {/* Hero Section */}
+      {/* HERO */}
       <div className="dersler-hero">
         <div className="hero-content">
           <h1 className="hero-title">Derslerim</h1>
-          <p className="hero-subtitle">Eğitim yolculuğunuza devam edin ve bilginizi test edin</p>
+          <p className="hero-subtitle">
+            Eğitim yolculuğunuza devam edin ve bilginizi test edin
+          </p>
         </div>
-        
-        {/* Stats Cards */}
+
+        {/* STATS */}
         <div className="stats-grid">
           <div className="stat-card stat-success">
             <div className="stat-icon stat-icon-check"></div>
@@ -55,7 +61,7 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
               <div className="stat-label">Doğru Cevap</div>
             </div>
           </div>
-          
+
           <div className="stat-card stat-primary">
             <div className="stat-icon stat-icon-chart"></div>
             <div className="stat-content">
@@ -63,7 +69,7 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
               <div className="stat-label">Başarı Oranı</div>
             </div>
           </div>
-          
+
           <div className="stat-card stat-info">
             <div className="stat-icon stat-icon-brain"></div>
             <div className="stat-content">
@@ -74,9 +80,10 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
         </div>
       </div>
 
-      {/* Dersler Grid */}
+      {/* DERSLER */}
       <div className="ders-grid-section">
         <h2 className="section-title">Tüm Dersler</h2>
+
         <div className="ders-grid">
           {dersler.length === 0 ? (
             <div className="empty-state">
@@ -89,30 +96,41 @@ export default function Derslerim({ onStartQuiz, onDersDetay }) {
               <div key={ders.id} className="ders-card">
                 <div className="ders-card-header">
                   <div className="ders-icon-wrapper">
-                    <div className="ders-icon">{ders.ad.charAt(0).toUpperCase()}</div>
+                    <div className="ders-icon">
+                      {ders.ad.charAt(0).toUpperCase()}
+                    </div>
                   </div>
                   <div className="ders-card-badge">Ders</div>
                 </div>
-                
+
                 <div className="ders-card-body">
                   <h3 className="ders-card-title">{ders.ad}</h3>
                   <p className="ders-card-description">
                     {ders.aciklama || "Ders açıklaması yakında eklenecek"}
                   </p>
                 </div>
-                
+
                 <div className="ders-card-footer">
-                  <button 
-                    className="btn-primary" 
+                  <button
+                    className="btn-primary"
                     onClick={() => onStartQuiz?.(ders.id, ders.ad)}
                   >
-                    <span>Teste Başla</span>
+                    Teste Başla
                   </button>
-                  <button 
-                    className="btn-secondary" 
+
+                  <button
+                    className="btn-secondary"
                     onClick={() => onDersDetay?.(ders)}
                   >
-                    <span>Detaylar</span>
+                    Detaylar
+                  </button>
+
+                  {/* 🔥 FlashCard butonu burası */}
+                  <button
+                    className="btn-flashcard"
+                    onClick={() => onStartFlashCard?.(ders)}
+                  >
+                    🎴 Flash Card
                   </button>
                 </div>
               </div>

@@ -9,6 +9,11 @@ export default function Profilim({ onBack }) {
   const [msg, setMsg] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [hedefForm, setHedefForm] = useState({
+    universite: "",
+    bolum: "",
+    siralamaHedef: 10000
+  });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -21,11 +26,26 @@ export default function Profilim({ onBack }) {
         setLoading(true);
         const { data } = await api.get("/api/users/me");
         setUser(data);
-      setEditForm({
-        ad: data.ad || "",
-        soyad: data.soyad || "",
-        email: data.email || "",
-      });
+        setEditForm({
+          ad: data.ad || "",
+          soyad: data.soyad || "",
+          email: data.email || "",
+        });
+        
+        // Hedef bilgilerini localStorage'dan yükle
+        const savedHedef = localStorage.getItem("userHedef");
+        if (savedHedef) {
+          try {
+            const parsed = JSON.parse(savedHedef);
+            setHedefForm({
+              universite: parsed.universite || "",
+              bolum: parsed.bolum || "",
+              siralamaHedef: parsed.siralamaHedef || 10000
+            });
+          } catch (e) {
+            console.error("Hedef bilgileri parse edilemedi:", e);
+          }
+        }
       } catch (e) {
         setMsg("Profil alınamadı: " + (e.response?.data || e.message));
       } finally {
@@ -92,14 +112,18 @@ export default function Profilim({ onBack }) {
       setLoading(true);
       setMsg("");
       
+      // Profil bilgilerini güncelle
       await api.put("/api/users/me", {
         ...user,
         ...editForm,
       });
 
+      // Hedef bilgilerini localStorage'a kaydet
+      localStorage.setItem("userHedef", JSON.stringify(hedefForm));
+
       await fetchUserData();
       setIsEditing(false);
-      setMsg("Profil başarıyla güncellendi!");
+      setMsg("Profil ve hedef bilgileri başarıyla güncellendi!");
       setTimeout(() => setMsg(""), 3000);
     } catch (error) {
       setMsg("Profil güncellenirken hata oluştu: " + (error.response?.data || error.message));
@@ -115,6 +139,24 @@ export default function Profilim({ onBack }) {
       soyad: user.soyad || "",
       email: user.email || "",
     });
+    
+    // Hedef formunu da sıfırla
+    const savedHedef = localStorage.getItem("userHedef");
+    if (savedHedef) {
+      try {
+        const parsed = JSON.parse(savedHedef);
+        setHedefForm({
+          universite: parsed.universite || "",
+          bolum: parsed.bolum || "",
+          siralamaHedef: parsed.siralamaHedef || parsed.netHedef || 10000 // Eski veriler için backward compatibility
+        });
+      } catch (e) {
+        setHedefForm({ universite: "", bolum: "", siralamaHedef: 10000 });
+      }
+    } else {
+      setHedefForm({ universite: "", bolum: "", siralamaHedef: 10000 });
+    }
+    
     setMsg("");
   };
 
@@ -211,6 +253,12 @@ export default function Profilim({ onBack }) {
                 <span className="info-label">E-posta</span>
                 <span className="info-value">{user.email || "-"}</span>
               </div>
+              <div className="info-row">
+                <span className="info-label">Sınıf</span>
+                <span className="info-value">
+                  {user.sinif ? `${user.sinif}. Sınıf` : "-"}
+                </span>
+              </div>
               {user.role === "ADMIN" && (
                 <div className="info-row">
                   <span className="info-label">Rol</span>
@@ -219,6 +267,31 @@ export default function Profilim({ onBack }) {
                       {user.role || "-"}
                     </span>
                   </span>
+                </div>
+              )}
+
+              {/* Hedef Bilgileri */}
+              {(hedefForm.universite || hedefForm.bolum) && (
+                <div className="info-section-divider">
+                  <span>🎯 Hedef Bilgileri</span>
+                </div>
+              )}
+              {hedefForm.universite && (
+                <div className="info-row">
+                  <span className="info-label">Hedef Üniversite</span>
+                  <span className="info-value">{hedefForm.universite}</span>
+                </div>
+              )}
+              {hedefForm.bolum && (
+                <div className="info-row">
+                  <span className="info-label">Hedef Bölüm</span>
+                  <span className="info-value">{hedefForm.bolum}</span>
+                </div>
+              )}
+              {hedefForm.siralamaHedef && (
+                <div className="info-row">
+                  <span className="info-label">Hedef Sıralama</span>
+                  <span className="info-value">{hedefForm.siralamaHedef.toLocaleString('tr-TR')}</span>
                 </div>
               )}
 
@@ -256,13 +329,63 @@ export default function Profilim({ onBack }) {
                 />
               </div>
 
+              {/* Sınıf Bilgisi - Sadece Göster */}
+              <div className="form-group">
+                <label>Sınıf</label>
+                <input
+                  type="text"
+                  value={user.sinif ? `${user.sinif}. Sınıf` : "Belirtilmemiş"}
+                  disabled
+                  className="form-input-disabled"
+                />
+                <small className="form-hint">Sınıf bilgisi kayıt sırasında belirlenir ve değiştirilemez.</small>
+              </div>
+
+              {/* Hedef Bilgileri Bölümü */}
+              <div className="info-section-divider">
+                <span>🎯 Hedef Bilgileri</span>
+              </div>
+
+              <div className="form-group">
+                <label>Hedef Üniversite</label>
+                <input
+                  type="text"
+                  value={hedefForm.universite}
+                  onChange={(e) => setHedefForm({ ...hedefForm, universite: e.target.value })}
+                  placeholder="Örn: Marmara Üniversitesi"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Hedef Bölüm</label>
+                <input
+                  type="text"
+                  value={hedefForm.bolum}
+                  onChange={(e) => setHedefForm({ ...hedefForm, bolum: e.target.value })}
+                  placeholder="Örn: Bilgisayar Mühendisliği"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Hedef Sıralama</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000000"
+                  value={hedefForm.siralamaHedef}
+                  onChange={(e) => setHedefForm({ ...hedefForm, siralamaHedef: parseInt(e.target.value) || 10000 })}
+                  placeholder="10000"
+                />
+                <small className="form-hint">TYT/AYT için hedeflediğiniz sıralama (örn: 10000)</small>
+              </div>
+
               <div className="button-group">
                 <button className="save-button" onClick={handleSaveProfile} disabled={loading}>
                   {loading ? "Kaydediliyor..." : "💾 Kaydet"}
                 </button>
                 <button className="cancel-button" onClick={handleCancelEdit} disabled={loading}>
                   ✖️ İptal
-        </button>
+                </button>
               </div>
             </>
           )}
