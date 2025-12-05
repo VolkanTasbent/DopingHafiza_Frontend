@@ -556,6 +556,143 @@
   background: #5568d3;
 }
 
+/* Takvim Widget */
+.dashboard-calendar-widget {
+  flex: 1;
+}
+
+.dashboard-calendar-widget .card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.calendar-view-all-btn {
+  padding: 6px 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calendar-view-all-btn:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+.calendar-widget-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.calendar-widget-day {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-widget-day:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.calendar-widget-day.today {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+}
+
+.calendar-widget-day.has-activity {
+  border-left: 3px solid #10b981;
+  background: #f0fdf4;
+}
+
+.calendar-widget-day-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.calendar-widget-day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.calendar-widget-day-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.calendar-widget-day-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-widget-hours {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.calendar-widget-hours-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #667eea;
+  line-height: 1;
+}
+
+.calendar-widget-hours-label {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.calendar-widget-minutes {
+  font-size: 9px;
+  color: #cbd5e1;
+}
+
+.calendar-widget-empty {
+  font-size: 12px;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.calendar-widget-footer {
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.calendar-widget-total {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.calendar-widget-total strong {
+  color: #667eea;
+  font-size: 15px;
+}
+
 /* Aktiviteler */
 .dashboard-activities {
   flex: 1;

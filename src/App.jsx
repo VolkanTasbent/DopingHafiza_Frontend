@@ -17,6 +17,7 @@ import DailyTasks from "./DailyTasks";
 import BadgeCollection from "./BadgeCollection";
 import FlashCard from "./FlashCard";
 import Dashboard from "./Dashboard";
+import Takvim from "./Takvim";
 
 
 import "./App.css";
@@ -118,7 +119,11 @@ export default function App() {
       
       {/* ====== SOL SİDEBAR ====== */}
       <aside className="sidebar">
-        <div className="logo-box">
+        <div 
+          className="logo-box"
+          onClick={() => setPage("dersler")}
+          style={{ cursor: "pointer" }}
+        >
           <span className="logo-icon">📚</span>
           <span className="logo-text">Hafıza Akademi</span>
         </div>
@@ -171,6 +176,13 @@ export default function App() {
             onClick={() => setPage("badges")}
           >
             🏅 Rozet Koleksiyonu
+          </button>
+
+          <button
+            className={`menu-item ${page === "takvim" ? "active" : ""}`}
+            onClick={() => setPage("takvim")}
+          >
+            📅 Takvim
           </button>
 
           {me?.role === "ADMIN" && (
@@ -299,6 +311,10 @@ export default function App() {
               seciliDers={seciliDers}
               me={me}
             />
+          )}
+
+          {page === "takvim" && (
+            <Takvim onBack={() => setPage("dersler")} />
           )}
 
         </main>

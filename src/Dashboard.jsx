@@ -52,6 +52,9 @@ export default function Dashboard({ me, onNavigate }) {
   
   // İlerleme hesaplama
   const [ilerlemeYuzdesi, setIlerlemeYuzdesi] = useState(27);
+  
+  // Takvim widget için haftalık veri
+  const [weeklyCalendarData, setWeeklyCalendarData] = useState([]);
 
   // Grafik verilerini hesapla
   const grafikVerileri = useMemo(() => {
@@ -132,7 +135,12 @@ export default function Dashboard({ me, onNavigate }) {
     loadData();
     loadDailyTasks();
     calculateProgress();
+    loadWeeklyCalendarData();
   }, []);
+  
+  useEffect(() => {
+    loadWeeklyCalendarData();
+  }, [raporlar]);
 
   useEffect(() => {
     applyFilters();
@@ -284,6 +292,53 @@ export default function Dashboard({ me, onNavigate }) {
     if (onNavigate) {
       onNavigate("game");
     }
+  };
+  
+  const loadWeeklyCalendarData = () => {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Pazartesi
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    const weekData = days.map((dayName, index) => {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(dayDate.getDate() + index);
+
+      const dayReports = raporlar.filter(rapor => {
+        if (!rapor.finishedAt) return false;
+        const reportDate = new Date(rapor.finishedAt);
+        return reportDate >= dayDate && reportDate < new Date(dayDate.getTime() + 24 * 60 * 60 * 1000);
+      });
+
+      let totalMinutes = 0;
+      dayReports.forEach(rapor => {
+        if (rapor.durationMs) {
+          totalMinutes += Math.round(rapor.durationMs / 60000);
+        } else if (rapor.items && rapor.items.length > 0) {
+          const itemMinutes = rapor.items.reduce((sum, item) => sum + (item.elapsedMs || 0), 0);
+          totalMinutes += Math.round(itemMinutes / 60000);
+        }
+      });
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      return {
+        dayName,
+        date: dayDate,
+        hours,
+        minutes,
+        totalMinutes,
+        isToday: new Date().toDateString() === dayDate.toDateString()
+      };
+    });
+
+    setWeeklyCalendarData(weekData);
   };
 
   const {
@@ -465,6 +520,55 @@ export default function Dashboard({ me, onNavigate }) {
 
         {/* Sağ Kolon */}
         <div className="dashboard-right-column">
+          {/* Haftalık Takvim Widget */}
+          <div className="card dashboard-calendar-widget">
+            <div className="card-title">
+              <span>📅 Haftalık Takvim</span>
+              {onNavigate && (
+                <button 
+                  className="calendar-view-all-btn"
+                  onClick={() => onNavigate("takvim")}
+                >
+                  Tümünü Gör
+                </button>
+              )}
+            </div>
+            <div className="calendar-widget-grid">
+              {weeklyCalendarData.map((day, index) => {
+                const hours = day.hours + (day.minutes / 60);
+                return (
+                  <div
+                    key={index}
+                    className={`calendar-widget-day ${day.isToday ? "today" : ""} ${hours > 0 ? "has-activity" : ""}`}
+                  >
+                    <div className="calendar-widget-day-header">
+                      <span className="calendar-widget-day-name">{day.dayName}</span>
+                      <span className="calendar-widget-day-number">{day.date.getDate()}</span>
+                    </div>
+                    <div className="calendar-widget-day-content">
+                      {hours > 0 ? (
+                        <div className="calendar-widget-hours">
+                          <span className="calendar-widget-hours-value">{day.hours}</span>
+                          <span className="calendar-widget-hours-label">saat</span>
+                          {day.minutes > 0 && (
+                            <span className="calendar-widget-minutes">{day.minutes} dk</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="calendar-widget-empty">-</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="calendar-widget-footer">
+              <div className="calendar-widget-total">
+                Toplam: <strong>{weeklyCalendarData.reduce((sum, d) => sum + d.hours + (d.minutes / 60), 0).toFixed(1)} saat</strong>
+              </div>
+            </div>
+          </div>
+
           {/* Özet İstatistikler */}
           <div className="dashboard-stats-compact">
             <div className="dashboard-stat-item stat-dogru">

@@ -875,6 +875,14 @@ body {
   font-weight: 700;
   font-size: 20px;
   color: #444;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.logo-box:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateX(2px);
 }
 
 .logo-icon {

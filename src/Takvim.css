@@ -1,0 +1,358 @@
+/* Takvim.css */
+.takvim-container {
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+  padding: 30px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.takvim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.takvim-header-left {
+  flex: 1;
+}
+
+.takvim-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.takvim-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.back-button {
+  padding: 12px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.back-button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Hafta Navigasyonu */
+.week-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.week-range {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.week-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.today-btn {
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.today-btn:hover {
+  background: #5568d3;
+}
+
+/* Filtre Bölümü */
+.filter-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: white;
+  padding: 15px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+
+.filter-section label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.filter-select {
+  padding: 8px 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.total-hours {
+  margin-left: auto;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.total-hours strong {
+  color: #667eea;
+  font-size: 16px;
+}
+
+/* Takvim Grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.calendar-day {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.calendar-day:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-day.today {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+}
+
+.calendar-day.has-activity {
+  border-left: 4px solid #10b981;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.day-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.day-number {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.day-content {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.day-hours {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.hours-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.hours-label {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.minutes-value {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.day-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.stat-item {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.day-empty {
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-style: italic;
+  padding: 20px 0;
+}
+
+/* Grafik Bölümü */
+.chart-section {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.chart-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.chart-info {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.chart-container {
+  height: 300px;
+  position: relative;
+}
+
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .calendar-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .takvim-container {
+    padding: 20px 15px;
+  }
+
+  .takvim-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .week-navigation {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filter-section {
+    flex-wrap: wrap;
+  }
+
+  .total-hours {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
