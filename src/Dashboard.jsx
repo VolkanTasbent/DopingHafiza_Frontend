@@ -13,6 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import PomodoroTimer from "./PomodoroTimer";
 import "./Dashboard.css";
 
 ChartJS.register(
@@ -55,6 +56,14 @@ export default function Dashboard({ me, onNavigate }) {
   
   // Takvim widget için haftalık veri
   const [weeklyCalendarData, setWeeklyCalendarData] = useState([]);
+  
+  // Pomodoro istatistikleri
+  const [pomodoroStats, setPomodoroStats] = useState({
+    today: { count: 0, minutes: 0 },
+    week: { count: 0, minutes: 0 },
+    month: { count: 0, minutes: 0 },
+    total: { count: 0, minutes: 0 }
+  });
 
   // Grafik verilerini hesapla
   const grafikVerileri = useMemo(() => {
@@ -136,11 +145,12 @@ export default function Dashboard({ me, onNavigate }) {
     loadDailyTasks();
     calculateProgress();
     loadWeeklyCalendarData();
+    loadPomodoroStats();
   }, []);
   
   useEffect(() => {
     loadWeeklyCalendarData();
-  }, [raporlar]);
+  }, [raporlar, pomodoroStats]);
 
   useEffect(() => {
     applyFilters();
@@ -294,6 +304,28 @@ export default function Dashboard({ me, onNavigate }) {
     }
   };
   
+  const loadPomodoroStats = async () => {
+    try {
+      const response = await api.get("/api/pomodoro/stats");
+      if (response.data) {
+        setPomodoroStats(response.data);
+      }
+    } catch (error) {
+      console.error("Pomodoro istatistikleri yüklenemedi:", error);
+      // Local storage'dan yükle
+      const localStats = JSON.parse(localStorage.getItem("pomodoroStats") || "{}");
+      const today = new Date().toISOString().split("T")[0];
+      const todayStats = localStats[today] || { count: 0, minutes: 0 };
+      
+      setPomodoroStats({
+        today: todayStats,
+        week: { count: 0, minutes: 0 },
+        month: { count: 0, minutes: 0 },
+        total: { count: 0, minutes: 0 }
+      });
+    }
+  };
+
   const loadWeeklyCalendarData = () => {
     const today = new Date();
     const weekStart = new Date(today);
@@ -308,6 +340,8 @@ export default function Dashboard({ me, onNavigate }) {
     const weekData = days.map((dayName, index) => {
       const dayDate = new Date(weekStart);
       dayDate.setDate(dayDate.getDate() + index);
+      const dayDateStr = dayDate.toISOString().split("T")[0];
+      const todayStr = new Date().toISOString().split("T")[0];
 
       const dayReports = raporlar.filter(rapor => {
         if (!rapor.finishedAt) return false;
@@ -324,6 +358,11 @@ export default function Dashboard({ me, onNavigate }) {
           totalMinutes += Math.round(itemMinutes / 60000);
         }
       });
+
+      // Pomodoro süresini ekle (sadece bugün için)
+      if (dayDateStr === todayStr) {
+        totalMinutes += pomodoroStats.today.minutes || 0;
+      }
 
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
@@ -365,27 +404,27 @@ export default function Dashboard({ me, onNavigate }) {
     <div className="dashboard-container">
       {/* Üst Bölüm: Kullanıcı Kartı ve Filtre */}
       <div className="dashboard-top-section">
-        {/* Kullanıcı Kartı */}
-        <div className="user-card">
-          <div className="user-left">
-            <div className="user-name">{me?.ad} {me?.soyad}</div>
+      {/* Kullanıcı Kartı */}
+      <div className="user-card">
+        <div className="user-left">
+          <div className="user-name">{me?.ad} {me?.soyad}</div>
             <div className="user-id">#{me?.id || "10044743"}</div>
-            <div className="user-progress">
+          <div className="user-progress">
               Çalışma programının %{ilerlemeYuzdesi}'ini tamamladın!  
               <span className="progress-highlight"> İlerlemen Harika!</span>
-            </div>
           </div>
+        </div>
 
-          <div className="user-right">
-            <div className="points-box">
-              <div className="score">{me?.puan || 2938}</div>
+        <div className="user-right">
+          <div className="points-box">
+            <div className="score">{me?.puan || 2938}</div>
               <div className="score-stars">⭐⭐</div>
               <button className="score-button" onClick={handlePuanlariKullan}>
                 Puanları Kullan
               </button>
-            </div>
           </div>
         </div>
+      </div>
 
         {/* Tarih Filtresi - Kompakt */}
         <div className="dashboard-filter-compact">
@@ -569,6 +608,9 @@ export default function Dashboard({ me, onNavigate }) {
             </div>
           </div>
 
+          {/* Pomodoro Timer Widget */}
+          <PomodoroTimer isWidget={true} onNavigate={onNavigate} />
+
           {/* Özet İstatistikler */}
           <div className="dashboard-stats-compact">
             <div className="dashboard-stat-item stat-dogru">
@@ -734,12 +776,12 @@ export default function Dashboard({ me, onNavigate }) {
                   Kaydet
                 </button>
               </div>
-            </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Son Aktiviteler */}
+      {/* Son Aktiviteler */}
           <div className="card dashboard-activities">
-            <div className="card-title">Son Aktivitelerim</div>
+        <div className="card-title">Son Aktivitelerim</div>
             <div className="activities-list">
               {filtered.length > 0 ? (
                 filtered.slice(-5).reverse().map((rapor, index) => {

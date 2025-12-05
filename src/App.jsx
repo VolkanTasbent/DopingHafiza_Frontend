@@ -18,6 +18,8 @@ import BadgeCollection from "./BadgeCollection";
 import FlashCard from "./FlashCard";
 import Dashboard from "./Dashboard";
 import Takvim from "./Takvim";
+import SearchModal from "./SearchModal";
+import PomodoroTimer from "./PomodoroTimer";
 
 
 import "./App.css";
@@ -32,6 +34,7 @@ export default function App() {
   const [seciliDers, setSeciliDers] = useState(null);
   const [seciliDersDetay, setSeciliDersDetay] = useState(null);
   const [seciliRaporOturumId, setSeciliRaporOturumId] = useState(null);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // -----------------------------------
   // ME BİLGİ ÇEKME
@@ -185,6 +188,13 @@ export default function App() {
             📅 Takvim
           </button>
 
+          <button
+            className={`menu-item ${page === "pomodoro" ? "active" : ""}`}
+            onClick={() => setPage("pomodoro")}
+          >
+            🍅 Pomodoro
+          </button>
+
           {me?.role === "ADMIN" && (
             <button
               className={`menu-item ${page === "admin" ? "active" : ""}`}
@@ -202,7 +212,12 @@ export default function App() {
         {/* ====== ÜST BAR ====== */}
         <header className="topbar">
           <div className="search">
-            <input type="text" placeholder="Ders, ünite veya konu ara..." />
+            <input
+              type="text"
+              placeholder="Ders, ünite veya konu ara..."
+              onClick={() => setSearchModalOpen(true)}
+              readOnly
+            />
           </div>
 
           <div className="topbar-right">
@@ -317,8 +332,28 @@ export default function App() {
             <Takvim onBack={() => setPage("dersler")} />
           )}
 
+          {page === "pomodoro" && (
+            <PomodoroTimer onBack={() => setPage("dersler")} />
+          )}
+
         </main>
       </div>
+
+      {/* Arama Modal */}
+      <SearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        onNavigate={(pageName) => {
+          setPage(pageName);
+          setSearchModalOpen(false);
+        }}
+        onSelectDers={(ders) => {
+          setSeciliDers(ders);
+        }}
+        onSelectDersDetay={(ders) => {
+          setSeciliDersDetay(ders);
+        }}
+      />
     </div>
   );
 }
