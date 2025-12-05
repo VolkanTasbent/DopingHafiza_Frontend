@@ -7,7 +7,7 @@ const SHORT_BREAK = 5 * 60; // 5 dakika
 const LONG_BREAK = 15 * 60; // 15 dakika
 const POMODOROS_FOR_LONG_BREAK = 4;
 
-export default function PomodoroTimer({ onBack, isWidget = false }) {
+export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) {
   const [timerType, setTimerType] = useState("pomodoro"); // "pomodoro" veya "stopwatch"
   const [timeLeft, setTimeLeft] = useState(WORK_TIME);
   const [stopwatchTime, setStopwatchTime] = useState(0); // Kronometre için

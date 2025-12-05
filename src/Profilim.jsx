@@ -32,18 +32,27 @@ export default function Profilim({ onBack }) {
           email: data.email || "",
         });
         
-        // Hedef bilgilerini localStorage'dan yükle
-        const savedHedef = localStorage.getItem("userHedef");
-        if (savedHedef) {
-          try {
-            const parsed = JSON.parse(savedHedef);
-            setHedefForm({
-              universite: parsed.universite || "",
-              bolum: parsed.bolum || "",
-              siralamaHedef: parsed.siralamaHedef || 10000
-            });
-          } catch (e) {
-            console.error("Hedef bilgileri parse edilemedi:", e);
+        // Hedef bilgilerini backend'den yükle
+        setHedefForm({
+          universite: data.hedefUniversite || data.hedef_universite || "",
+          bolum: data.hedefBolum || data.hedef_bolum || "",
+          siralamaHedef: data.hedefSiralama || data.hedef_siralama || data.siralamaHedef || 10000
+        });
+        
+        // Fallback: Eğer backend'de yoksa localStorage'dan yükle
+        if (!data.hedefUniversite && !data.hedef_universite) {
+          const savedHedef = localStorage.getItem(`userHedef_${data.id}`);
+          if (savedHedef) {
+            try {
+              const parsed = JSON.parse(savedHedef);
+              setHedefForm({
+                universite: parsed.universite || "",
+                bolum: parsed.bolum || "",
+                siralamaHedef: parsed.siralamaHedef || 10000
+              });
+            } catch (e) {
+              console.error("Hedef bilgileri parse edilemedi:", e);
+            }
           }
         }
       } catch (e) {
@@ -112,14 +121,19 @@ export default function Profilim({ onBack }) {
       setLoading(true);
       setMsg("");
       
-      // Profil bilgilerini güncelle
+      // Profil ve hedef bilgilerini backend'e kaydet
       await api.put("/api/users/me", {
         ...user,
         ...editForm,
+        hedefUniversite: hedefForm.universite,
+        hedefBolum: hedefForm.bolum,
+        hedefSiralama: hedefForm.siralamaHedef
       });
 
-      // Hedef bilgilerini localStorage'a kaydet
-      localStorage.setItem("userHedef", JSON.stringify(hedefForm));
+      // Fallback: LocalStorage'a da kaydet
+      if (user?.id) {
+        localStorage.setItem(`userHedef_${user.id}`, JSON.stringify(hedefForm));
+      }
 
       await fetchUserData();
       setIsEditing(false);
@@ -140,18 +154,31 @@ export default function Profilim({ onBack }) {
       email: user.email || "",
     });
     
-    // Hedef formunu da sıfırla
-    const savedHedef = localStorage.getItem("userHedef");
-    if (savedHedef) {
-      try {
-        const parsed = JSON.parse(savedHedef);
-        setHedefForm({
-          universite: parsed.universite || "",
-          bolum: parsed.bolum || "",
-          siralamaHedef: parsed.siralamaHedef || parsed.netHedef || 10000 // Eski veriler için backward compatibility
-        });
-      } catch (e) {
-        setHedefForm({ universite: "", bolum: "", siralamaHedef: 10000 });
+    // Hedef formunu backend'den gelen verilerle sıfırla
+    if (user) {
+      setHedefForm({
+        universite: user.hedefUniversite || user.hedef_universite || "",
+        bolum: user.hedefBolum || user.hedef_bolum || "",
+        siralamaHedef: user.hedefSiralama || user.hedef_siralama || user.siralamaHedef || 10000
+      });
+      
+      // Fallback: localStorage'dan yükle
+      if (!user.hedefUniversite && !user.hedef_universite && user.id) {
+        const savedHedef = localStorage.getItem(`userHedef_${user.id}`);
+        if (savedHedef) {
+          try {
+            const parsed = JSON.parse(savedHedef);
+            setHedefForm({
+              universite: parsed.universite || "",
+              bolum: parsed.bolum || "",
+              siralamaHedef: parsed.siralamaHedef || 10000
+            });
+          } catch (e) {
+            setHedefForm({ universite: "", bolum: "", siralamaHedef: 10000 });
+          }
+        } else {
+          setHedefForm({ universite: "", bolum: "", siralamaHedef: 10000 });
+        }
       }
     } else {
       setHedefForm({ universite: "", bolum: "", siralamaHedef: 10000 });

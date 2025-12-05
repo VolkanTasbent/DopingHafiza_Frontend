@@ -20,6 +20,7 @@ import Dashboard from "./Dashboard";
 import Takvim from "./Takvim";
 import SearchModal from "./SearchModal";
 import PomodoroTimer from "./PomodoroTimer";
+import NotificationCenter from "./NotificationCenter";
 
 
 import "./App.css";
@@ -35,6 +36,26 @@ export default function App() {
   const [seciliDersDetay, setSeciliDersDetay] = useState(null);
   const [seciliRaporOturumId, setSeciliRaporOturumId] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("darkMode");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Dark mode toggle
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem("darkMode", JSON.stringify(newMode));
+  };
+
+  // Dark mode class'ını body'ye ekle
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark-mode");
+    } else {
+      document.documentElement.classList.remove("dark-mode");
+    }
+  }, [darkMode]);
 
   // -----------------------------------
   // ME BİLGİ ÇEKME
@@ -221,6 +242,35 @@ export default function App() {
           </div>
 
           <div className="topbar-right">
+            <button 
+              className="dark-mode-toggle"
+              onClick={toggleDarkMode}
+              title={darkMode ? "Açık Moda Geç" : "Koyu Moda Geç"}
+            >
+              {darkMode ? "☀️" : "🌙"}
+            </button>
+            <NotificationCenter 
+              notifications={[
+                {
+                  id: 1,
+                  icon: '🎯',
+                  title: 'Günlük Hedef Tamamlandı!',
+                  message: 'Bugün 30 soru çözdün. Harika iş!',
+                  time: '2 saat önce',
+                  read: false,
+                  onClick: () => setPage("tasks")
+                },
+                {
+                  id: 2,
+                  icon: '🏆',
+                  title: 'Yeni Rozet Kazandın!',
+                  message: 'Başlangıç Ustası rozetini kazandın.',
+                  time: '5 saat önce',
+                  read: false,
+                  onClick: () => setPage("badges")
+                }
+              ]}
+            />
             <div 
               className="user-info" 
               onClick={() => setPage("profil")}

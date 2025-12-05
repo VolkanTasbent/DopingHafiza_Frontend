@@ -30,15 +30,25 @@ export default function AuthPage({ onSuccess }) {
           sinif: sinif || null,
         };
         
-        await api.post("/api/auth/register", registerData);
+        const { data } = await api.post("/api/auth/register", registerData);
         
-        // Hedef bilgilerini localStorage'a kaydet
-        if (hedefUniversite || hedefBolum) {
-          localStorage.setItem("userHedef", JSON.stringify({
-            universite: hedefUniversite,
-            bolum: hedefBolum,
-            siralamaHedef: hedefSiralama
-          }));
+        // Kayıt sonrası hedef bilgilerini backend'e kaydet
+        if (data.user?.id && (hedefUniversite || hedefBolum)) {
+          try {
+            await api.put("/api/users/me", {
+              hedefUniversite: hedefUniversite,
+              hedefBolum: hedefBolum,
+              hedefSiralama: hedefSiralama
+            });
+          } catch (error) {
+            console.error("Hedef bilgileri kaydedilemedi:", error);
+            // Fallback: localStorage'a kaydet
+            localStorage.setItem(`userHedef_${data.user.id}`, JSON.stringify({
+              universite: hedefUniversite,
+              bolum: hedefBolum,
+              siralamaHedef: hedefSiralama
+            }));
+          }
         }
         
         setMsg("Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
@@ -50,7 +60,7 @@ export default function AuthPage({ onSuccess }) {
         setSinif("");
         setHedefUniversite("");
         setHedefBolum("");
-        setHedefNet(85);
+        setHedefSiralama(10000);
       } else {
         const { data } = await api.post("/api/auth/login", { email, password: sifre });
         localStorage.setItem("token", data.token);

@@ -1,100 +1,343 @@
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding-bottom: 20px;
+  gap: 24px;
+  padding: 24px;
+  padding-bottom: 40px;
+  background: #f8fafc;
+  min-height: 100vh;
 }
 
-/* Üst Bölüm */
-.dashboard-top-section {
+/* Üst Kartlar - Modern Tasarım */
+.dashboard-top-cards {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 20px;
-  align-items: start;
+  margin-bottom: 24px;
 }
 
-/* Kullanıcı Kartı */
-.user-card {
+/* Modern Kullanıcı Kartı */
+.user-card-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card-modern::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.user-card-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+
+.user-info-section {
+  flex: 1;
+}
+
+.user-name-modern {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-id-modern {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.user-progress-modern {
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+.user-progress-modern strong {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.progress-status {
+  display: block;
+  margin-top: 4px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-avatar-section {
+  margin-left: 20px;
+}
+
+.user-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.user-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Modern Puan Kutusu */
+.points-box-modern {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 20px;
   padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: box-shadow 0.2s;
-}
-
-.user-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.user-left {
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.user-name {
-  font-size: 22px;
+.points-content {
+  width: 100%;
+}
+
+.points-value {
+  font-size: 36px;
   font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.points-stars {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.points-button {
+  background: #1e293b;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.points-button:hover {
+  background: #334155;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+/* Modern Takvim Widget */
+.calendar-widget-modern {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.calendar-header-modern {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.calendar-week-label {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.calendar-nav-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.calendar-nav-btn:hover {
+  background: #e2e8f0;
   color: #1e293b;
 }
 
-.user-id {
+.calendar-days-modern {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.calendar-day-modern {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 4px;
+  border-radius: 10px;
+  transition: all 0.2s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.calendar-day-modern:active {
+  transform: scale(0.95);
+}
+
+.calendar-day-modern:hover {
+  background: #f8fafc;
+}
+
+.calendar-day-modern.today {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+}
+
+.calendar-day-modern.has-activity {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.calendar-day-name {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.calendar-day-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.calendar-day-hours {
+  font-size: 10px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.calendar-footer-modern {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 2px solid #f1f5f9;
   font-size: 13px;
+  color: #64748b;
+}
+
+.calendar-footer-modern strong {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* Günlük Çalışma Performansı Bölümü */
+.daily-performance-section {
+  background: white;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  margin-bottom: 24px;
+}
+
+.performance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.performance-title-section {
+  flex: 1;
+}
+
+.performance-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.performance-time {
+  font-size: 16px;
   color: #64748b;
   font-weight: 500;
 }
 
-.user-progress {
-  font-size: 14px;
-  color: #475569;
-  margin-top: 4px;
+.performance-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-.progress-highlight {
-  font-weight: 600;
-  color: #4a54ff;
-}
-
-/* Puan Kutusu */
-.user-right .points-box {
-  background: linear-gradient(135deg, #ffeb99 0%, #ffd54f 100%);
-  padding: 16px 24px;
-  border-radius: 14px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(255, 235, 153, 0.3);
-  min-width: 140px;
-}
-
-.score {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.score-stars {
-  font-size: 16px;
-  margin: 4px 0;
-}
-
-.score-button {
-  background: #1e293b;
-  color: white;
-  border: none;
+.performance-filter {
   padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  background: white;
   cursor: pointer;
-  margin-top: 6px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
-.score-button:hover {
-  background: #334155;
+.performance-filter:hover {
+  border-color: #cbd5e1;
 }
+
+.performance-filter:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.performance-chart-container {
+  height: 300px;
+  position: relative;
+}
+
+/* Eski stiller kaldırıldı - Modern stiller yukarıda */
 
 /* Kompakt Filtre */
 .dashboard-filter-compact {
@@ -123,23 +366,335 @@
   font-weight: 500;
 }
 
-/* Ana Grid Layout */
-.dashboard-main-grid {
+/* Alt Bölüm - Organize Grid */
+.dashboard-bottom-section {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
 }
 
-.dashboard-left-column {
+.dashboard-bottom-left {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-.dashboard-right-column {
+.dashboard-bottom-right {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+}
+
+/* Modern Kart Yapısı */
+.dashboard-card-modern {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.dashboard-card-modern:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.dashboard-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+.dashboard-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.dashboard-card-content {
+  padding: 24px;
+}
+
+/* Grafik Wrapper'lar */
+.chart-wrapper {
+  height: 280px;
+  position: relative;
+}
+
+.chart-wrapper-small {
+  height: 240px;
+  position: relative;
+}
+
+/* Modern İstatistik Grid */
+.stats-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-card-modern {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.stat-card-modern:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.stat-icon-modern {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stat-success .stat-icon-modern {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.stat-error .stat-icon-modern {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.stat-neutral .stat-icon-modern {
+  background: rgba(107, 114, 128, 0.15);
+}
+
+.stat-info .stat-icon-modern {
+  background: rgba(102, 126, 234, 0.15);
+}
+
+.stat-info-modern {
+  flex: 1;
+}
+
+.stat-value-modern {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-success .stat-value-modern {
+  color: #10b981;
+}
+
+.stat-error .stat-value-modern {
+  color: #ef4444;
+}
+
+.stat-neutral .stat-value-modern {
+  color: #6b7280;
+}
+
+.stat-info .stat-value-modern {
+  color: #667eea;
+}
+
+.stat-label-modern {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Dağılım Grafiği Bölümü */
+.distribution-chart-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #f1f5f9;
+}
+
+/* Modern Görev Listesi */
+.tasks-list-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-item-modern {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.task-item-modern:hover {
+  background: #f1f5f9;
+}
+
+.task-item-modern.completed {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.task-icon-modern {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.task-info-modern {
+  flex: 1;
+}
+
+.task-name-modern {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.task-progress-modern {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Modern Hedef Görünümü */
+.goal-display-modern {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.goal-university {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.goal-department {
+  font-size: 16px;
+  opacity: 0.95;
+  margin-bottom: 12px;
+}
+
+.goal-rank-info {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 12px;
+}
+
+.goal-rank-value {
+  font-size: 18px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.goal-stats {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.goal-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.goal-stat-label {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.goal-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.goal-empty-modern {
+  text-align: center;
+  padding: 32px 20px;
+  color: #64748b;
+}
+
+.goal-empty-modern p {
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+.goal-empty-hint {
+  font-size: 13px !important;
+  opacity: 0.7;
+}
+
+.goal-form-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goal-input-modern {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  background: white;
+  transition: all 0.2s;
+}
+
+.goal-input-modern:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.goal-rank-input-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goal-rank-input-modern label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.goal-save-btn-modern {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.goal-save-btn-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.goal-save-btn-modern:active {
+  transform: translateY(0);
 }
 
 /* Kart Genel Yapı */
@@ -740,9 +1295,92 @@
 }
 
 /* Responsive */
+/* Responsive Tasarım */
 @media (max-width: 1200px) {
-  .dashboard-main-grid {
+  .dashboard-top-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .calendar-widget-modern {
+    grid-column: 1 / -1;
+  }
+  
+  .dashboard-bottom-section {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+  
+  .dashboard-top-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .user-card-modern {
+    padding: 20px;
+  }
+  
+  .user-name-modern {
+    font-size: 20px;
+  }
+  
+  .user-avatar-large {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+  
+  .points-value {
+    font-size: 28px;
+  }
+  
+  .calendar-days-modern {
+    gap: 4px;
+  }
+  
+  .calendar-day-modern {
+    padding: 8px 2px;
+  }
+  
+  .daily-performance-section {
+    padding: 20px;
+  }
+  
+  .performance-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .performance-chart-container {
+    height: 250px;
+  }
+  
+  .dashboard-bottom-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-stats-compact {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-filter-compact {
+    flex-wrap: wrap;
+  }
+  
+  .dashboard-graph-large,
+  .dashboard-graph-medium,
+  .dashboard-graph-small {
+    min-height: 300px;
+  }
+  
+  .dashboard-graph-large .dashboard-chart-container,
+  .dashboard-graph-medium .dashboard-chart-container,
+  .dashboard-graph-small .dashboard-chart-container {
+    min-height: 250px;
   }
 }
 
@@ -751,7 +1389,11 @@
     grid-template-columns: 1fr;
   }
 
-  .dashboard-stats-compact {
+  .dashboard-bottom-section {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid-modern {
     grid-template-columns: 1fr;
   }
 
@@ -759,15 +1401,75 @@
     flex-wrap: wrap;
   }
 
-  .dashboard-graph-large,
-  .dashboard-graph-medium,
-  .dashboard-graph-small {
-    min-height: 300px;
+  .chart-wrapper {
+    height: 240px;
   }
 
-  .dashboard-graph-large .dashboard-chart-container,
-  .dashboard-graph-medium .dashboard-chart-container,
-  .dashboard-graph-small .dashboard-chart-container {
-    min-height: 250px;
+  .chart-wrapper-small {
+    height: 200px;
   }
+}
+
+/* Dark Mode Stilleri */
+.dark-mode .dashboard-container {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.dark-mode .dashboard-card-modern,
+.dark-mode .daily-performance-section {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .dashboard-card-header {
+  background: linear-gradient(to right, #0f172a, #1e293b);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .dashboard-card-title {
+  color: #e2e8f0;
+}
+
+.dark-mode .user-card-modern {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+}
+
+.dark-mode .points-box-modern {
+  background: linear-gradient(135deg, #92400e 0%, #78350f 100%);
+}
+
+.dark-mode .calendar-widget-modern {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .goal-input-modern {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+.dark-mode .goal-input-modern:focus {
+  border-color: #667eea;
+  background: #1e293b;
+}
+
+.dark-mode .stat-card-modern {
+  background: #0f172a;
+}
+
+.dark-mode .task-item-modern {
+  background: #0f172a;
+}
+
+.dark-mode .task-item-modern:hover {
+  background: #1e293b;
+}
+
+.dark-mode .performance-filter {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
 }

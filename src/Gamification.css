@@ -31,6 +31,26 @@
 .xp-fill {
   height: 100%;
   background: linear-gradient(90deg, #4f46e5, #6366f1);
+  transition: width 0.5s ease;
+}
+
+.gold-display {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.gold-icon {
+  font-size: 1.3rem;
+}
+
+.gold-amount {
+  color: #d97706;
 }
 
 .daily-card {
@@ -118,6 +138,24 @@
 .levelup-text {
   font-size: 22px;
   margin-bottom: 20px;
+}
+
+.levelup-reward {
+  font-size: 18px;
+  color: #10b981;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.milestone-box {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+}
+
+.milestone-box .levelup-title,
+.milestone-box .levelup-text,
+.milestone-box .levelup-reward {
+  color: white;
 }
 
 /* --- POP ANİMASYONU --- */

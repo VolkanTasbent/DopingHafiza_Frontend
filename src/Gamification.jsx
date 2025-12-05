@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "./services/api";
 import confetti from "canvas-confetti";
+import { calculateLevelFromXP, calculateDailyReward, checkMilestones } from "./services/scoring";
 import "./Gamification.css";
 
 export default function Gamification({ onBack }) {
@@ -8,10 +9,16 @@ export default function Gamification({ onBack }) {
   // 🟦 STATE'LER
   // ---------------------------
   const [xp, setXp] = useState(0);
+  const [gold, setGold] = useState(0);
   const [level, setLevel] = useState(1);
   const [progress, setProgress] = useState(0);
+  const [nextLevelXP, setNextLevelXP] = useState(100);
   const [dailySolved, setDailySolved] = useState(0);
+  const [dailyCorrect, setDailyCorrect] = useState(0);
   const [badges, setBadges] = useState([]);
+  const [milestones, setMilestones] = useState([]);
+  const [showMilestone, setShowMilestone] = useState(false);
+  const [currentMilestone, setCurrentMilestone] = useState(null);
 
   const [previousLevel, setPreviousLevel] = useState(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -71,7 +78,9 @@ export default function Gamification({ onBack }) {
     );
 
     const daily = todays.reduce((a, r) => a + (r.totalCount || 0), 0);
+    const dailyCorrectCount = todays.reduce((a, r) => a + (r.correctCount || 0), 0);
     setDailySolved(daily);
+    setDailyCorrect(dailyCorrectCount);
 
     // ---------------------------
     // 🟦 STREAK (KESİNTİSİZ ÇALIŞMA)
@@ -101,15 +110,24 @@ export default function Gamification({ onBack }) {
     setLastActive(today);
 
     // ---------------------------
-    // 🟦 XP HESABI
+    // 🟦 XP HESABI (Gelişmiş Sistem)
     // ---------------------------
     const xpFromCorrect = totalCorrect * 5;
     const xpFromSolved = totalSolved * 1;
     const xpTotal = xpFromCorrect + xpFromSolved;
-
-    // Level Hesaplama
-    const currentLevel = Math.floor(xpTotal / 100);
-    const progressPercent = Math.floor((xpTotal % 100) / 100 * 100);
+    
+    // Günlük ödüller
+    const dailyReward = calculateDailyReward(daily, dailyCorrectCount);
+    const totalXP = xpTotal + (dailyReward.xp || 0);
+    
+    // Altın hesaplama
+    const totalGold = Math.floor(totalXP / 10) + (dailyReward.gold || 0);
+    
+    // Level hesaplama (yeni sistem)
+    const levelData = calculateLevelFromXP(totalXP);
+    const currentLevel = levelData.level;
+    const progressPercent = levelData.progress;
+    const nextXP = levelData.nextLevelXP;
 
     if (previousLevel !== null && currentLevel > previousLevel) {
       setShowLevelUp(true);
@@ -117,9 +135,31 @@ export default function Gamification({ onBack }) {
     }
 
     setPreviousLevel(currentLevel);
-    setXp(xpTotal);
+    setXp(totalXP);
+    setGold(totalGold);
     setLevel(currentLevel === 0 ? 1 : currentLevel);
     setProgress(progressPercent);
+    setNextLevelXP(nextXP);
+    
+    // Milestone kontrolü
+    const newMilestones = checkMilestones(totalXP, totalCorrect, streak);
+    if (newMilestones.length > 0) {
+      const lastMilestone = newMilestones[newMilestones.length - 1];
+      setCurrentMilestone(lastMilestone);
+      setShowMilestone(true);
+      setTimeout(() => setShowMilestone(false), 3000);
+      
+      // Milestone ödüllerini uygula
+      setXp(prev => prev + (lastMilestone.reward.xp || 0));
+      setGold(prev => prev + (lastMilestone.reward.gold || 0));
+      
+      confetti({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.7 }
+      });
+    }
+    setMilestones(newMilestones);
 
     // ---------------------------
     // 🏅 ROZETLER
@@ -153,7 +193,11 @@ export default function Gamification({ onBack }) {
           <div className="xp-fill" style={{ width: `${progress}%` }}></div>
         </div>
 
-        <p>{xp % 100}/100 XP</p>
+        <p>{xp % nextLevelXP}/{nextLevelXP} XP</p>
+        <div className="gold-display">
+          <span className="gold-icon">🪙</span>
+          <span className="gold-amount">{gold} Altın</span>
+        </div>
       </div>
 
       {/* 🔥 STREAK */}
@@ -169,11 +213,16 @@ export default function Gamification({ onBack }) {
       <div className="daily-card">
         <h3>📅 Günlük Hedef</h3>
         <p>Bugün çözülen soru: <strong>{dailySolved}</strong> / 30</p>
+        <p>Bugün doğru cevap: <strong>{dailyCorrect}</strong> / 20</p>
 
         {dailySolved >= 30 ? (
-          <div className="daily-done">🔥 Günlük hedef tamamlandı! +20 XP</div>
+          <div className="daily-done">🔥 Günlük hedef tamamlandı! +20 XP, +2 Altın</div>
         ) : (
           <div className="daily-progress">Devam et! 💪</div>
+        )}
+        
+        {dailyCorrect >= 20 && (
+          <div className="daily-done">🎯 Yüksek doğruluk! +15 XP, +1 Altın</div>
         )}
       </div>
 
@@ -200,6 +249,20 @@ export default function Gamification({ onBack }) {
           <div className="levelup-box">
             <h1 className="levelup-title">🎉 Seviye Atladın!</h1>
             <p className="levelup-text">Yeni Seviyen: {level}</p>
+            <p className="levelup-reward">+50 XP, +5 Altın Ödülü!</p>
+          </div>
+        </div>
+      )}
+
+      {/* MILESTONE POPUP */}
+      {showMilestone && currentMilestone && (
+        <div className="levelup-overlay">
+          <div className="levelup-box milestone-box">
+            <h1 className="levelup-title">🏆 Başarım Kazandın!</h1>
+            <p className="levelup-text">{currentMilestone.name}</p>
+            <p className="levelup-reward">
+              +{currentMilestone.reward.xp} XP, +{currentMilestone.reward.gold} Altın
+            </p>
           </div>
         </div>
       )}
