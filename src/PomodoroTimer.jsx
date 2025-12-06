@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "./services/api";
 import "./PomodoroTimer.css";
 
@@ -7,14 +7,53 @@ const SHORT_BREAK = 5 * 60; // 5 dakika
 const LONG_BREAK = 15 * 60; // 15 dakika
 const POMODOROS_FOR_LONG_BREAK = 4;
 
-export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) {
-  const [timerType, setTimerType] = useState("pomodoro"); // "pomodoro" veya "stopwatch"
-  const [timeLeft, setTimeLeft] = useState(WORK_TIME);
-  const [stopwatchTime, setStopwatchTime] = useState(0); // Kronometre için
-  const [isRunning, setIsRunning] = useState(false);
-  const [mode, setMode] = useState("work"); // "work", "shortBreak", "longBreak"
-  const [completedPomodoros, setCompletedPomodoros] = useState(0);
-  const [sessionPomodoros, setSessionPomodoros] = useState(0);
+const POMODORO_STORAGE_KEY = "pomodoroTimerState";
+
+// localStorage'dan pomodoro state'ini yükle
+const loadPomodoroState = () => {
+  try {
+    const saved = localStorage.getItem(POMODORO_STORAGE_KEY);
+    if (saved) {
+      const state = JSON.parse(saved);
+      // Eğer timer çalışıyorsa, geçen süreyi hesapla
+      if (state.isRunning && state.startTime) {
+        const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        if (state.timerType === "pomodoro") {
+          state.timeLeft = Math.max(0, state.timeLeft - elapsed);
+        } else {
+          state.stopwatchTime = state.stopwatchTime + elapsed;
+        }
+        state.startTime = Date.now(); // Yeni başlangıç zamanı
+      }
+      return state;
+    }
+  } catch (e) {
+    console.error("Pomodoro state yüklenemedi:", e);
+  }
+  return null;
+};
+
+// localStorage'a pomodoro state'ini kaydet
+const savePomodoroState = (state) => {
+  try {
+    localStorage.setItem(POMODORO_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error("Pomodoro state kaydedilemedi:", e);
+  }
+};
+
+export default function PomodoroTimer({ onBack, isWidget = false, onNavigate, me }) {
+  // localStorage'dan state'i yükle
+  const initialState = loadPomodoroState();
+  
+  const [timerType, setTimerType] = useState(initialState?.timerType || "pomodoro");
+  const [timeLeft, setTimeLeft] = useState(initialState?.timeLeft ?? WORK_TIME);
+  const [stopwatchTime, setStopwatchTime] = useState(initialState?.stopwatchTime || 0);
+  const [isRunning, setIsRunning] = useState(initialState?.isRunning || false);
+  const [mode, setMode] = useState(initialState?.mode || "work");
+  const [completedPomodoros, setCompletedPomodoros] = useState(initialState?.completedPomodoros || 0);
+  const [sessionPomodoros, setSessionPomodoros] = useState(initialState?.sessionPomodoros || 0);
+  const [startTime, setStartTime] = useState(initialState?.startTime || null);
   
   // İstatistikler
   const [stats, setStats] = useState({
@@ -32,10 +71,133 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
   useEffect(() => {
     loadStats();
   }, []);
+  
+  // State değiştiğinde localStorage'a kaydet (debounce ile)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const state = {
+        timerType,
+        timeLeft,
+        stopwatchTime,
+        isRunning,
+        mode,
+        completedPomodoros,
+        sessionPomodoros,
+        startTime
+      };
+      savePomodoroState(state);
+    }, 100); // 100ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [timerType, timeLeft, stopwatchTime, isRunning, mode, completedPomodoros, sessionPomodoros, startTime]);
+  
+  // Diğer component'lerden gelen state değişikliklerini dinle
+  useEffect(() => {
+    let isUpdating = false; // Sonsuz döngüyü önlemek için
+    let lastStateHash = ''; // Son state'in hash'i
+    
+    const handleStorageChange = () => {
+      if (isUpdating) return; // Zaten güncelleniyorsa atla
+      
+      const savedState = loadPomodoroState();
+      if (!savedState) return;
+      
+      // State hash'i oluştur (değişiklik kontrolü için)
+      const stateHash = JSON.stringify({
+        timerType: savedState.timerType,
+        isRunning: savedState.isRunning,
+        mode: savedState.mode
+      });
+      
+      // Eğer aynı state ise güncelleme yapma
+      if (stateHash === lastStateHash) return;
+      lastStateHash = stateHash;
+      
+      isUpdating = true;
+      
+      // Sadece gerçekten farklıysa güncelle (batch update)
+      const updates = [];
+      if (timerType !== savedState.timerType) updates.push(() => setTimerType(savedState.timerType));
+      if (timeLeft !== savedState.timeLeft) updates.push(() => setTimeLeft(savedState.timeLeft));
+      if (stopwatchTime !== savedState.stopwatchTime) updates.push(() => setStopwatchTime(savedState.stopwatchTime));
+      if (isRunning !== savedState.isRunning) updates.push(() => setIsRunning(savedState.isRunning));
+      if (mode !== savedState.mode) updates.push(() => setMode(savedState.mode));
+      if (completedPomodoros !== (savedState.completedPomodoros || 0)) updates.push(() => setCompletedPomodoros(savedState.completedPomodoros || 0));
+      if (sessionPomodoros !== (savedState.sessionPomodoros || 0)) updates.push(() => setSessionPomodoros(savedState.sessionPomodoros || 0));
+      if (startTime !== savedState.startTime) updates.push(() => setStartTime(savedState.startTime));
+      
+      // Tüm güncellemeleri aynı anda yap
+      if (updates.length > 0) {
+        updates.forEach(update => update());
+      }
+      
+      setTimeout(() => { isUpdating = false; }, 200);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Custom event ile aynı sayfadaki diğer component'leri de güncelle (debounce ile)
+    let eventTimeout;
+    const handleCustomEvent = () => {
+      clearTimeout(eventTimeout);
+      eventTimeout = setTimeout(handleStorageChange, 100);
+    };
+    window.addEventListener('pomodoroStateChange', handleCustomEvent);
+    
+    // Periyodik kontrolü kaldırdık - sadece event'ler yeterli
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('pomodoroStateChange', handleCustomEvent);
+      clearTimeout(eventTimeout);
+    };
+  }, [timerType, timeLeft, stopwatchTime, isRunning, mode, completedPomodoros, sessionPomodoros, startTime]);
 
+  // handleTimerComplete'i useCallback ile sarmala
+  const handleTimerComplete = useCallback(async () => {
+    setIsRunning(false);
+    setStartTime(null);
+    playSound();
+    
+    if (mode === "work") {
+      const newCount = completedPomodoros + 1;
+      const newSessionCount = sessionPomodoros + 1;
+      
+      setCompletedPomodoros(newCount);
+      setSessionPomodoros(newSessionCount);
+      
+      // Backend'e kaydet
+      await savePomodoroSession(25); // 25 dakika çalışma
+      
+      // İstatistikleri güncelle
+      await loadStats();
+      
+      // Dashboard'ı bilgilendir (event ile)
+      window.dispatchEvent(new CustomEvent('pomodoroCompleted'));
+      
+      // Uzun mola zamanı mı?
+      if (newSessionCount % POMODOROS_FOR_LONG_BREAK === 0) {
+        setMode("longBreak");
+        setTimeLeft(LONG_BREAK);
+      } else {
+        setMode("shortBreak");
+        setTimeLeft(SHORT_BREAK);
+      }
+    } else {
+      // Mola bitti, çalışmaya dön
+      setMode("work");
+      setTimeLeft(WORK_TIME);
+    }
+    
+    // State değişikliğini diğer component'lere bildir
+    window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
+  }, [mode, completedPomodoros, sessionPomodoros, me]);
+  
   // Timer mantığı - Pomodoro modu
   useEffect(() => {
     if (timerType === "pomodoro" && isRunning && timeLeft > 0) {
+      if (!startTime) {
+        setStartTime(Date.now());
+      }
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -46,6 +208,9 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
         });
       }, 1000);
     } else if (timerType === "stopwatch" && isRunning) {
+      if (!startTime) {
+        setStartTime(Date.now());
+      }
       // Kronometre modu - ileriye sayar
       intervalRef.current = setInterval(() => {
         setStopwatchTime((prev) => prev + 1);
@@ -55,6 +220,9 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      if (!isRunning) {
+        setStartTime(null);
+      }
     }
 
     return () => {
@@ -62,7 +230,7 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, timeLeft, timerType]);
+  }, [isRunning, timeLeft, timerType, startTime, handleTimerComplete]);
 
   // Ses çal (timer bittiğinde)
   const playSound = () => {
@@ -88,37 +256,6 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
     }
   };
 
-  const handleTimerComplete = async () => {
-    setIsRunning(false);
-    playSound();
-    
-    if (mode === "work") {
-      const newCount = completedPomodoros + 1;
-      const newSessionCount = sessionPomodoros + 1;
-      
-      setCompletedPomodoros(newCount);
-      setSessionPomodoros(newSessionCount);
-      
-      // Backend'e kaydet
-      await savePomodoroSession(25); // 25 dakika çalışma
-      
-      // İstatistikleri güncelle
-      await loadStats();
-      
-      // Uzun mola zamanı mı?
-      if (newSessionCount % POMODOROS_FOR_LONG_BREAK === 0) {
-        setMode("longBreak");
-        setTimeLeft(LONG_BREAK);
-      } else {
-        setMode("shortBreak");
-        setTimeLeft(SHORT_BREAK);
-      }
-    } else {
-      // Mola bitti, çalışmaya dön
-      setMode("work");
-      setTimeLeft(WORK_TIME);
-    }
-  };
 
   const savePomodoroSession = async (minutes) => {
     try {
@@ -126,15 +263,19 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
         duration: minutes,
         completedAt: new Date().toISOString()
       });
+      console.log("Pomodoro backend'e kaydedildi:", minutes, "dakika");
     } catch (error) {
       console.error("Pomodoro kaydedilemedi:", error);
-      // Hata olsa bile devam et, local storage'a kaydet
-      const localStats = JSON.parse(localStorage.getItem("pomodoroStats") || "{}");
+      // Hata olsa bile devam et, local storage'a kaydet (kullanıcıya özel)
+      const userId = me?.id || "guest";
+      const storageKey = `pomodoroStats_${userId}`;
+      const localStats = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem("pomodoroStats") || "{}");
       const today = new Date().toISOString().split("T")[0];
       if (!localStats[today]) localStats[today] = { count: 0, minutes: 0 };
       localStats[today].count += 1;
       localStats[today].minutes += minutes;
-      localStorage.setItem("pomodoroStats", JSON.stringify(localStats));
+      localStorage.setItem(storageKey, JSON.stringify(localStats));
+      console.log("Pomodoro localStorage'a kaydedildi (kullanıcıya özel):", minutes, "dakika");
     }
   };
 
@@ -146,15 +287,31 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
       }
     } catch (error) {
       console.error("İstatistikler yüklenemedi:", error);
-      // Local storage'dan yükle
-      const localStats = JSON.parse(localStorage.getItem("pomodoroStats") || "{}");
+      // Local storage'dan yükle (kullanıcıya özel)
+      const userId = me?.id || "guest";
+      const storageKey = `pomodoroStats_${userId}`;
+      const localStats = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem("pomodoroStats") || "{}");
       const today = new Date().toISOString().split("T")[0];
       const todayStats = localStats[today] || { count: 0, minutes: 0 };
+      
+      // Son 7 günü hesapla
+      const weekStats = { count: 0, minutes: 0 };
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      Object.keys(localStats).forEach(dateKey => {
+        const date = new Date(dateKey);
+        if (date >= weekAgo) {
+          const dayStats = localStats[dateKey];
+          weekStats.count += dayStats?.count || 0;
+          weekStats.minutes += dayStats?.minutes || 0;
+        }
+      });
       
       // Basit hesaplama (tam doğru olmayabilir ama fallback)
       setStats({
         today: todayStats,
-        week: { count: Object.values(localStats).reduce((sum, s) => sum + (s.count || 0), 0), minutes: Object.values(localStats).reduce((sum, s) => sum + (s.minutes || 0), 0) },
+        week: weekStats,
         month: { count: Object.values(localStats).reduce((sum, s) => sum + (s.count || 0), 0), minutes: Object.values(localStats).reduce((sum, s) => sum + (s.minutes || 0), 0) },
         total: { count: Object.values(localStats).reduce((sum, s) => sum + (s.count || 0), 0), minutes: Object.values(localStats).reduce((sum, s) => sum + (s.minutes || 0), 0) }
       });
@@ -164,19 +321,81 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
   };
 
   const handleStart = () => {
+    if (isRunning) return; // Zaten çalışıyorsa atla
+    
+    const newStartTime = Date.now();
     setIsRunning(true);
+    setStartTime(newStartTime);
+    
+    // State'i hemen localStorage'a kaydet
+    const currentState = {
+      timerType,
+      timeLeft,
+      stopwatchTime,
+      isRunning: true,
+      mode,
+      completedPomodoros,
+      sessionPomodoros,
+      startTime: newStartTime
+    };
+    savePomodoroState(currentState);
+    
+    // State değişikliğini diğer component'lere bildir
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
+    });
   };
 
   const handlePause = () => {
+    if (!isRunning) return; // Zaten durmuşsa atla
+    
     setIsRunning(false);
+    setStartTime(null);
+    
+    // State'i hemen localStorage'a kaydet
+    const currentState = {
+      timerType,
+      timeLeft,
+      stopwatchTime,
+      isRunning: false,
+      mode,
+      completedPomodoros,
+      sessionPomodoros,
+      startTime: null
+    };
+    savePomodoroState(currentState);
+    
+    // State değişikliğini diğer component'lere bildir
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
+    });
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setIsRunning(false);
+    setStartTime(null);
+    
     if (timerType === "stopwatch") {
+      // Kronometre modunda, durdurulan süreyi kaydet
+      if (stopwatchTime > 0) {
+        const minutes = Math.floor(stopwatchTime / 60);
+        if (minutes >= 1) { // En az 1 dakika çalıştıysa kaydet
+          await savePomodoroSession(minutes);
+          await loadStats();
+          window.dispatchEvent(new CustomEvent('pomodoroCompleted'));
+        }
+      }
       setStopwatchTime(0);
     } else {
+      // Pomodoro modunda
       if (mode === "work") {
+        // Çalışma modundaysa, geçen süreyi kaydet
+        const elapsedMinutes = Math.floor((WORK_TIME - timeLeft) / 60);
+        if (elapsedMinutes >= 1) { // En az 1 dakika çalıştıysa kaydet
+          await savePomodoroSession(elapsedMinutes);
+          await loadStats();
+          window.dispatchEvent(new CustomEvent('pomodoroCompleted'));
+        }
         setTimeLeft(WORK_TIME);
       } else if (mode === "shortBreak") {
         setTimeLeft(SHORT_BREAK);
@@ -184,11 +403,17 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
         setTimeLeft(LONG_BREAK);
       }
     }
+    // State değişikliğini diğer component'lere bildir
+    window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
   };
 
   const handleModeChange = (newMode) => {
-    if (isRunning) return; // Çalışırken mod değiştirilemez
-    setIsRunning(false);
+    if (isRunning) {
+      // Çalışırken mod değiştirilemez, önce durdur
+      setIsRunning(false);
+      setStartTime(null);
+    }
+    
     setMode(newMode);
     if (newMode === "work") {
       setTimeLeft(WORK_TIME);
@@ -197,11 +422,33 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
     } else {
       setTimeLeft(LONG_BREAK);
     }
+    
+    // State'i hemen localStorage'a kaydet
+    const currentState = {
+      timerType,
+      timeLeft: newMode === "work" ? WORK_TIME : newMode === "shortBreak" ? SHORT_BREAK : LONG_BREAK,
+      stopwatchTime,
+      isRunning: false,
+      mode: newMode,
+      completedPomodoros,
+      sessionPomodoros,
+      startTime: null
+    };
+    savePomodoroState(currentState);
+    
+    // State değişikliğini diğer component'lere bildir
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
+    });
   };
 
   const handleTimerTypeChange = (type) => {
-    if (isRunning) return; // Çalışırken tip değiştirilemez
-    setIsRunning(false);
+    if (isRunning) {
+      // Çalışırken tip değiştirilemez, önce durdur
+      setIsRunning(false);
+      setStartTime(null);
+    }
+    
     setTimerType(type);
     if (type === "stopwatch") {
       setStopwatchTime(0);
@@ -215,6 +462,24 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
         setTimeLeft(LONG_BREAK);
       }
     }
+    
+    // State'i hemen localStorage'a kaydet
+    const currentState = {
+      timerType: type,
+      timeLeft: type === "stopwatch" ? WORK_TIME : (mode === "work" ? WORK_TIME : mode === "shortBreak" ? SHORT_BREAK : LONG_BREAK),
+      stopwatchTime: type === "stopwatch" ? 0 : stopwatchTime,
+      isRunning: false,
+      mode,
+      completedPomodoros,
+      sessionPomodoros,
+      startTime: null
+    };
+    savePomodoroState(currentState);
+    
+    // State değişikliğini diğer component'lere bildir
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
+    });
   };
 
   const formatTime = (seconds) => {
@@ -240,7 +505,9 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
             {timerType === "pomodoro" ? "🍅" : "⏱️"}
           </span>
           <span className="pomodoro-title">
-            {timerType === "pomodoro" ? "Pomodoro" : "Kronometre"}
+            {timerType === "pomodoro" 
+              ? (mode === "work" ? "Pomodoro" : mode === "shortBreak" ? "Kısa Mola" : "Uzun Mola")
+              : "Kronometre"}
           </span>
           <button
             className="pomodoro-widget-type-toggle"
@@ -251,6 +518,37 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
             🔄
           </button>
         </div>
+        
+        {/* Pomodoro modunda mod seçimi */}
+        {timerType === "pomodoro" && (
+          <div className="pomodoro-widget-modes">
+            <button
+              className={`pomodoro-mode-btn ${mode === "work" ? "active" : ""}`}
+              onClick={() => handleModeChange("work")}
+              disabled={isRunning}
+              title="Çalışma"
+            >
+              🍅
+            </button>
+            <button
+              className={`pomodoro-mode-btn ${mode === "shortBreak" ? "active" : ""}`}
+              onClick={() => handleModeChange("shortBreak")}
+              disabled={isRunning}
+              title="Kısa Mola"
+            >
+              ☕
+            </button>
+            <button
+              className={`pomodoro-mode-btn ${mode === "longBreak" ? "active" : ""}`}
+              onClick={() => handleModeChange("longBreak")}
+              disabled={isRunning}
+              title="Uzun Mola"
+            >
+              🌴
+            </button>
+          </div>
+        )}
+        
         <div className="pomodoro-widget-timer">
           <div className="pomodoro-time-display-small">
             {timerType === "pomodoro" ? formatTime(timeLeft) : formatTime(stopwatchTime)}
@@ -268,6 +566,30 @@ export default function PomodoroTimer({ onBack, isWidget = false, onNavigate }) 
             <button className="pomodoro-btn-small" onClick={handleReset}>
               🔄
             </button>
+            {/* Kronometre modunda sıfırla butonu */}
+            {timerType === "stopwatch" && stopwatchTime === 0 && !isRunning && (
+              <button 
+                className="pomodoro-btn-small" 
+                onClick={() => {
+                  setStopwatchTime(0);
+                  const currentState = {
+                    timerType,
+                    timeLeft,
+                    stopwatchTime: 0,
+                    isRunning: false,
+                    mode,
+                    completedPomodoros,
+                    sessionPomodoros,
+                    startTime: null
+                  };
+                  savePomodoroState(currentState);
+                  window.dispatchEvent(new CustomEvent('pomodoroStateChange'));
+                }}
+                title="Sıfırla"
+              >
+                ⏹️
+              </button>
+            )}
           </div>
         </div>
         <div className="pomodoro-widget-stats">

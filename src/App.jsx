@@ -443,7 +443,7 @@ export default function App() {
           )}
 
           {page === "pomodoro" && (
-            <PomodoroTimer onBack={() => setPage("dersler")} />
+            <PomodoroTimer onBack={() => setPage("dersler")} me={me} />
           )}
 
         </main>

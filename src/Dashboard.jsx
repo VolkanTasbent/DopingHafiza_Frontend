@@ -286,6 +286,16 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
     loadPomodoroStats();
     loadUserHedef();
     loadRecentActivities();
+    
+    // Pomodoro timer'dan gelen yenileme isteklerini dinle
+    const handlePomodoroRefresh = () => {
+      loadPomodoroStats();
+    };
+    window.addEventListener('pomodoroCompleted', handlePomodoroRefresh);
+    
+    return () => {
+      window.removeEventListener('pomodoroCompleted', handlePomodoroRefresh);
+    };
   }, [me]);
   
   useEffect(() => {
@@ -525,16 +535,32 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
       }
     } catch (error) {
       console.error("Pomodoro istatistikleri yüklenemedi:", error);
-      // Local storage'dan yükle
-      const localStats = JSON.parse(localStorage.getItem("pomodoroStats") || "{}");
+      // Local storage'dan yükle (kullanıcıya özel)
+      const userId = me?.id || "guest";
+      const storageKey = `pomodoroStats_${userId}`;
+      const localStats = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem("pomodoroStats") || "{}");
       const today = new Date().toISOString().split("T")[0];
       const todayStats = localStats[today] || { count: 0, minutes: 0 };
       
+      // Son 7 günü hesapla
+      const weekStats = { count: 0, minutes: 0 };
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      Object.keys(localStats).forEach(dateKey => {
+        const date = new Date(dateKey);
+        if (date >= weekAgo) {
+          const dayStats = localStats[dateKey];
+          weekStats.count += dayStats?.count || 0;
+          weekStats.minutes += dayStats?.minutes || 0;
+        }
+      });
+      
       setPomodoroStats({
         today: todayStats,
-        week: { count: 0, minutes: 0 },
-        month: { count: 0, minutes: 0 },
-        total: { count: 0, minutes: 0 }
+        week: weekStats,
+        month: { count: Object.values(localStats).reduce((sum, s) => sum + (s.count || 0), 0), minutes: Object.values(localStats).reduce((sum, s) => sum + (s.minutes || 0), 0) },
+        total: { count: Object.values(localStats).reduce((sum, s) => sum + (s.count || 0), 0), minutes: Object.values(localStats).reduce((sum, s) => sum + (s.minutes || 0), 0) }
       });
     }
   };
@@ -1440,7 +1466,7 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
           </div>
 
           {/* Pomodoro Timer Widget */}
-          <PomodoroTimer isWidget={true} onNavigate={onNavigate} />
+          <PomodoroTimer isWidget={true} onNavigate={onNavigate} me={me} />
 
           {/* Günlük Görevler */}
           <div className="dashboard-card-modern">
