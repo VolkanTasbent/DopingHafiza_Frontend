@@ -36,16 +36,60 @@ export default function App() {
   const [seciliDersDetay, setSeciliDersDetay] = useState(null);
   const [seciliRaporOturumId, setSeciliRaporOturumId] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("darkMode");
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Dark mode'u kullanıcıya özel yükle
+  useEffect(() => {
+    const loadUserDarkMode = async () => {
+      if (!me?.id) {
+        // Kullanıcı yoksa varsayılan değeri kullan
+        setDarkMode(false);
+        return;
+      }
+      
+      try {
+        // Backend'den kullanıcı ayarlarını yükle
+        const { data } = await api.get("/api/users/me");
+        if (data.darkMode !== undefined) {
+          setDarkMode(data.darkMode);
+        } else {
+          // Backend'de yoksa localStorage'dan yükle (kullanıcıya özel)
+          const saved = localStorage.getItem(`darkMode_${me.id}`);
+          if (saved !== null) {
+            setDarkMode(JSON.parse(saved));
+          }
+        }
+      } catch (error) {
+        console.error("Dark mode yüklenemedi:", error);
+        // Fallback: localStorage'dan yükle (kullanıcıya özel)
+        const saved = localStorage.getItem(`darkMode_${me.id}`);
+        if (saved !== null) {
+          setDarkMode(JSON.parse(saved));
+        }
+      }
+    };
+    
+    loadUserDarkMode();
+  }, [me?.id]);
 
   // Dark mode toggle
-  const toggleDarkMode = () => {
+  const toggleDarkMode = async () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
-    localStorage.setItem("darkMode", JSON.stringify(newMode));
+    
+    if (me?.id) {
+      try {
+        // Backend'e kaydet
+        await api.put("/api/users/me", { darkMode: newMode });
+      } catch (error) {
+        console.error("Dark mode backend'e kaydedilemedi:", error);
+        // Fallback: localStorage'a kaydet (kullanıcıya özel)
+        localStorage.setItem(`darkMode_${me.id}`, JSON.stringify(newMode));
+      }
+    } else {
+      // Kullanıcı yoksa genel localStorage'a kaydet
+      localStorage.setItem("darkMode", JSON.stringify(newMode));
+    }
   };
 
   // Dark mode class'ını body'ye ekle
@@ -297,7 +341,19 @@ export default function App() {
 
 {page === "dersler" && (
   <>
-    <Dashboard me={me} onNavigate={setPage} />
+    <Dashboard 
+      key={`dashboard-${page}`}
+      me={me} 
+      onNavigate={setPage}
+      onSelectDers={(ders) => {
+        setSeciliDers(ders);
+        setPage("coz");
+      }}
+      onSelectDersDetay={(ders) => {
+        setSeciliDersDetay(ders);
+        setPage("dersdetay");
+      }}
+    />
     <Derslerim
       onStartQuiz={(dersId, dersAd) => {
         setSeciliDers({ id: dersId, ad: dersAd });
@@ -321,6 +377,7 @@ export default function App() {
               onBack={() => setPage("dersler")}
               onFinish={() => setPage("raporlar")}
               seciliDers={seciliDers}
+              me={me}
             />
           )}
 
@@ -349,6 +406,9 @@ export default function App() {
             <DersDetay
               onBack={() => setPage("dersler")}
               ders={seciliDersDetay}
+              initialTab={seciliDersDetay?._initialTab}
+              scrollToKonuId={seciliDersDetay?._scrollToKonuId}
+              me={me}
             />
           )}
 

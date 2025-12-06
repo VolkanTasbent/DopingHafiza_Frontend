@@ -368,3 +368,4 @@ WHERE user_id = :userId
 - **Frontend Widget:** `src/Dashboard.jsx` (PomodoroTimer widget olarak)
 - **Frontend Routing:** `src/App.jsx`
 
+

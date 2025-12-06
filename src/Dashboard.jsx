@@ -27,7 +27,7 @@ ChartJS.register(
   Legend
 );
 
-export default function Dashboard({ me, onNavigate }) {
+export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDetay }) {
   const [raporlar, setRaporlar] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +73,10 @@ export default function Dashboard({ me, onNavigate }) {
     month: { count: 0, minutes: 0 },
     total: { count: 0, minutes: 0 }
   });
+  
+  // Son aktiviteler
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
   
   // Bildirimler
   const [notifications, setNotifications] = useState([
@@ -205,6 +209,7 @@ export default function Dashboard({ me, onNavigate }) {
     loadWeeklyCalendarData();
     loadPomodoroStats();
     loadUserHedef();
+    loadRecentActivities();
   }, [me]);
   
   useEffect(() => {
@@ -520,6 +525,329 @@ export default function Dashboard({ me, onNavigate }) {
     }
     setCurrentWeekStart(newWeekStart);
   };
+  
+  const loadRecentActivities = async () => {
+    if (!me?.id) {
+      setActivitiesLoading(false);
+      return;
+    }
+    
+    try {
+      const { data } = await api.get("/api/activities/recent", {
+        params: { limit: 20 }
+      });
+      
+      if (data?.activities) {
+        // Backend'den gelen aktiviteler zaten DESC sıralı olmalı (en yeni en üstte)
+        setRecentActivities(data.activities);
+      } else {
+        // Fallback: Raporlardan ve localStorage'dan aktivite oluştur
+        const allActivities = [];
+        
+        // 1. Raporlardan soru çözme aktiviteleri
+        const sortedRaporlar = [...raporlar].sort((a, b) => {
+          const dateA = a.finishedAt ? new Date(a.finishedAt).getTime() : 0;
+          const dateB = b.finishedAt ? new Date(b.finishedAt).getTime() : 0;
+          return dateB - dateA; // DESC sıralama (en yeni en üstte)
+        });
+        
+        sortedRaporlar.forEach(rapor => {
+          if (rapor.finishedAt) {
+            // Ders ve konu bilgilerini items'dan al
+            let dersAd = "Soru Çözme";
+            let konuAd = "";
+            let dersId = null;
+            let konuId = null;
+            
+            if (rapor.items && rapor.items.length > 0) {
+              // İlk sorudan ders bilgisini al
+              const firstItem = rapor.items[0];
+              if (firstItem.soru) {
+                dersAd = firstItem.soru.dersAd || firstItem.soru.ders?.ad || "Soru Çözme";
+                dersId = firstItem.soru.dersId || firstItem.soru.ders?.id || null;
+                
+                // Konu bilgisini al (varsa)
+                if (firstItem.soru.konular && firstItem.soru.konular.length > 0) {
+                  konuAd = firstItem.soru.konular[0].ad || "";
+                  konuId = firstItem.soru.konular[0].id || null;
+                }
+              }
+            }
+            
+            const activityTitle = konuAd 
+              ? `${dersAd} > ${konuAd}`
+              : dersAd;
+            
+            allActivities.push({
+              id: rapor.oturumId,
+              activityType: "soru_cozme",
+              activityTitle: activityTitle,
+              activitySubtitle: `${rapor.correctCount || 0} doğru, ${rapor.wrongCount || 0} yanlış`,
+              activityIcon: "abc",
+              dersId: dersId,
+              konuId: konuId,
+              raporId: rapor.oturumId,
+              createdAt: rapor.finishedAt
+            });
+          }
+        });
+        
+        // 2. localStorage'dan video aktiviteleri (kullanıcıya özel)
+        try {
+          const userId = me?.id || "guest";
+          const storageKey = `videoActivities_${userId}`;
+          const savedVideoActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          savedVideoActivities.forEach(activity => {
+            allActivities.push({
+              id: activity.id,
+              activityType: activity.activityType || "video_izleme",
+              activityTitle: activity.activityTitle || "Video İzleme",
+              activitySubtitle: activity.activitySubtitle || "",
+              activityIcon: activity.activityIcon || "video",
+              dersId: activity.dersId,
+              konuId: activity.konuId,
+              createdAt: activity.createdAt || new Date().toISOString()
+            });
+          });
+        } catch (e) {
+          console.error("localStorage video aktiviteleri okunamadı:", e);
+        }
+        
+        // 3. localStorage'dan PDF aktiviteleri (kullanıcıya özel)
+        try {
+          const userId = me?.id || "guest";
+          const storageKey = `pdfActivities_${userId}`;
+          const savedPdfActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          savedPdfActivities.forEach(activity => {
+            allActivities.push({
+              id: activity.id,
+              activityType: activity.activityType || "konu_calisma",
+              activityTitle: activity.activityTitle || "Konu Çalışması",
+              activitySubtitle: activity.activitySubtitle || "",
+              activityIcon: activity.activityIcon || "book",
+              dersId: activity.dersId,
+              konuId: activity.konuId,
+              createdAt: activity.createdAt || new Date().toISOString()
+            });
+          });
+        } catch (e) {
+          console.error("localStorage PDF aktiviteleri okunamadı:", e);
+        }
+        
+        // 4. localStorage'dan quiz aktiviteleri (soru çözme - kullanıcıya özel)
+        try {
+          const userId = me?.id || "guest";
+          const storageKey = `quizActivities_${userId}`;
+          const savedQuizActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          savedQuizActivities.forEach(activity => {
+            allActivities.push({
+              id: activity.id,
+              activityType: activity.activityType || "soru_cozme",
+              activityTitle: activity.activityTitle || "Soru Çözme",
+              activitySubtitle: activity.activitySubtitle || "",
+              activityIcon: activity.activityIcon || "abc",
+              dersId: activity.dersId,
+              konuId: activity.konuId,
+              raporId: activity.raporId,
+              createdAt: activity.createdAt || new Date().toISOString()
+            });
+          });
+        } catch (e) {
+          console.error("localStorage quiz aktiviteleri okunamadı:", e);
+        }
+        
+        // Tüm aktiviteleri tarihe göre sırala (en yeni en üstte)
+        allActivities.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+        
+        // İlk 20 aktiviteyi al
+        setRecentActivities(allActivities.slice(0, 20));
+      }
+    } catch (error) {
+      console.error("Aktiviteler yüklenemedi:", error);
+      // Fallback: Raporlardan ve localStorage'dan aktivite oluştur
+      const allActivities = [];
+      
+      // 1. Raporlardan soru çözme aktiviteleri
+      const sortedRaporlar = [...raporlar].sort((a, b) => {
+        const dateA = a.finishedAt ? new Date(a.finishedAt).getTime() : 0;
+        const dateB = b.finishedAt ? new Date(b.finishedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      sortedRaporlar.forEach(rapor => {
+        if (rapor.finishedAt) {
+          // Ders ve konu bilgilerini items'dan al
+          let dersAd = "Soru Çözme";
+          let konuAd = "";
+          let dersId = null;
+          let konuId = null;
+          
+          if (rapor.items && rapor.items.length > 0) {
+            // İlk sorudan ders bilgisini al
+            const firstItem = rapor.items[0];
+            if (firstItem.soru) {
+              dersAd = firstItem.soru.dersAd || firstItem.soru.ders?.ad || "Soru Çözme";
+              dersId = firstItem.soru.dersId || firstItem.soru.ders?.id || null;
+              
+              // Konu bilgisini al (varsa)
+              if (firstItem.soru.konular && firstItem.soru.konular.length > 0) {
+                konuAd = firstItem.soru.konular[0].ad || "";
+                konuId = firstItem.soru.konular[0].id || null;
+              }
+            }
+          }
+          
+          const activityTitle = konuAd 
+            ? `${dersAd} > ${konuAd}`
+            : dersAd;
+          
+          allActivities.push({
+            id: rapor.oturumId,
+            activityType: "soru_cozme",
+            activityTitle: activityTitle,
+            activitySubtitle: `${rapor.correctCount || 0} doğru, ${rapor.wrongCount || 0} yanlış`,
+            activityIcon: "abc",
+            dersId: dersId,
+            konuId: konuId,
+            raporId: rapor.oturumId,
+            createdAt: rapor.finishedAt
+          });
+        }
+      });
+      
+      // 2. localStorage'dan video aktiviteleri (kullanıcıya özel)
+      try {
+        const userId = me?.id || "guest";
+        const storageKey = `videoActivities_${userId}`;
+        const savedVideoActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        savedVideoActivities.forEach(activity => {
+          allActivities.push({
+            id: activity.id,
+            activityType: activity.activityType || "video_izleme",
+            activityTitle: activity.activityTitle || "Video İzleme",
+            activitySubtitle: activity.activitySubtitle || "",
+            activityIcon: activity.activityIcon || "video",
+            dersId: activity.dersId,
+            konuId: activity.konuId,
+            createdAt: activity.createdAt || new Date().toISOString()
+          });
+        });
+      } catch (e) {
+        console.error("localStorage video aktiviteleri okunamadı:", e);
+      }
+      
+      // 3. localStorage'dan PDF aktiviteleri (kullanıcıya özel)
+      try {
+        const userId = me?.id || "guest";
+        const storageKey = `pdfActivities_${userId}`;
+        const savedPdfActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        savedPdfActivities.forEach(activity => {
+          allActivities.push({
+            id: activity.id,
+            activityType: activity.activityType || "konu_calisma",
+            activityTitle: activity.activityTitle || "Konu Çalışması",
+            activitySubtitle: activity.activitySubtitle || "",
+            activityIcon: activity.activityIcon || "book",
+            dersId: activity.dersId,
+            konuId: activity.konuId,
+            createdAt: activity.createdAt || new Date().toISOString()
+          });
+        });
+      } catch (e) {
+        console.error("localStorage PDF aktiviteleri okunamadı:", e);
+      }
+      
+      // 4. localStorage'dan quiz aktiviteleri (soru çözme - kullanıcıya özel)
+      try {
+        const userId = me?.id || "guest";
+        const storageKey = `quizActivities_${userId}`;
+        const savedQuizActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        savedQuizActivities.forEach(activity => {
+          allActivities.push({
+            id: activity.id,
+            activityType: activity.activityType || "soru_cozme",
+            activityTitle: activity.activityTitle || "Soru Çözme",
+            activitySubtitle: activity.activitySubtitle || "",
+            activityIcon: activity.activityIcon || "abc",
+            dersId: activity.dersId,
+            konuId: activity.konuId,
+            raporId: activity.raporId,
+            createdAt: activity.createdAt || new Date().toISOString()
+          });
+        });
+      } catch (e) {
+        console.error("localStorage quiz aktiviteleri okunamadı:", e);
+      }
+      
+      // Tüm aktiviteleri tarihe göre sırala
+      allActivities.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+      
+      setRecentActivities(allActivities.slice(0, 20));
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (raporlar.length > 0 && recentActivities.length === 0 && !activitiesLoading) {
+      loadRecentActivities();
+    }
+  }, [raporlar]);
+  
+  // Sayfa görünür olduğunda aktiviteleri yenile (visibility API)
+  useEffect(() => {
+    if (!me?.id) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Sayfa görünür olduğunda aktiviteleri yenile
+        loadRecentActivities();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [me?.id]);
+  
+  const getActivityIcon = (iconType) => {
+    const icons = {
+      'abc': '🔤',
+      'document': '📄',
+      'grid': '📊',
+      'video': '▶️',
+      'book': '📖'
+    };
+    return icons[iconType] || icons['document'];
+  };
+  
+  const formatActivityTime = (dateString) => {
+    if (!dateString) return "Az önce";
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return "Az önce";
+    if (diffMins < 60) return `${diffMins} dakika önce`;
+    if (diffHours < 24) return `${diffHours} saat önce`;
+    if (diffDays < 7) return `${diffDays} gün önce`;
+    
+    return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+  };
 
   const handleDayClick = (dayDate) => {
     // Günün detaylarını göster veya filtrele
@@ -716,6 +1044,154 @@ export default function Dashboard({ me, onNavigate }) {
       <div className="dashboard-bottom-section">
         {/* Sol Kolon: Grafikler ve Hedefler */}
         <div className="dashboard-bottom-left">
+          {/* Son Aktivitelerim */}
+          <div className="dashboard-card-modern">
+            <div className="dashboard-card-header">
+              <h3 className="dashboard-card-title">📋 Son Aktivitelerim</h3>
+            </div>
+            <div className="dashboard-card-content">
+              {activitiesLoading ? (
+                <div className="dashboard-loading">Yükleniyor...</div>
+              ) : recentActivities.length > 0 ? (
+                <div className="activities-list-modern">
+                  {recentActivities.map((activity) => (
+                    <div key={activity.id} className="activity-item-modern">
+                      <div className="activity-icon-modern">
+                        {getActivityIcon(activity.activityIcon || activity.activityType)}
+                      </div>
+                      <div className="activity-content-modern">
+                        <div className="activity-title-modern">
+                          {activity.activityTitle || "Aktivite"}
+                        </div>
+                        {activity.activitySubtitle && (
+                          <div className="activity-subtitle-modern">
+                            {activity.activitySubtitle}
+                          </div>
+                        )}
+                        <div className="activity-time-modern">
+                          {formatActivityTime(activity.createdAt)}
+                        </div>
+                      </div>
+                      <div className="activity-action-modern">
+                        {(activity.activityType === "video_izleme" || activity.activityType === "soru_cozme" || activity.activityType === "konu_calisma") && (
+                          <button 
+                            className="activity-play-btn"
+                            onClick={async () => {
+                              if (activity.activityType === "soru_cozme") {
+                                // Soru çözme sayfasına git
+                                if (activity.dersId && onSelectDers) {
+                                  try {
+                                    // Ders bilgilerini al
+                                    const { data: dersler } = await api.get("/api/ders");
+                                    const ders = dersler?.find(d => d.id === activity.dersId);
+                                    if (ders) {
+                                      onSelectDers({ id: ders.id, ad: ders.ad });
+                                    } else {
+                                      // Ders bulunamazsa sadece ID ile git
+                                      onSelectDers({ id: activity.dersId, ad: activity.activityTitle?.split(' > ')[0] || "Ders" });
+                                    }
+                                  } catch (error) {
+                                    console.error("Ders bilgisi alınamadı:", error);
+                                    // Hata durumunda da git
+                                    if (activity.dersId) {
+                                      onSelectDers({ id: activity.dersId, ad: activity.activityTitle?.split(' > ')[0] || "Ders" });
+                                    } else if (onNavigate) {
+                                      onNavigate("coz");
+                                    }
+                                  }
+                                } else if (onNavigate) {
+                                  onNavigate("coz");
+                                }
+                              } else if (activity.activityType === "video_izleme") {
+                                // Video izleme sayfasına git (ders detay sayfası)
+                                if (activity.dersId && onSelectDersDetay) {
+                                  try {
+                                    // Ders bilgilerini al
+                                    const { data: dersler } = await api.get("/api/ders");
+                                    const ders = dersler?.find(d => d.id === activity.dersId);
+                                    if (ders) {
+                                      // Video aktivitesi için video tab'ını aç ve konuId varsa scroll et
+                                      const dersWithVideoTab = { ...ders, _initialTab: "videolar", _scrollToKonuId: activity.konuId };
+                                      onSelectDersDetay(dersWithVideoTab);
+                                    } else {
+                                      // Ders bulunamazsa sadece ID ile git
+                                      onSelectDersDetay({ 
+                                        id: activity.dersId, 
+                                        ad: activity.activityTitle?.split(' > ')[0] || "Ders",
+                                        _initialTab: "videolar",
+                                        _scrollToKonuId: activity.konuId
+                                      });
+                                    }
+                                  } catch (error) {
+                                    console.error("Ders bilgisi alınamadı:", error);
+                                    // Hata durumunda da git
+                                    if (activity.dersId) {
+                                      onSelectDersDetay({ 
+                                        id: activity.dersId, 
+                                        ad: activity.activityTitle?.split(' > ')[0] || "Ders",
+                                        _initialTab: "videolar",
+                                        _scrollToKonuId: activity.konuId
+                                      });
+                                    } else if (onNavigate) {
+                                      onNavigate("dersler");
+                                    }
+                                  }
+                                } else if (onNavigate) {
+                                  onNavigate("dersler");
+                                }
+                              } else if (activity.activityType === "konu_calisma") {
+                                // Konu çalışma (PDF) sayfasına git (ders detay sayfası)
+                                if (activity.dersId && onSelectDersDetay) {
+                                  try {
+                                    // Ders bilgilerini al
+                                    const { data: dersler } = await api.get("/api/ders");
+                                    const ders = dersler?.find(d => d.id === activity.dersId);
+                                    if (ders) {
+                                      // PDF aktivitesi için konular tab'ını aç ve konuId varsa scroll et
+                                      const dersWithKonuTab = { ...ders, _initialTab: "konular", _scrollToKonuId: activity.konuId };
+                                      onSelectDersDetay(dersWithKonuTab);
+                                    } else {
+                                      // Ders bulunamazsa sadece ID ile git
+                                      onSelectDersDetay({ 
+                                        id: activity.dersId, 
+                                        ad: activity.activityTitle?.split(' > ')[0] || "Ders",
+                                        _initialTab: "konular",
+                                        _scrollToKonuId: activity.konuId
+                                      });
+                                    }
+                                  } catch (error) {
+                                    console.error("Ders bilgisi alınamadı:", error);
+                                    // Hata durumunda da git
+                                    if (activity.dersId) {
+                                      onSelectDersDetay({ 
+                                        id: activity.dersId, 
+                                        ad: activity.activityTitle?.split(' > ')[0] || "Ders",
+                                        _initialTab: "konular",
+                                        _scrollToKonuId: activity.konuId
+                                      });
+                                    } else if (onNavigate) {
+                                      onNavigate("dersler");
+                                    }
+                                  }
+                                } else if (onNavigate) {
+                                  onNavigate("dersler");
+                                }
+                              }
+                            }}
+                            title="Tekrar İzle/Çöz"
+                          >
+                            ▶
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="dashboard-empty">Henüz aktivite yok</div>
+              )}
+            </div>
+          </div>
           {/* Net Puan Gelişimi */}
           <div className="dashboard-card-modern">
             <div className="dashboard-card-header">
@@ -789,54 +1265,6 @@ export default function Dashboard({ me, onNavigate }) {
                   <p className="goal-empty-hint">Hedef belirleyerek motivasyonunuzu artırın!</p>
                 </div>
               )}
-              <div className="goal-form-modern">
-                <input
-                  type="text"
-                  placeholder="Üniversite adı"
-                  value={hedef.universite}
-                  onChange={(e) => {
-                    const newHedef = { ...hedef, universite: e.target.value };
-                    setHedef(newHedef);
-                    // Otomatik kaydet
-                    if (me?.id) {
-                      localStorage.setItem(`userHedef_${me.id}`, JSON.stringify(newHedef));
-                    }
-                  }}
-                  className="goal-input-modern"
-                />
-                <input
-                  type="text"
-                  placeholder="Bölüm adı"
-                  value={hedef.bolum}
-                  onChange={(e) => {
-                    const newHedef = { ...hedef, bolum: e.target.value };
-                    setHedef(newHedef);
-                    // Otomatik kaydet
-                    if (me?.id) {
-                      localStorage.setItem(`userHedef_${me.id}`, JSON.stringify(newHedef));
-                    }
-                  }}
-                  className="goal-input-modern"
-                />
-                <div className="goal-rank-input-modern">
-                  <label>Hedef Sıralama</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="1000000"
-                    value={hedef.siralamaHedef}
-                    onChange={(e) => {
-                      const newHedef = { ...hedef, siralamaHedef: parseInt(e.target.value) || 10000 };
-                      setHedef(newHedef);
-                      // Otomatik kaydet
-                      if (me?.id) {
-                        localStorage.setItem(`userHedef_${me.id}`, JSON.stringify(newHedef));
-                      }
-                    }}
-                    className="goal-input-modern"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>

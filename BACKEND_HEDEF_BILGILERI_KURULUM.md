@@ -363,3 +363,4 @@ public class UserResponse {
   - `UserController.java` - Update ve Get endpoint'leri
   - `RegisterRequest.java`, `UpdateUserRequest.java`, `UserResponse.java` - DTO'lar
 
+

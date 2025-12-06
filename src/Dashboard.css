@@ -417,6 +417,20 @@
   padding: 24px;
 }
 
+/* Son Aktivitelerim kartı için özel stil */
+.dashboard-card-modern:has(.activities-list-modern) {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-card-modern:has(.activities-list-modern) .dashboard-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px;
+}
+
 /* Grafik Wrapper'lar */
 .chart-wrapper {
   height: 280px;
@@ -1472,4 +1486,206 @@
   background: #1e293b;
   border-color: rgba(255, 255, 255, 0.1);
   color: #e2e8f0;
+}
+
+/* Son Aktivitelerim Stilleri */
+.activities-list-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 700px;
+  min-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  padding-bottom: 12px;
+  padding-top: 4px;
+}
+
+/* Aktivite kartının içeriği scroll edilebilir olmalı */
+.dashboard-card-modern:has(.activities-list-modern) .dashboard-card-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.activities-list-modern::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activities-list-modern::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.activities-list-modern::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.activities-list-modern::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.activity-item-modern {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.activity-item-modern:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.activity-icon-modern {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.activity-content-modern {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-title-modern {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-subtitle-modern {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-time-modern {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.activity-action-modern {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.activity-play-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #667eea;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.activity-play-btn:hover {
+  background: #5568d3;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.activity-play-btn:active {
+  transform: scale(0.95);
+}
+
+/* Dark Mode için Aktivite Stilleri */
+.dark-mode .activity-item-modern {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .activity-item-modern:hover {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark-mode .activity-icon-modern {
+  background: #1e293b;
+}
+
+.dark-mode .activity-title-modern {
+  color: #e2e8f0;
+}
+
+.dark-mode .activity-subtitle-modern {
+  color: #94a3b8;
+}
+
+.dark-mode .activity-time-modern {
+  color: #64748b;
+}
+
+.dark-mode .activities-list-modern::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark-mode .activities-list-modern::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark-mode .activities-list-modern::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .activity-item-modern {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .activity-icon-modern {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+  
+  .activity-title-modern {
+    font-size: 13px;
+  }
+  
+  .activity-subtitle-modern {
+    font-size: 11px;
+  }
+  
+  .activity-play-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
 }

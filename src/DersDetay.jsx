@@ -1,11 +1,11 @@
 // src/DersDetay.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api, { fileUrl } from "./services/api";
 import "./DersDetay.css";
 
-export default function DersDetay({ ders, onBack }) {
+export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me }) {
   const [konular, setKonular] = useState([]);
-  const [aktifTab, setAktifTab] = useState("konular");
+  const [aktifTab, setAktifTab] = useState(initialTab || "konular");
   const [loading, setLoading] = useState(true);
   
   // PDF Modal state
@@ -20,6 +20,40 @@ export default function DersDetay({ ders, onBack }) {
       fetchKonular();
     }
   }, [ders]);
+  
+  // Video tab'ına geçildiyse ve scrollToKonuId varsa, o konuya scroll et
+  useEffect(() => {
+    if (aktifTab === "videolar" && scrollToKonuId && konular.length > 0) {
+      setTimeout(() => {
+        const videoWrapper = document.querySelector(`[data-konu-id="${scrollToKonuId}"]`);
+        if (videoWrapper) {
+          videoWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Kartı vurgula
+          videoWrapper.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.5)';
+          videoWrapper.style.borderRadius = '12px';
+          setTimeout(() => {
+            videoWrapper.style.boxShadow = '';
+          }, 2000);
+        }
+      }, 300);
+    }
+    
+    // Konular tab'ına geçildiyse ve scrollToKonuId varsa, o konuya scroll et
+    if (aktifTab === "konular" && scrollToKonuId && konular.length > 0) {
+      setTimeout(() => {
+        const konuCard = document.querySelector(`.konu-card[data-konu-id="${scrollToKonuId}"]`);
+        if (konuCard) {
+          konuCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Kartı vurgula
+          konuCard.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.5)';
+          konuCard.style.borderRadius = '12px';
+          setTimeout(() => {
+            konuCard.style.boxShadow = '';
+          }, 2000);
+        }
+      }, 300);
+    }
+  }, [aktifTab, scrollToKonuId, konular]);
 
   const fetchKonular = async () => {
     try {
@@ -35,12 +69,68 @@ export default function DersDetay({ ders, onBack }) {
   // Video'lu konuları filtrele
   const videolar = konular.filter(k => k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url);
 
+  // PDF okuma aktivitesi kaydet
+  const savePdfActivity = async (konu) => {
+    // Aynı konu için birden fazla kez kayıt yapma
+    const activityKey = `pdf_${konu?.id}`;
+    if (savedPdfActivities.current.has(activityKey)) {
+      return;
+    }
+    
+    const dersAd = ders?.ad || "Bilinmeyen Ders";
+    const konuAd = konu?.ad || "Bilinmeyen Konu";
+    const activityData = {
+      activityType: "konu_calisma",
+      activityTitle: `${dersAd} > ${konuAd} - Konu Anlatım Dökümanı`,
+      activitySubtitle: konu?.aciklama || konuAd || "Konu Anlatım Dökümanı",
+      activityIcon: "book",
+      dersId: ders?.id,
+      konuId: konu?.id,
+      createdAt: new Date().toISOString(),
+      metadata: {
+        dokumanUrl: konu.dokumanUrl || konu.dokuman_url,
+        dokumanAdi: konu.dokumanAdi || konu.dokuman_adi || konu.ad
+      }
+    };
+    
+    try {
+      // Backend'e kaydet
+      await api.post("/api/activities", activityData);
+      console.log("PDF aktivitesi backend'e kaydedildi:", activityData);
+    } catch (error) {
+      console.error("PDF aktivitesi backend'e kaydedilemedi:", error);
+      // Backend yoksa localStorage'a kaydet (fallback - kullanıcıya özel)
+      try {
+        // Kullanıcı ID'sini al
+        const userId = me?.id || "guest";
+        const storageKey = `pdfActivities_${userId}`;
+        const savedActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        savedActivities.unshift({
+          id: `local_pdf_${Date.now()}_${konu?.id}`,
+          ...activityData
+        });
+        // Son 50 aktiviteyi tut
+        const limited = savedActivities.slice(0, 50);
+        localStorage.setItem(storageKey, JSON.stringify(limited));
+        console.log("PDF aktivitesi localStorage'a kaydedildi:", activityData);
+      } catch (localError) {
+        console.error("PDF aktivitesi localStorage'a kaydedilemedi:", localError);
+      }
+    }
+    
+    // Başarılı kayıt sonrası flag'i set et
+    savedPdfActivities.current.add(activityKey);
+  };
+
   const openPdfModal = (konu) => {
     setPdfModal({
       isOpen: true,
       url: konu.dokumanUrl || konu.dokuman_url,
       adi: konu.dokumanAdi || konu.dokuman_adi || konu.ad
     });
+    
+    // PDF açıldığında aktivite kaydet
+    savePdfActivity(konu);
   };
 
   const closePdfModal = () => {
@@ -49,6 +139,61 @@ export default function DersDetay({ ders, onBack }) {
       url: null,
       adi: null
     });
+  };
+
+  // Video izleme aktivitesi kaydet (her konu için bir kez)
+  const savedVideoActivities = useRef(new Set());
+  // PDF okuma aktivitesi kaydet (her konu için bir kez)
+  const savedPdfActivities = useRef(new Set());
+  
+  const saveVideoActivity = async (konu) => {
+    // Aynı konu için birden fazla kez kayıt yapma
+    const activityKey = `video_${konu?.id}`;
+    if (savedVideoActivities.current.has(activityKey)) {
+      return;
+    }
+    
+    const dersAd = ders?.ad || "Bilinmeyen Ders";
+    const konuAd = konu?.ad || "Bilinmeyen Konu";
+    const activityData = {
+      activityType: "video_izleme",
+      activityTitle: `${dersAd} > ${konuAd} - Konu Anlatım Videosu`,
+      activitySubtitle: konu?.aciklama || konuAd || "Konu Anlatım Videosu",
+      activityIcon: "video",
+      dersId: ders?.id,
+      konuId: konu?.id,
+      createdAt: new Date().toISOString(),
+      metadata: {
+        videoUrl: konu.konuAnlatimVideosuUrl || konu.konu_anlatim_videosu_url || konu.videoUrl || konu.video_url
+      }
+    };
+    
+    try {
+      // Backend'e kaydet
+      await api.post("/api/activities", activityData);
+      console.log("Video aktivitesi backend'e kaydedildi:", activityData);
+    } catch (error) {
+      console.error("Video aktivitesi backend'e kaydedilemedi:", error);
+      // Backend yoksa localStorage'a kaydet (fallback - kullanıcıya özel)
+      try {
+        const userId = me?.id || "guest";
+        const storageKey = `videoActivities_${userId}`;
+        const savedActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        savedActivities.unshift({
+          id: `local_${Date.now()}_${konu?.id}`,
+          ...activityData
+        });
+        // Son 50 aktiviteyi tut
+        const limited = savedActivities.slice(0, 50);
+        localStorage.setItem(storageKey, JSON.stringify(limited));
+        console.log("Video aktivitesi localStorage'a kaydedildi:", activityData);
+      } catch (localError) {
+        console.error("Video aktivitesi localStorage'a kaydedilemedi:", localError);
+      }
+    }
+    
+    // Başarılı kayıt sonrası flag'i set et
+    savedVideoActivities.current.add(activityKey);
   };
 
   if (loading) return <div className="ders-loading">Ders detayları yükleniyor...</div>;
@@ -78,7 +223,7 @@ export default function DersDetay({ ders, onBack }) {
         {aktifTab === "konular" && (
           <div className="konu-listesi">
             {konular.map((k) => (
-              <div key={k.id} className="konu-card">
+              <div key={k.id} className="konu-card" data-konu-id={k.id}>
                 <div className="konu-card-header">
                   <h4>{k.ad}</h4>
                   {(k.dokumanUrl || k.dokuman_url) && (
@@ -174,12 +319,25 @@ export default function DersDetay({ ders, onBack }) {
                             title={k.ad}
                             allowFullScreen
                             style={{ width: '100%', height: '400px', border: 'none', display: 'block' }}
+                            onLoad={() => {
+                              // YouTube iframe yüklendiğinde aktivite kaydet
+                              // Not: YouTube iframe'de tam izlenme tespiti zor, bu yüzden yüklendiğinde kaydediyoruz
+                              saveVideoActivity(k);
+                            }}
                           ></iframe>
                         ) : (
                           <video 
                             src={finalVideoUrl} 
                             controls 
                             style={{ width: '100%', height: '400px', display: 'block' }}
+                            onEnded={() => {
+                              // Video tamamen izlendiğinde aktivite kaydet
+                              saveVideoActivity(k);
+                            }}
+                            onPlay={() => {
+                              // Video oynatılmaya başlandığında kaydet (sadece bir kez)
+                              saveVideoActivity(k);
+                            }}
                           >
                             Tarayıcınız video oynatmayı desteklemiyor.
                           </video>

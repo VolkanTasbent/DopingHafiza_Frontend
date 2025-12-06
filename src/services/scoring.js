@@ -289,3 +289,4 @@ export function checkMilestones(totalXP, totalCorrect, streak) {
   return milestones;
 }
 
+

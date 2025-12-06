@@ -3,7 +3,7 @@ import api, { fileUrl } from "./services/api";
 import { submitQuiz } from "./services/quiz";
 import "./SoruCoz.css";
 
-export default function SoruCoz({ onBack, seciliDers }) {
+export default function SoruCoz({ onBack, seciliDers, me }) {
   // seçimler
   const [dersler, setDersler] = useState([]);
   const [seciliDersId, setSeciliDersId] = useState(seciliDers?.id?.toString() || "");
@@ -314,12 +314,82 @@ export default function SoruCoz({ onBack, seciliDers }) {
       setStep("result");
       // sonucu state'e koy
       setResult(res);
+      
+      // Soru çözme aktivitesi kaydet
+      await saveQuizActivity(res);
     } catch (e) {
       setMsg("Gönderim başarısız: " + errText(e));
       // süre görünmeye devam etmesin
       setStep("ready");
     }
   }
+  
+  // Soru çözme aktivitesi kaydet
+  const saveQuizActivity = async (quizResult) => {
+    try {
+      // Ders bilgilerini al
+      const ders = dersler.find(d => d.id === Number(seciliDersId));
+      const dersAd = ders?.ad || "Bilinmeyen Ders";
+      
+      // Konu bilgilerini al (eğer seçiliyse)
+      let konuAd = "";
+      let konuId = null;
+      if (seciliKonuId) {
+        const konu = konular.find(k => k.id === Number(seciliKonuId));
+        konuAd = konu?.ad || "";
+        konuId = konu?.id || null;
+      }
+      
+      // Aktivite başlığı oluştur
+      const activityTitle = konuAd 
+        ? `${dersAd} > ${konuAd}`
+        : `${dersAd} > Soru Çözme`;
+      
+      const activityData = {
+        activityType: "soru_cozme",
+        activityTitle: activityTitle,
+        activitySubtitle: `${quizResult.correct || 0} doğru, ${quizResult.wrong || 0} yanlış`,
+        activityIcon: "abc",
+        dersId: ders?.id || Number(seciliDersId),
+        konuId: konuId,
+        raporId: quizResult.oturumId,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          soruSayisi: quizResult.total || sorular.length,
+          dogru: quizResult.correct || 0,
+          yanlis: quizResult.wrong || 0,
+          net: quizResult.score || 0
+        }
+      };
+      
+      try {
+        // Backend'e kaydet
+        await api.post("/api/activities", activityData);
+        console.log("Soru çözme aktivitesi backend'e kaydedildi:", activityData);
+      } catch (error) {
+        console.error("Soru çözme aktivitesi backend'e kaydedilemedi:", error);
+        // Backend yoksa localStorage'a kaydet (fallback - kullanıcıya özel)
+        try {
+          const userId = me?.id || "guest";
+          const storageKey = `quizActivities_${userId}`;
+          const savedActivities = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          savedActivities.unshift({
+            id: `local_quiz_${Date.now()}_${quizResult.oturumId}`,
+            ...activityData
+          });
+          // Son 50 aktiviteyi tut
+          const limited = savedActivities.slice(0, 50);
+          localStorage.setItem(storageKey, JSON.stringify(limited));
+          console.log("Soru çözme aktivitesi localStorage'a kaydedildi:", activityData);
+        } catch (localError) {
+          console.error("Soru çözme aktivitesi localStorage'a kaydedilemedi:", localError);
+        }
+      }
+    } catch (error) {
+      console.error("Aktivite kaydetme hatası:", error);
+      // Hata olsa bile devam et
+    }
+  };
 
   const [result, setResult] = useState(null);
 
