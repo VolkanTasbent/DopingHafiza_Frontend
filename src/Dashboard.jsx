@@ -152,10 +152,106 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
       return ta - tb;
     });
 
-    const last10 = sortedRaporlar.slice(-10);
+    // Günlük çalışma sürelerini hesapla
+    const dailyStudyTimes = new Map(); // { "2025-01-15": { totalMinutes, hours, minutes } }
+    
+    // Raporlardan günlük süreleri hesapla
+    sortedRaporlar.forEach(rapor => {
+      if (!rapor.finishedAt) return;
+      
+      const date = new Date(rapor.finishedAt);
+      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD formatı
+      
+      let totalMinutes = 0;
+      if (rapor.durationMs) {
+        totalMinutes = Math.round(rapor.durationMs / 60000);
+      } else if (rapor.items && rapor.items.length > 0) {
+        const itemMinutes = rapor.items.reduce((sum, item) => sum + (item.elapsedMs || 0), 0);
+        totalMinutes = Math.round(itemMinutes / 60000);
+      }
+      
+      if (!dailyStudyTimes.has(dateKey)) {
+        dailyStudyTimes.set(dateKey, { totalMinutes: 0, hours: 0, minutes: 0 });
+      }
+      
+      const dayData = dailyStudyTimes.get(dateKey);
+      dayData.totalMinutes += totalMinutes;
+      dayData.hours = Math.floor(dayData.totalMinutes / 60);
+      dayData.minutes = dayData.totalMinutes % 60;
+    });
+    
+    // Pomodoro sürelerini ekle (localStorage'dan geçmiş günler için)
+    let localPomodoroStats = {};
+    try {
+      const userId = me?.id || "guest";
+      const pomodoroStatsKey = `pomodoroStats_${userId}`;
+      localPomodoroStats = JSON.parse(localStorage.getItem(pomodoroStatsKey) || localStorage.getItem("pomodoroStats") || "{}");
+      
+      Object.keys(localPomodoroStats).forEach(dateKey => {
+        const dayStats = localPomodoroStats[dateKey];
+        if (dayStats && dayStats.minutes > 0) {
+          if (!dailyStudyTimes.has(dateKey)) {
+            dailyStudyTimes.set(dateKey, { totalMinutes: 0, hours: 0, minutes: 0 });
+          }
+          const dayData = dailyStudyTimes.get(dateKey);
+          dayData.totalMinutes += dayStats.minutes || 0;
+          dayData.hours = Math.floor(dayData.totalMinutes / 60);
+          dayData.minutes = dayData.totalMinutes % 60;
+        }
+      });
+    } catch (e) {
+      console.error("Pomodoro verileri yüklenemedi:", e);
+    }
+    
+    // Bugünkü pomodoro verisini de ekle (eğer henüz eklenmediyse)
+    const today = new Date().toISOString().split('T')[0];
+    if (pomodoroStats.today && pomodoroStats.today.minutes > 0) {
+      if (!dailyStudyTimes.has(today)) {
+        dailyStudyTimes.set(today, { totalMinutes: 0, hours: 0, minutes: 0 });
+      }
+      const todayData = dailyStudyTimes.get(today);
+      // Eğer bugünkü veri zaten localStorage'dan eklenmediyse ekle
+      if (!localPomodoroStats[today]) {
+        todayData.totalMinutes += pomodoroStats.today.minutes || 0;
+        todayData.hours = Math.floor(todayData.totalMinutes / 60);
+        todayData.minutes = todayData.totalMinutes % 60;
+      }
+    }
+    
+    // Son 10 günü al ve sırala
+    const sortedDays = Array.from(dailyStudyTimes.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-10);
+    
+    // Son 10 Gün Çalışma Süresi
+    const lineLabels = sortedDays.map(([dateKey]) => {
+      const date = new Date(dateKey);
+      return date.toLocaleDateString("tr-TR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+    });
 
-    // Son 10 Oturum Başarı
-    const lineLabels = last10.map((x, index) => {
+    const lineData = sortedDays.map(([dateKey, dayData]) => {
+      // Saat cinsinden göster (ondalıklı)
+      return parseFloat((dayData.totalMinutes / 60).toFixed(2));
+    });
+
+    // Toplam Doğru/Yanlış/Boş
+    const totalDogru = sortedRaporlar.reduce((t, x) => t + (x.correctCount || 0), 0);
+    const totalYanlis = sortedRaporlar.reduce((t, x) => t + (x.wrongCount || 0), 0);
+    const totalBos = sortedRaporlar.reduce((t, x) => t + (x.emptyCount || 0), 0);
+
+    // Net Gelişimi (son 10 rapor için)
+    const last10Raporlar = sortedRaporlar.slice(-10);
+    const netValues = last10Raporlar.map((x) => {
+      const dogru = x.correctCount || 0;
+      const yanlis = x.wrongCount || 0;
+      return parseFloat((dogru - yanlis / 4).toFixed(2));
+    });
+    
+    // Net grafiği için label'lar (son 10 raporun tarihleri)
+    const netLabels = last10Raporlar.map((x, index) => {
       if (x.finishedAt) {
         return new Date(x.finishedAt).toLocaleDateString("tr-TR", {
           day: "2-digit",
@@ -165,42 +261,22 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
       return `Oturum ${index + 1}`;
     });
 
-    const lineData = last10.map((x) => {
-      const dogru = x.correctCount || 0;
-      const yanlis = x.wrongCount || 0;
-      const bos = x.emptyCount || 0;
-      const total = dogru + yanlis + bos;
-      return total > 0 ? Math.round((dogru / total) * 100) : 0;
-    });
-
-    // Toplam Doğru/Yanlış/Boş
-    const totalDogru = sortedRaporlar.reduce((t, x) => t + (x.correctCount || 0), 0);
-    const totalYanlis = sortedRaporlar.reduce((t, x) => t + (x.wrongCount || 0), 0);
-    const totalBos = sortedRaporlar.reduce((t, x) => t + (x.emptyCount || 0), 0);
-
-    // Net Gelişimi
-    const netValues = last10.map((x) => {
-      const dogru = x.correctCount || 0;
-      const yanlis = x.wrongCount || 0;
-      return parseFloat((dogru - yanlis / 4).toFixed(2));
-    });
-
     const hasItems = filtered.some((rapor) => rapor.items && rapor.items.length > 0);
 
-    return {
-      lineLabels,
-      lineData,
-      totalDogru,
-      totalYanlis,
-      totalBos,
-      netLabels: lineLabels,
-      netValues,
+      return {
+        lineLabels,
+        lineData,
+        totalDogru,
+        totalYanlis,
+        totalBos,
+        netLabels,
+        netValues,
       pieDogru: totalDogru,
       pieYanlis: totalYanlis,
       pieBos: totalBos,
       hasItems,
     };
-  }, [filtered]);
+  }, [filtered, pomodoroStats, me?.id]);
 
   useEffect(() => {
     loadData();
@@ -997,7 +1073,7 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
                 labels: lineLabels,
                 datasets: [
                   {
-                    label: "Başarı (%)",
+                    label: "Çalışma Süresi (saat)",
                     data: lineData,
                     borderColor: "#667eea",
                     backgroundColor: "rgba(102,126,234,0.1)",
@@ -1019,15 +1095,24 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
                     backgroundColor: "rgba(0,0,0,0.8)",
                     padding: 12,
                     cornerRadius: 8,
+                    callbacks: {
+                      label: function(context) {
+                        const hours = Math.floor(context.parsed.y);
+                        const minutes = Math.round((context.parsed.y - hours) * 60);
+                        if (minutes > 0) {
+                          return `${hours} saat ${minutes} dakika`;
+                        }
+                        return `${hours} saat`;
+                      }
+                    }
                   },
                 },
                 scales: {
                   y: {
                     beginAtZero: true,
-                    max: 100,
                     ticks: {
                       callback: function(value) {
-                        return value + "%";
+                        return value + "s";
                       },
                     },
                   },
