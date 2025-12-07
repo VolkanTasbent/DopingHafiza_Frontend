@@ -1,6 +1,7 @@
 // src/DersDetay.jsx
 import { useEffect, useState, useRef } from "react";
 import api, { fileUrl } from "./services/api";
+import VideoNotes from "./VideoNotes";
 import "./DersDetay.css";
 
 export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me }) {
@@ -14,6 +15,56 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
     url: null,
     adi: null
   });
+
+  // Video Notes state
+  const [videoNotesOpen, setVideoNotesOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const videoRefs = useRef({});
+  const youtubeTimeInterval = useRef(null);
+
+  // YouTube iframe zaman damgası takibi
+  useEffect(() => {
+    if (videoNotesOpen && selectedVideo) {
+      const videoElement = videoRefs.current[selectedVideo.konuId];
+      if (videoElement && videoElement.tagName === 'IFRAME') {
+        // YouTube iframe için zaman damgası takibi
+        youtubeTimeInterval.current = setInterval(() => {
+          try {
+            videoElement.contentWindow.postMessage(
+              JSON.stringify({ event: 'listening', id: 'video-notes' }),
+              '*'
+            );
+          } catch (e) {
+            // Cross-origin hatası olabilir, sessizce devam et
+          }
+        }, 1000);
+
+        // YouTube'dan gelen zaman damgası mesajlarını dinle
+        const handleMessage = (event) => {
+          if (event.data && typeof event.data === 'string') {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.event === 'onStateChange' && data.info && data.info.currentTime !== undefined) {
+                setVideoCurrentTime(data.info.currentTime);
+              }
+            } catch (e) {
+              // Mesaj parse edilemedi, devam et
+            }
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        return () => {
+          if (youtubeTimeInterval.current) {
+            clearInterval(youtubeTimeInterval.current);
+          }
+          window.removeEventListener('message', handleMessage);
+        };
+      }
+    }
+  }, [videoNotesOpen, selectedVideo]);
 
   useEffect(() => {
     if (ders?.id) {
@@ -200,6 +251,17 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
 
   return (
     <div className="ders-detay">
+      {/* Video Notları Overlay */}
+      {videoNotesOpen && (
+        <div 
+          className="video-notes-overlay"
+          onClick={() => {
+            setVideoNotesOpen(false);
+            setSelectedVideo(null);
+          }}
+        />
+      )}
+
       <div className="ders-header">
         <h2>{ders.ad}</h2>
         <button onClick={onBack} className="geri-btn">← Geri</button>
@@ -301,20 +363,50 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
                         color: 'white',
                         padding: '16px 24px',
                         borderRadius: '12px 12px 0 0',
-                        marginBottom: '0'
+                        marginBottom: '0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}>
-                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>{k.ad}</h3>
-                        {k.aciklama && (
-                          <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.9 }}>{k.aciklama}</p>
-                        )}
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>{k.ad}</h3>
+                          {k.aciklama && (
+                            <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.9 }}>{k.aciklama}</p>
+                          )}
+                        </div>
+                        <button
+                          className="video-notes-toggle-btn"
+                          onClick={() => {
+                            setSelectedVideo({ konuId: k.id, videoUrl: finalVideoUrl });
+                            setVideoNotesOpen(true);
+                          }}
+                          title="Notları aç"
+                          style={{ 
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          📝 Notlar
+                        </button>
                       </div>
                       <div className="video-card" style={{ 
                         borderRadius: '0 0 12px 12px',
                         padding: '0',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        position: 'relative'
                       }}>
                         {isYoutubeEmbed || videoUrl.includes('embed') ? (
                           <iframe
+                            ref={(el) => {
+                              if (el) videoRefs.current[k.id] = el;
+                            }}
                             src={embedUrl}
                             title={k.ad}
                             allowFullScreen
@@ -327,6 +419,17 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
                           ></iframe>
                         ) : (
                           <video 
+                            ref={(el) => {
+                              if (el) {
+                                videoRefs.current[k.id] = el;
+                                // Video zaman damgasını takip et
+                                el.addEventListener('timeupdate', () => {
+                                  if (selectedVideo?.konuId === k.id && videoNotesOpen) {
+                                    setVideoCurrentTime(el.currentTime);
+                                  }
+                                });
+                              }
+                            }}
                             src={finalVideoUrl} 
                             controls 
                             style={{ width: '100%', height: '400px', display: 'block' }}
@@ -353,6 +456,76 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
               </div>
             )}
           </div>
+        )}
+
+        {/* Video Notları Panel */}
+        {videoNotesOpen && selectedVideo && (
+          <VideoNotes
+            konuId={selectedVideo.konuId}
+            videoUrl={selectedVideo.videoUrl}
+            currentTime={videoCurrentTime}
+            onSeekTo={(timestamp) => {
+              // Video'yu belirtilen zamana götür
+              const videoElement = videoRefs.current[selectedVideo.konuId];
+              if (videoElement) {
+                if (videoElement.tagName === 'VIDEO') {
+                  videoElement.currentTime = timestamp;
+                  videoElement.play();
+                } else if (videoElement.tagName === 'IFRAME') {
+                  // YouTube iframe için postMessage kullan
+                  videoElement.contentWindow.postMessage(
+                    JSON.stringify({
+                      event: 'command',
+                      func: 'seekTo',
+                      args: [timestamp, true]
+                    }),
+                    '*'
+                  );
+                }
+              }
+            }}
+            isOpen={videoNotesOpen}
+            onClose={() => {
+              setVideoNotesOpen(false);
+              setSelectedVideo(null);
+            }}
+            me={me}
+          />
+        )}
+
+        {/* Video Notları Panel */}
+        {videoNotesOpen && selectedVideo && (
+          <VideoNotes
+            konuId={selectedVideo.konuId}
+            videoUrl={selectedVideo.videoUrl}
+            currentTime={videoCurrentTime}
+            onSeekTo={(timestamp) => {
+              // Video'yu belirtilen zamana götür
+              const videoElement = videoRefs.current[selectedVideo.konuId];
+              if (videoElement) {
+                if (videoElement.tagName === 'VIDEO') {
+                  videoElement.currentTime = timestamp;
+                  videoElement.play();
+                } else if (videoElement.tagName === 'IFRAME') {
+                  // YouTube iframe için postMessage kullan
+                  videoElement.contentWindow.postMessage(
+                    JSON.stringify({
+                      event: 'command',
+                      func: 'seekTo',
+                      args: [timestamp, true]
+                    }),
+                    '*'
+                  );
+                }
+              }
+            }}
+            isOpen={videoNotesOpen}
+            onClose={() => {
+              setVideoNotesOpen(false);
+              setSelectedVideo(null);
+            }}
+            me={me}
+          />
         )}
 
         {aktifTab === "istatistikler" && (

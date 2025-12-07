@@ -185,6 +185,50 @@ body {
   text-align: center;
 }
 
+.video-notes-toggle-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.video-notes-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.dark-mode .video-notes-toggle-btn {
+  background: linear-gradient(135deg, #4c1d95 0%, #581c87 100%);
+}
+
+/* Video Notes Overlay */
+.video-notes-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ====== İSTATİSTİKLER ====== */
 .istatistikler {
   margin-top: 20px;
