@@ -5,6 +5,7 @@ import "./VideoNotes.css";
 
 export default function VideoNotes({ 
   konuId, 
+  videoId, // Birden fazla video için benzersiz video ID
   videoUrl, 
   currentTime = 0, 
   onSeekTo,
@@ -22,24 +23,73 @@ export default function VideoNotes({
 
   // Notları yükle
   useEffect(() => {
-    if (konuId && videoUrl && isOpen) {
+    if (konuId && (videoId || videoUrl) && isOpen) {
       loadNotes();
     }
-  }, [konuId, videoUrl, isOpen]);
+  }, [konuId, videoId, videoUrl, isOpen]);
 
   // Mevcut zamanı güncelle
   useEffect(() => {
-    setNewNoteTimestamp(Math.floor(currentTime));
+    if (typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
+      setNewNoteTimestamp(Math.floor(currentTime));
+    }
   }, [currentTime]);
 
   const loadNotes = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/video-notes", {
-        params: { konuId, videoUrl }
+      // videoId varsa ve videoUrl'den farklıysa videoId gönder, yoksa videoUrl gönder
+      // Backend'den gelen video.id sayı olabilir (1, 3, 4), bu yüzden string'e çevir
+      const requestVideoId = videoId && videoId !== videoUrl ? String(videoId) : undefined;
+      
+      console.log("Not yükleme parametreleri:", { 
+        videoId, 
+        requestVideoId, 
+        videoUrl, 
+        konuId 
       });
+      
+      const response = await api.get("/api/video-notes", {
+        params: { 
+          konuId, 
+          ...(requestVideoId && { videoId: requestVideoId }),
+          videoUrl 
+        }
+      });
+      
+      console.log("Notlar yüklendi:", response.data);
+      console.log("Filtreleme parametreleri:", { requestVideoId, videoId, videoUrl, konuId });
+      
       if (response.data?.notes) {
-        setNotes(response.data.notes);
+        // Backend'den gelen notları videoId'ye göre filtrele
+        // Backend filtreleme yapıyor ama ekstra güvenlik için frontend'de de filtrele
+        let filteredNotes = response.data.notes;
+        
+        if (requestVideoId) {
+          // Frontend'de de videoId'ye göre filtrele (ekstra güvenlik)
+          filteredNotes = response.data.notes.filter(note => {
+            const noteVideoId = note.videoId || note.video_id;
+            
+            // videoId karşılaştırması: sayı veya string olabilir
+            // Backend'den gelen videoId sayı (1, 3, 4), frontend'den gelen videoId string olabilir
+            const videoIdMatches = noteVideoId != null && String(noteVideoId) === String(requestVideoId);
+            
+            return videoIdMatches;
+          });
+        } else if (videoUrl) {
+          // videoId yoksa, videoUrl'e göre filtrele (eski sistem)
+          filteredNotes = response.data.notes.filter(note => {
+            const noteVideoUrl = note.videoUrl || note.video_url;
+            return noteVideoUrl === videoUrl;
+          });
+        }
+        
+        console.log("Filtrelenmiş notlar:", filteredNotes);
+        console.log("Toplam not sayısı:", response.data.notes.length, "Filtrelenmiş:", filteredNotes.length);
+        setNotes(filteredNotes);
+      } else {
+        console.warn("Backend'den notlar gelmedi veya boş:", response.data);
+        setNotes([]);
       }
     } catch (error) {
       console.error("Notlar yüklenemedi:", error);
@@ -53,7 +103,9 @@ export default function VideoNotes({
   const loadNotesFromLocalStorage = () => {
     try {
       const userId = me?.id || window.currentUserId || "guest";
-      const storageKey = `videoNotes_${userId}_${konuId}_${btoa(videoUrl).slice(0, 20)}`;
+      // videoId varsa onu kullan, yoksa videoUrl kullan (geriye dönük uyumluluk)
+      const videoIdentifier = videoId || btoa(videoUrl).slice(0, 20);
+      const storageKey = `videoNotes_${userId}_${konuId}_${videoIdentifier}`;
       const savedNotes = JSON.parse(localStorage.getItem(storageKey) || "[]");
       setNotes(savedNotes);
     } catch (e) {
@@ -64,7 +116,9 @@ export default function VideoNotes({
   const saveNoteToLocalStorage = (note) => {
     try {
       const userId = me?.id || window.currentUserId || "guest";
-      const storageKey = `videoNotes_${userId}_${konuId}_${btoa(videoUrl).slice(0, 20)}`;
+      // videoId varsa onu kullan, yoksa videoUrl kullan (geriye dönük uyumluluk)
+      const videoIdentifier = videoId || btoa(videoUrl).slice(0, 20);
+      const storageKey = `videoNotes_${userId}_${konuId}_${videoIdentifier}`;
       const savedNotes = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const updatedNotes = [...savedNotes, note];
       localStorage.setItem(storageKey, JSON.stringify(updatedNotes));
@@ -76,7 +130,9 @@ export default function VideoNotes({
   const updateNoteInLocalStorage = (noteId, updatedNote) => {
     try {
       const userId = me?.id || window.currentUserId || "guest";
-      const storageKey = `videoNotes_${userId}_${konuId}_${btoa(videoUrl).slice(0, 20)}`;
+      // videoId varsa onu kullan, yoksa videoUrl kullan (geriye dönük uyumluluk)
+      const videoIdentifier = videoId || btoa(videoUrl).slice(0, 20);
+      const storageKey = `videoNotes_${userId}_${konuId}_${videoIdentifier}`;
       const savedNotes = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const updatedNotes = savedNotes.map(n => n.id === noteId ? updatedNote : n);
       localStorage.setItem(storageKey, JSON.stringify(updatedNotes));
@@ -88,7 +144,9 @@ export default function VideoNotes({
   const deleteNoteFromLocalStorage = (noteId) => {
     try {
       const userId = me?.id || window.currentUserId || "guest";
-      const storageKey = `videoNotes_${userId}_${konuId}_${btoa(videoUrl).slice(0, 20)}`;
+      // videoId varsa onu kullan, yoksa videoUrl kullan (geriye dönük uyumluluk)
+      const videoIdentifier = videoId || btoa(videoUrl).slice(0, 20);
+      const storageKey = `videoNotes_${userId}_${konuId}_${videoIdentifier}`;
       const savedNotes = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const updatedNotes = savedNotes.filter(n => n.id !== noteId);
       localStorage.setItem(storageKey, JSON.stringify(updatedNotes));
@@ -98,31 +156,54 @@ export default function VideoNotes({
   };
 
   const handleAddNote = async () => {
-    if (!newNoteText.trim()) return;
+    if (!newNoteText.trim()) {
+      console.warn("Not metni boş!");
+      return;
+    }
+
+    // videoId varsa onu kullan, yoksa undefined (backend videoUrl'e göre filtreler)
+    // videoId formatı: Backend'den gelen video.id (sayı: 1, 3, 4) veya "konuId_videoIndex" (fallback)
+    // Backend'e gönderirken string'e çevir (backend sayı olarak kaydediyor olabilir)
+    const finalVideoId = videoId && videoId !== videoUrl ? String(videoId) : undefined;
 
     const noteData = {
       konuId,
+      videoId: finalVideoId, // videoId varsa gönder, yoksa undefined (backend görmezden gelir)
       videoUrl,
       noteText: newNoteText.trim(),
-      timestampSeconds: newNoteTimestamp
+      timestampSeconds: newNoteTimestamp || 0
     };
+
+    console.log("Not ekleniyor:", noteData);
 
     try {
       const response = await api.post("/api/video-notes", noteData);
       const newNote = response.data;
+      
+      console.log("Backend'den gelen not:", newNote);
+      
+      // Backend'den gelen notu direkt ekle (backend zaten doğru notu döndürüyor)
+      // Backend videoId desteklemiyorsa bile, konuId ve videoUrl'e göre filtreleme yapıyor
+      // Bu yüzden backend'den gelen notu direkt ekleyebiliriz
       setNotes([...notes, newNote].sort((a, b) => a.timestampSeconds - b.timestampSeconds));
       setNewNoteText("");
       setShowAddNote(false);
     } catch (error) {
       console.error("Not kaydedilemedi:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
       // Fallback: localStorage'a kaydet
       const fallbackNote = {
         id: `local_${Date.now()}`,
         ...noteData,
-        timestampFormatted: formatTimestamp(newNoteTimestamp),
+        videoId: finalVideoId || null,
+        timestampFormatted: formatTimestamp(newNoteTimestamp || 0),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      
+      console.log("localStorage'a kaydediliyor:", fallbackNote);
       saveNoteToLocalStorage(fallbackNote);
       setNotes([...notes, fallbackNote].sort((a, b) => a.timestampSeconds - b.timestampSeconds));
       setNewNoteText("");
@@ -172,7 +253,7 @@ export default function VideoNotes({
   const handleExportPdf = async () => {
     try {
       const response = await api.get("/api/video-notes/export-pdf", {
-        params: { konuId, videoUrl },
+        params: { konuId, videoId: videoId || videoUrl, videoUrl },
         responseType: 'blob'
       });
       

@@ -289,4 +289,136 @@ export function checkMilestones(totalXP, totalCorrect, streak) {
   return milestones;
 }
 
+/**
+ * Raporlardan kullanıcı puanını hesapla
+ * @param {Array} raporlar - Kullanıcının tüm raporları
+ * @param {number} currentStreak - Mevcut günlük streak
+ * @returns {Object} { totalScore, breakdown, stats }
+ */
+export function calculateUserScoreFromReports(raporlar = [], currentStreak = 0) {
+  if (!raporlar || raporlar.length === 0) {
+    return {
+      totalScore: 0,
+      breakdown: {
+        baseScore: 0,
+        netBonus: 0,
+        activityBonus: 0,
+        streakBonus: 0,
+        accuracyBonus: 0
+      },
+      stats: {
+        totalCorrect: 0,
+        totalWrong: 0,
+        totalEmpty: 0,
+        totalNet: 0,
+        accuracy: 0,
+        totalReports: 0
+      }
+    };
+  }
+
+  // İstatistikleri hesapla
+  const stats = {
+    totalCorrect: 0,
+    totalWrong: 0,
+    totalEmpty: 0,
+    totalNet: 0,
+    totalReports: raporlar.length
+  };
+
+  raporlar.forEach(rapor => {
+    stats.totalCorrect += rapor.correctCount || 0;
+    stats.totalWrong += rapor.wrongCount || 0;
+    stats.totalEmpty += rapor.emptyCount || 0;
+    stats.totalNet += rapor.net || 0;
+  });
+
+  // Doğruluk oranı
+  const totalAnswered = stats.totalCorrect + stats.totalWrong;
+  stats.accuracy = totalAnswered > 0 
+    ? stats.totalCorrect / totalAnswered 
+    : 0;
+
+  // Puan hesaplama
+  const breakdown = {
+    baseScore: 0,
+    netBonus: 0,
+    activityBonus: 0,
+    streakBonus: 0,
+    accuracyBonus: 0
+  };
+
+  // 1. Temel Puan
+  breakdown.baseScore = (stats.totalCorrect * 10) - Math.round(stats.totalWrong * 2.5);
+
+  // 2. Net Puan Bonusu
+  breakdown.netBonus = Math.round(stats.totalNet * 5);
+
+  // 3. Aktivite Bonusları
+  if (stats.totalReports >= 100) {
+    breakdown.activityBonus += 200;
+  } else if (stats.totalReports >= 50) {
+    breakdown.activityBonus += 100;
+  } else if (stats.totalReports >= 30) {
+    breakdown.activityBonus += 50;
+  }
+
+  // Son 7 günlük aktivite kontrolü
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentReports = raporlar.filter(rapor => {
+    const finishedAt = rapor.finishedAt 
+      ? new Date(rapor.finishedAt) 
+      : null;
+    return finishedAt && finishedAt >= sevenDaysAgo;
+  });
+
+  if (recentReports.length >= 100) {
+    breakdown.activityBonus += 200;
+  } else if (recentReports.length >= 50) {
+    breakdown.activityBonus += 100;
+  } else if (recentReports.length >= 30) {
+    breakdown.activityBonus += 50;
+  }
+
+  // 4. Streak Bonusu
+  if (currentStreak >= 30) {
+    breakdown.streakBonus = 200;
+  } else if (currentStreak >= 7) {
+    breakdown.streakBonus = 50;
+  } else if (currentStreak >= 3) {
+    breakdown.streakBonus = 20;
+  }
+
+  // 5. Doğruluk Oranı Bonusu
+  if (stats.accuracy >= 0.95) {
+    breakdown.accuracyBonus = 100;
+  } else if (stats.accuracy >= 0.90) {
+    breakdown.accuracyBonus = 50;
+  } else if (stats.accuracy >= 0.80) {
+    breakdown.accuracyBonus = 30;
+  }
+
+  // Toplam puan
+  const totalScore = Math.max(0, 
+    breakdown.baseScore + 
+    breakdown.netBonus + 
+    breakdown.activityBonus + 
+    breakdown.streakBonus + 
+    breakdown.accuracyBonus
+  );
+
+  return {
+    totalScore,
+    breakdown,
+    stats: {
+      ...stats,
+      accuracy: Math.round(stats.accuracy * 100) / 100 // 2 ondalık basamak
+    }
+  };
+}
+
+
+
+
 

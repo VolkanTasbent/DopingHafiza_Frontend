@@ -21,48 +21,109 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const videoRefs = useRef({});
-  const youtubeTimeInterval = useRef(null);
+  const youtubeTimeInterval = useRef({}); // Her konu için ayrı interval
+  const youtubePlayers = useRef({}); // YouTube player instances
+  const youtubeTimeInputs = useRef({}); // Her konu için input referansları
 
-  // YouTube iframe zaman damgası takibi
+  // YouTube iframe zaman damgası takibi - Player onReady'de başlatılıyor
   useEffect(() => {
-    if (videoNotesOpen && selectedVideo) {
-      const videoElement = videoRefs.current[selectedVideo.konuId];
-      if (videoElement && videoElement.tagName === 'IFRAME') {
-        // YouTube iframe için zaman damgası takibi
-        youtubeTimeInterval.current = setInterval(() => {
-          try {
-            videoElement.contentWindow.postMessage(
-              JSON.stringify({ event: 'listening', id: 'video-notes' }),
-              '*'
-            );
-          } catch (e) {
-            // Cross-origin hatası olabilir, sessizce devam et
-          }
-        }, 1000);
-
-        // YouTube'dan gelen zaman damgası mesajlarını dinle
-        const handleMessage = (event) => {
-          if (event.data && typeof event.data === 'string') {
-            try {
-              const data = JSON.parse(event.data);
-              if (data.event === 'onStateChange' && data.info && data.info.currentTime !== undefined) {
-                setVideoCurrentTime(data.info.currentTime);
-              }
-            } catch (e) {
-              // Mesaj parse edilemedi, devam et
+    if (!videoNotesOpen || !selectedVideo) {
+      // Video notları kapalıysa zaman damgasını sıfırla
+      setVideoCurrentTime(0);
+      return;
+    }
+    
+    // Birden fazla video varsa videoId kullan, yoksa konuId kullan (geriye dönük uyumluluk)
+    const videoId = selectedVideo.videoId || selectedVideo.konuId;
+    
+    // YouTube player varsa zaman damgası takibi yap
+    if (youtubePlayers.current[videoId]) {
+      const player = youtubePlayers.current[videoId];
+      
+      // Her 500ms'de bir zaman damgası güncelle
+      const intervalId = setInterval(() => {
+        try {
+          if (player && typeof player.getCurrentTime === 'function') {
+            const currentTime = player.getCurrentTime();
+            if (typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
+              setVideoCurrentTime(Math.floor(currentTime));
             }
           }
+        } catch (e) {
+          console.warn("YouTube zaman damgası alınamadı:", e);
+        }
+      }, 500);
+
+      // İlk zaman damgasını al
+      try {
+        if (player && typeof player.getCurrentTime === 'function') {
+          const currentTime = player.getCurrentTime();
+          if (typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
+            setVideoCurrentTime(Math.floor(currentTime));
+          }
+        }
+      } catch (e) {
+        // Hata olursa sessizce devam et
+      }
+
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
+    } else {
+      // Player henüz oluşturulmadıysa, oluşturulmasını bekle
+      const checkPlayer = setInterval(() => {
+        if (youtubePlayers.current[videoId]) {
+          clearInterval(checkPlayer);
+          // Player oluşturuldu, useEffect tekrar çalışacak
+        }
+      }, 500);
+
+      // 10 saniye sonra timeout
+      setTimeout(() => {
+        clearInterval(checkPlayer);
+      }, 10000);
+
+      return () => {
+        clearInterval(checkPlayer);
+      };
+    }
+  }, [videoNotesOpen, selectedVideo]);
+
+  // Normal video element için zaman damgası takibi
+  useEffect(() => {
+    if (videoNotesOpen && selectedVideo) {
+      // Birden fazla video varsa videoId kullan, yoksa konuId kullan (geriye dönük uyumluluk)
+      const videoId = selectedVideo.videoId || selectedVideo.konuId;
+      const videoElement = videoRefs.current[videoId];
+      
+      if (videoElement && videoElement.tagName === 'VIDEO') {
+        // Normal video element için zaman damgası takibi
+        const updateTime = () => {
+          if (videoElement) {
+            setVideoCurrentTime(Math.floor(videoElement.currentTime));
+          }
         };
 
-        window.addEventListener('message', handleMessage);
+        videoElement.addEventListener('timeupdate', updateTime);
+        videoElement.addEventListener('play', updateTime);
+        videoElement.addEventListener('pause', updateTime);
+        videoElement.addEventListener('seeked', updateTime);
+
+        // İlk zaman damgasını al
+        updateTime();
 
         return () => {
-          if (youtubeTimeInterval.current) {
-            clearInterval(youtubeTimeInterval.current);
-          }
-          window.removeEventListener('message', handleMessage);
+          videoElement.removeEventListener('timeupdate', updateTime);
+          videoElement.removeEventListener('play', updateTime);
+          videoElement.removeEventListener('pause', updateTime);
+          videoElement.removeEventListener('seeked', updateTime);
         };
       }
+    } else {
+      // Video notları kapalıysa zaman damgasını sıfırla
+      setVideoCurrentTime(0);
     }
   }, [videoNotesOpen, selectedVideo]);
 
@@ -117,8 +178,14 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
     }
   };
 
-  // Video'lu konuları filtrele
-  const videolar = konular.filter(k => k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url);
+  // Video'lu konuları filtrele (yeni video listesi veya eski tek video)
+  const videolar = konular.filter(k => 
+    (k.videolar && k.videolar.length > 0) || 
+    k.konuAnlatimVideosuUrl || 
+    k.konu_anlatim_videosu_url || 
+    k.videoUrl || 
+    k.video_url
+  );
 
   // PDF okuma aktivitesi kaydet
   const savePdfActivity = async (konu) => {
@@ -336,28 +403,86 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
             {videolar.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {videolar.map((k) => {
-                  const videoUrl = k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url;
-                  if (!videoUrl) return null;
+                  // Yeni video listesi varsa kullan, yoksa eski tek video'yu kullan
+                  const videoList = k.videolar && k.videolar.length > 0 
+                    ? k.videolar 
+                    : (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url)
+                      ? [{ 
+                          id: k.id, 
+                          videoUrl: k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url,
+                          videoAdi: "Konu Anlatım Videosu"
+                        }]
+                      : [];
                   
-                  // Eğer URL bir dosya yolu ise (örn: /files/...)
-                  const finalVideoUrl = videoUrl.startsWith('/files/') 
-                    ? fileUrl(videoUrl) 
-                    : videoUrl;
+                  if (videoList.length === 0) return null;
                   
-                  // YouTube embed URL'i mi kontrol et
-                  const isYoutubeEmbed = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
-                  let embedUrl = finalVideoUrl;
-                  
-                  if (isYoutubeEmbed) {
+                  // Her video için ayrı kart oluştur
+                  return videoList
+                    .sort((a, b) => {
+                      // Sıralamaya göre sırala (eğer varsa)
+                      const siralamaA = a.siralama || a.sira || 0;
+                      const siralamaB = b.siralama || b.sira || 0;
+                      return siralamaA - siralamaB;
+                    })
+                    .map((video, videoIndex) => {
+                      const videoUrl = video.videoUrl || video.video_url || video.konuAnlatimVideosuUrl || video.konu_anlatim_videosu_url;
+                      if (!videoUrl) return null;
+                      
+                      // Backend'den gelen video.id'yi kullan (sayı formatında: 1, 3, 4)
+                    // Eğer yoksa, fallback olarak "konuId_videoIndex" formatını kullan
+                    const videoId = video.id ? String(video.id) : `${k.id}_${videoIndex}`;
+                      
+                      // Video adını belirle: backend'den gelen ad varsa ve benzersizse kullan, yoksa index'e göre oluştur
+                      let videoAdi = video.videoAdi || video.video_adi;
+                      
+                      // Eğer video adı yoksa, boşsa veya "Video" ile başlayıp sayı içeriyorsa, index'e göre oluştur
+                      // (Backend'den gelen video adları genellikle "Video 1" formatında geliyor ve hepsi aynı olabiliyor)
+                      if (!videoAdi || videoAdi.trim() === "" || videoAdi.match(/^Video\s*\d+$/i)) {
+                        // Index + 1 kullan (çünkü index 0'dan başlar)
+                        videoAdi = videoList.length > 1 ? `Video ${videoIndex + 1}` : k.ad;
+                      }
+                    
+                    // YouTube URL'ini tespit et ve embed formatına çevir
+                    const isYoutubeVideo = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+                    let finalVideoUrlValue = videoUrl;
+                    let isYoutubeEmbedValue = false;
+                    
+                    if (isYoutubeVideo) {
                     // YouTube URL'ini embed formatına çevir
-                    const youtubeId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                      let youtubeId = null;
+                      
+                      // Farklı YouTube URL formatlarını destekle
+                      if (videoUrl.includes('youtube.com/watch?v=')) {
+                        youtubeId = videoUrl.match(/[?&]v=([^&\n?#]+)/)?.[1];
+                      } else if (videoUrl.includes('youtu.be/')) {
+                        youtubeId = videoUrl.match(/youtu\.be\/([^?\n&#]+)/)?.[1];
+                      } else if (videoUrl.includes('youtube.com/embed/')) {
+                        youtubeId = videoUrl.match(/embed\/([^?\n&#]+)/)?.[1];
+                        isYoutubeEmbedValue = true; // Zaten embed formatında
+                      } else if (videoUrl.includes('youtube.com/v/')) {
+                        youtubeId = videoUrl.match(/\/v\/([^?\n&#]+)/)?.[1];
+                      }
+                      
                     if (youtubeId) {
-                      embedUrl = `https://www.youtube.com/embed/${youtubeId}`;
-                    }
+                        // YouTube embed URL'ini oluştur
+                        // enablejsapi=1: JavaScript API'yi etkinleştir (zaman damgası takibi için gerekli)
+                        // origin: Güvenlik için origin belirt
+                        const origin = encodeURIComponent(window.location.origin);
+                        finalVideoUrlValue = `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${origin}`;
+                        isYoutubeEmbedValue = true;
+                      } else {
+                        // YouTube URL'i tespit edildi ama ID çıkarılamadı
+                        console.warn("YouTube URL'i tespit edildi ancak video ID çıkarılamadı:", videoUrl);
+                      }
+                    } else {
+                      // YouTube değilse, dosya yolu kontrolü yap
+                      finalVideoUrlValue = videoUrl.startsWith('/files/') 
+                        ? fileUrl(videoUrl) 
+                        : videoUrl;
                   }
                   
                   return (
-                    <div key={k.id} className="video-konu-wrapper" data-konu-id={k.id}>
+                      <div key={videoId} className="video-konu-wrapper" data-konu-id={k.id} data-video-id={videoId}>
                       <div style={{ 
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
@@ -369,15 +494,20 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
                         alignItems: 'center'
                       }}>
                         <div>
-                          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>{k.ad}</h3>
-                          {k.aciklama && (
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>
+                              {videoList.length > 1 ? `${k.ad} - ${videoAdi}` : k.ad}
+                            </h3>
+                            {k.aciklama && videoList.length === 1 && (
                             <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.9 }}>{k.aciklama}</p>
                           )}
+                            {videoList.length > 1 && (
+                              <p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.8 }}>{videoAdi}</p>
+                            )}
                         </div>
                         <button
                           className="video-notes-toggle-btn"
                           onClick={() => {
-                            setSelectedVideo({ konuId: k.id, videoUrl: finalVideoUrl });
+                              setSelectedVideo({ konuId: k.id, videoId: videoId, videoUrl: finalVideoUrlValue });
                             setVideoNotesOpen(true);
                           }}
                           title="Notları aç"
@@ -402,44 +532,233 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
                         overflow: 'hidden',
                         position: 'relative'
                       }}>
-                        {isYoutubeEmbed || videoUrl.includes('embed') ? (
+                          {isYoutubeEmbedValue ? (
+                            <div className="youtube-container" style={{ position: 'relative' }}>
+                              <div 
+                                id={`youtube-player-${videoId}`}
+                                style={{ width: '100%', height: '400px' }}
+                              ></div>
                           <iframe
                             ref={(el) => {
-                              if (el) videoRefs.current[k.id] = el;
+                                  if (el) videoRefs.current[videoId] = el;
                             }}
-                            src={embedUrl}
-                            title={k.ad}
+                                src={finalVideoUrlValue}
+                                title={videoAdi}
                             allowFullScreen
-                            style={{ width: '100%', height: '400px', border: 'none', display: 'block' }}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                style={{ display: 'none' }}
                             onLoad={() => {
-                              // YouTube iframe yüklendiğinde aktivite kaydet
-                              // Not: YouTube iframe'de tam izlenme tespiti zor, bu yüzden yüklendiğinde kaydediyoruz
-                              saveVideoActivity(k);
+                                  // YouTube iframe yüklendiğinde player instance oluştur
+                                  const initPlayer = () => {
+                                    if (typeof window.YT === 'undefined' || typeof window.YT.Player === 'undefined') {
+                                      setTimeout(initPlayer, 500);
+                                      return;
+                                    }
+
+                                    const videoIdMatch = finalVideoUrlValue.match(/embed\/([^?&#]+)/);
+                                    if (!videoIdMatch) return;
+
+                                    const ytVideoId = videoIdMatch[1];
+                                    
+                                    try {
+                                      if (!youtubePlayers.current[videoId]) {
+                                        const player = new window.YT.Player(`youtube-player-${videoId}`, {
+                                          videoId: ytVideoId,
+                                          playerVars: {
+                                            rel: 0,
+                                            modestbranding: 1,
+                                            playsinline: 1,
+                                            enablejsapi: 1
+                                          },
+                                          events: {
+                                            onReady: (event) => {
+                                              const player = event.target;
+                                              
+                                              // Mevcut interval'i temizle (eğer varsa)
+                                              if (youtubeTimeInterval.current[videoId]) {
+                                                clearInterval(youtubeTimeInterval.current[videoId]);
+                                              }
+                                              
+                                            // Her 500ms'de bir zaman damgası güncelle
+                                            // Mevcut interval'i temizle (eğer varsa)
+                                            if (youtubeTimeInterval.current[videoId]) {
+                                              clearInterval(youtubeTimeInterval.current[videoId]);
+                                            }
+                                            
+                                            youtubeTimeInterval.current[videoId] = setInterval(() => {
+                                              try {
+                                                const currentTime = player.getCurrentTime();
+                                                if (typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
+                                                  const seconds = Math.floor(currentTime);
+                                                  // Video notları açıksa ve bu video seçiliyse zaman damgasını güncelle
+                                                  // selectedVideo kontrolü için videoId veya konuId kullan
+                                                  const currentVideoId = selectedVideo?.videoId || selectedVideo?.konuId;
+                                                  if (currentVideoId === videoId && videoNotesOpen) {
+                                                    setVideoCurrentTime(seconds);
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                // YouTube API çalışmıyor, sessizce devam et
+                                              }
+                                            }, 500);
+                                            
+                                            // İlk zaman damgasını al
+                                            try {
+                                              const currentTime = player.getCurrentTime();
+                                              if (typeof currentTime === 'number' && !isNaN(currentTime)) {
+                                                const currentVideoId = selectedVideo?.videoId || selectedVideo?.konuId;
+                                                if (currentVideoId === videoId && videoNotesOpen) {
+                                                  setVideoCurrentTime(Math.floor(currentTime));
+                                                }
+                                              }
+                                            } catch (e) {
+                                              // Hata olursa sessizce devam et
+                                            }
+                                              
+                                              console.log("YouTube Player hazır, zaman damgası takibi başlatıldı:", videoId);
+                                            },
+                                            onStateChange: (event) => {
+                                              // Video durumu değiştiğinde log (debug için)
+                                              console.log("YouTube video durumu:", event.data);
+                                              
+                                              // Video oynatılmaya başlandığında aktivite kaydet (sadece bir kez)
+                                              // YT.PlayerState.PLAYING = 1
+                                              if (event.data === 1) {
+                                                saveVideoActivity({ ...k, videoAdi: videoAdi });
+                                              }
+                                            }
+                                          }
+                                        });
+                                        
+                                        youtubePlayers.current[videoId] = player;
+                                        console.log("YouTube Player oluşturuldu:", videoId, ytVideoId);
+                                      }
+                                    } catch (e) {
+                                      console.error("YouTube Player oluşturulamadı:", e);
+                                    }
+                                  };
+
+                                  setTimeout(initPlayer, 500);
                             }}
                           ></iframe>
+                              
+                              {/* YouTube için zaman damgası kontrolü - Elle yüklenen videolar gibi */}
+                              {((selectedVideo?.videoId || selectedVideo?.konuId) === videoId && videoNotesOpen) && (
+                                <div style={{
+                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  padding: '12px 16px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '12px',
+                                  color: 'white',
+                                  fontSize: '14px',
+                                  fontWeight: 600
+                                }}>
+                                  <span>⏱️ Zaman:</span>
+                                  <input
+                                    ref={(el) => {
+                                      if (el) youtubeTimeInputs.current[videoId] = el;
+                                    }}
+                                    type="number"
+                                    data-youtube-time={videoId}
+                                    min="0"
+                                    step="1"
+                                    value={videoCurrentTime}
+                                    onChange={(e) => {
+                                      const seconds = parseInt(e.target.value) || 0;
+                                      setVideoCurrentTime(seconds);
+                                    }}
+                                    onBlur={(e) => {
+                                      const seconds = parseInt(e.target.value) || 0;
+                                      setVideoCurrentTime(seconds);
+                                      // Video'yu bu zamana götür
+                                      const player = youtubePlayers.current[videoId];
+                                      if (player && typeof player.seekTo === 'function') {
+                                        player.seekTo(seconds, true);
+                                      }
+                                    }}
+                                    style={{
+                                      background: 'rgba(255, 255, 255, 0.2)',
+                                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                                      borderRadius: '6px',
+                                      padding: '6px 12px',
+                                      color: 'white',
+                                      fontSize: '14px',
+                                      fontWeight: 600,
+                                      width: '80px',
+                                      textAlign: 'center'
+                                    }}
+                                    placeholder="0"
+                                  />
+                                  <span>saniye</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // Şu anki zamanı al (YouTube Player'dan)
+                                      const player = youtubePlayers.current[videoId];
+                                      if (player && typeof player.getCurrentTime === 'function') {
+                                        try {
+                                          const currentTime = player.getCurrentTime();
+                                          if (typeof currentTime === 'number' && !isNaN(currentTime) && currentTime >= 0) {
+                                            const seconds = Math.floor(currentTime);
+                                            setVideoCurrentTime(seconds);
+                                          }
+                                        } catch (e) {
+                                          console.warn("YouTube zaman damgası alınamadı:", e);
+                                        }
+                                      }
+                                    }}
+                                    style={{
+                                      background: 'rgba(255, 255, 255, 0.3)',
+                                      border: '1px solid rgba(255, 255, 255, 0.4)',
+                                      borderRadius: '6px',
+                                      padding: '6px 12px',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.background = 'rgba(255, 255, 255, 0.4)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                                    }}
+                                  >
+                                    🔄 Şu Anki Zamanı Al
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                         ) : (
                           <video 
                             ref={(el) => {
                               if (el) {
-                                videoRefs.current[k.id] = el;
+                                  videoRefs.current[videoId] = el;
                                 // Video zaman damgasını takip et
-                                el.addEventListener('timeupdate', () => {
-                                  if (selectedVideo?.konuId === k.id && videoNotesOpen) {
-                                    setVideoCurrentTime(el.currentTime);
+                                const updateVideoTime = () => {
+                                  const currentVideoId = selectedVideo?.videoId || selectedVideo?.konuId;
+                                  if (currentVideoId === videoId && videoNotesOpen) {
+                                    setVideoCurrentTime(Math.floor(el.currentTime));
                                   }
-                                });
+                                };
+                                
+                                el.addEventListener('timeupdate', updateVideoTime);
+                                el.addEventListener('play', updateVideoTime);
+                                el.addEventListener('pause', updateVideoTime);
                               }
                             }}
-                            src={finalVideoUrl} 
+                              src={finalVideoUrlValue} 
                             controls 
                             style={{ width: '100%', height: '400px', display: 'block' }}
                             onEnded={() => {
                               // Video tamamen izlendiğinde aktivite kaydet
-                              saveVideoActivity(k);
+                                saveVideoActivity({ ...k, videoAdi: videoAdi });
                             }}
                             onPlay={() => {
                               // Video oynatılmaya başlandığında kaydet (sadece bir kez)
-                              saveVideoActivity(k);
+                                saveVideoActivity({ ...k, videoAdi: videoAdi });
                             }}
                           >
                             Tarayıcınız video oynatmayı desteklemiyor.
@@ -448,7 +767,8 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
                       </div>
                     </div>
                   );
-                })}
+                  });
+                }).flat()}
               </div>
             ) : (
               <div className="empty-state" style={{ textAlign: 'center', padding: '40px' }}>
@@ -462,60 +782,24 @@ export default function DersDetay({ ders, onBack, initialTab, scrollToKonuId, me
         {videoNotesOpen && selectedVideo && (
           <VideoNotes
             konuId={selectedVideo.konuId}
+            videoId={selectedVideo.videoId} // Fallback yok! videoId varsa onu kullan, yoksa undefined
             videoUrl={selectedVideo.videoUrl}
             currentTime={videoCurrentTime}
             onSeekTo={(timestamp) => {
               // Video'yu belirtilen zamana götür
-              const videoElement = videoRefs.current[selectedVideo.konuId];
+              // Birden fazla video varsa videoId kullan, yoksa konuId kullan (geriye dönük uyumluluk)
+              const videoId = selectedVideo.videoId || selectedVideo.konuId;
+              const videoElement = videoRefs.current[videoId];
               if (videoElement) {
                 if (videoElement.tagName === 'VIDEO') {
                   videoElement.currentTime = timestamp;
                   videoElement.play();
                 } else if (videoElement.tagName === 'IFRAME') {
-                  // YouTube iframe için postMessage kullan
-                  videoElement.contentWindow.postMessage(
-                    JSON.stringify({
-                      event: 'command',
-                      func: 'seekTo',
-                      args: [timestamp, true]
-                    }),
-                    '*'
-                  );
-                }
-              }
-            }}
-            isOpen={videoNotesOpen}
-            onClose={() => {
-              setVideoNotesOpen(false);
-              setSelectedVideo(null);
-            }}
-            me={me}
-          />
-        )}
-
-        {/* Video Notları Panel */}
-        {videoNotesOpen && selectedVideo && (
-          <VideoNotes
-            konuId={selectedVideo.konuId}
-            videoUrl={selectedVideo.videoUrl}
-            currentTime={videoCurrentTime}
-            onSeekTo={(timestamp) => {
-              // Video'yu belirtilen zamana götür
-              const videoElement = videoRefs.current[selectedVideo.konuId];
-              if (videoElement) {
-                if (videoElement.tagName === 'VIDEO') {
-                  videoElement.currentTime = timestamp;
-                  videoElement.play();
-                } else if (videoElement.tagName === 'IFRAME') {
-                  // YouTube iframe için postMessage kullan
-                  videoElement.contentWindow.postMessage(
-                    JSON.stringify({
-                      event: 'command',
-                      func: 'seekTo',
-                      args: [timestamp, true]
-                    }),
-                    '*'
-                  );
+                  // YouTube iframe için player API kullan
+                  const player = youtubePlayers.current[videoId];
+                  if (player && typeof player.seekTo === 'function') {
+                    player.seekTo(timestamp, true);
+                  }
                 }
               }
             }}

@@ -45,6 +45,20 @@ export default function AdminPanel({ onBack }) {
   // --- döküman yükleme ---
   const [uploadingKonuId, setUploadingKonuId] = useState(null);
   const [uploadingVideoKonuId, setUploadingVideoKonuId] = useState(null);
+  
+  // --- konu düzenleme ---
+  const [duzenlenenKonuId, setDuzenlenenKonuId] = useState(null);
+  const [konuForm, setKonuForm] = useState({
+    ad: "",
+    aciklama: "",
+    konuAnlatimVideosuUrl: "",
+    dokumanUrl: ""
+  });
+  
+  // --- video URL ekleme ---
+  const [videoUrlAcikKonuId, setVideoUrlAcikKonuId] = useState(null);
+  const [videoUrlInput, setVideoUrlInput] = useState("");
+  const [videoUrlsInput, setVideoUrlsInput] = useState(""); // Birden fazla URL için (her satırda bir URL)
 
   // --- deneme sınavı ---
   const [denemeSinaviAcik, setDenemeSinaviAcik] = useState(false);
@@ -354,47 +368,34 @@ export default function AdminPanel({ onBack }) {
     }
   }
 
-  async function uploadKonuVideosu(konuId, file) {
-    if (!file) return;
+  // Birden fazla video dosyası yükleme
+  async function uploadKonuVideosuMultiple(konuId, files) {
+    if (!files || files.length === 0) return;
 
-    // Video dosya tipini kontrol et
     const videoMimeTypes = [
-      'video/mp4',
-      'video/mpeg',
-      'video/x-mpeg',
-      'video/x-mpeg-1',
-      'video/x-mpeg-2',
-      'video/x-ms-mpeg',
-      'video/quicktime',
-      'video/x-msvideo',
-      'video/webm',
-      'video/x-matroska',
-      'video/x-flv',
-      'video/3gpp',
-      'video/x-ms-wmv'
+      'video/mp4', 'video/mpeg', 'video/x-mpeg', 'video/x-mpeg-1', 'video/x-mpeg-2',
+      'video/x-ms-mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+      'video/x-matroska', 'video/x-flv', 'video/3gpp', 'video/x-ms-wmv'
     ];
-
     const validExtensions = /\.(mp4|mov|avi|webm|mkv|flv|wmv|3gp|m4v)$/i;
-    const hasValidExtension = validExtensions.test(file.name);
-    const hasValidMimeType = file.type && (
-      videoMimeTypes.includes(file.type) ||
-      file.type.startsWith('video/')
-    );
-
-    const isValidVideo = hasValidExtension || hasValidMimeType;
-
-    if (!isValidVideo) {
-      setMsg("Lütfen geçerli bir video dosyası seçin (MP4, MOV, AVI, WEBM, MKV, FLV, WMV, 3GP, M4V)");
-      setTimeout(() => setMsg(""), 3000);
-      return;
-    }
-
-    // Dosya boyutunu kontrol et (max 500MB - konu anlatım videoları daha uzun olabilir)
     const maxSize = 500 * 1024 * 1024; // 500MB
-    if (file.size > maxSize) {
-      setMsg("Video dosyası çok büyük. Maksimum 500MB olmalıdır.");
-      setTimeout(() => setMsg(""), 3000);
-      return;
+
+    // Tüm dosyaları kontrol et
+    for (let file of files) {
+      const hasValidExtension = validExtensions.test(file.name);
+      const hasValidMimeType = file.type && (
+        videoMimeTypes.includes(file.type) || file.type.startsWith('video/')
+      );
+      if (!hasValidExtension && !hasValidMimeType) {
+        setMsg(`Geçersiz video dosyası: ${file.name}`);
+        setTimeout(() => setMsg(""), 3000);
+        return;
+      }
+      if (file.size > maxSize) {
+        setMsg(`Video dosyası çok büyük: ${file.name} (Max: 500MB)`);
+        setTimeout(() => setMsg(""), 3000);
+        return;
+      }
     }
 
     setUploadingVideoKonuId(konuId);
@@ -402,14 +403,18 @@ export default function AdminPanel({ onBack }) {
     
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      // Birden fazla dosya için files[] array'i oluştur
+      for (let file of files) {
+        formData.append("files", file);
+      }
       formData.append("konuId", konuId);
+      // Video adı backend tarafından otomatik atanacak
       
       const { data } = await api.post("/api/files/upload-konu-videosu", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       
-      setMsg("Konu anlatım videosu başarıyla yüklendi!");
+      setMsg(`${files.length} video başarıyla yüklendi!`);
       fetchKonular(seciliDersId);
       
       setTimeout(() => setMsg(""), 3000);
@@ -418,6 +423,12 @@ export default function AdminPanel({ onBack }) {
     } finally {
       setUploadingVideoKonuId(null);
     }
+  }
+
+  // Tek video dosyası yükleme (geriye dönük uyumluluk için)
+  async function uploadKonuVideosu(konuId, file) {
+    if (!file) return;
+    await uploadKonuVideosuMultiple(konuId, [file]);
   }
 
   async function deleteDokuman(konuId) {
@@ -433,6 +444,22 @@ export default function AdminPanel({ onBack }) {
     }
   }
 
+  // Video silme (yeni video listesi için)
+  async function deleteKonuVideo(videoId, konuId) {
+    if (!confirm("Bu videoyu silmek istediğinizden emin misiniz?")) return;
+    
+    try {
+      await api.delete(`/api/konu/video/${videoId}`);
+      setMsg("Video başarıyla silindi!");
+      fetchKonular(seciliDersId);
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e) {
+      setMsg("Video silinemedi: " + errText(e));
+      setTimeout(() => setMsg(""), 3000);
+    }
+  }
+
+  // Eski video silme (geriye dönük uyumluluk için)
   async function deleteKonuVideosu(konuId) {
     if (!confirm("Konu anlatım videosunu silmek istediğinizden emin misiniz?")) return;
     
@@ -443,6 +470,171 @@ export default function AdminPanel({ onBack }) {
       setTimeout(() => setMsg(""), 3000);
     } catch (e) {
       setMsg("Video silinemedi: " + errText(e));
+    }
+  }
+
+  // Video URL ekleme/güncelleme
+  function openVideoUrlInput(konuId) {
+    // Mevcut videoları bul ve URL'lerini textarea'ya yükle
+    const konu = konular.find(k => k.id === konuId);
+    const mevcutUrls = [];
+    
+    if (konu?.videolar && konu.videolar.length > 0) {
+      // Yeni video listesi varsa
+      konu.videolar.forEach(video => {
+        const url = video.videoUrl || video.video_url || video.konuAnlatimVideosuUrl;
+        if (url) mevcutUrls.push(url);
+      });
+    } else if (konu?.konuAnlatimVideosuUrl || konu?.konu_anlatim_videosu_url || konu?.videoUrl || konu?.video_url) {
+      // Eski tek video varsa
+      const url = konu.konuAnlatimVideosuUrl || konu.konu_anlatim_videosu_url || konu.videoUrl || konu.video_url;
+      if (url) mevcutUrls.push(url);
+    }
+    
+    setVideoUrlAcikKonuId(konuId);
+    setVideoUrlInput(""); // Tek URL input'unu temizle (artık kullanmıyoruz)
+    setVideoUrlsInput(mevcutUrls.join('\n')); // Mevcut URL'leri textarea'ya yükle
+  }
+
+  function closeVideoUrlInput() {
+    setVideoUrlAcikKonuId(null);
+    setVideoUrlInput("");
+    setVideoUrlsInput("");
+  }
+
+  // Birden fazla video URL ekleme
+  async function saveVideoUrls(konuId) {
+    if (!videoUrlsInput.trim()) {
+      setMsg("Lütfen en az bir video URL girin!");
+      setTimeout(() => setMsg(""), 3000);
+      return;
+    }
+
+    try {
+      setUploadingVideoKonuId(konuId);
+      setMsg("");
+      
+      // Her satırdaki URL'leri al (boş satırları filtrele)
+      const urls = videoUrlsInput.trim().split('\n')
+        .map(url => url.trim())
+        .filter(url => url.length > 0);
+      
+      if (urls.length === 0) {
+        setMsg("Lütfen en az bir geçerli video URL girin!");
+        setTimeout(() => setMsg(""), 3000);
+        return;
+      }
+
+      // Mevcut videoları kontrol et - sadece yeni URL'leri ekle
+      const konu = konular.find(k => k.id === konuId);
+      const mevcutUrls = [];
+      
+      if (konu?.videolar && konu.videolar.length > 0) {
+        konu.videolar.forEach(video => {
+          const url = video.videoUrl || video.video_url || video.konuAnlatimVideosuUrl;
+          if (url) mevcutUrls.push(url);
+        });
+      } else if (konu?.konuAnlatimVideosuUrl || konu?.konu_anlatim_videosu_url || konu?.videoUrl || konu?.video_url) {
+        const url = konu.konuAnlatimVideosuUrl || konu.konu_anlatim_videosu_url || konu.videoUrl || konu.video_url;
+        if (url) mevcutUrls.push(url);
+      }
+      
+      // Yeni URL'leri bul (mevcut olmayanlar)
+      const yeniUrls = urls.filter(url => !mevcutUrls.includes(url));
+      
+      if (yeniUrls.length === 0) {
+        setMsg("Tüm URL'ler zaten mevcut!");
+        setTimeout(() => setMsg(""), 3000);
+        setUploadingVideoKonuId(null);
+        return;
+      }
+
+      const formData = new FormData();
+      // Sadece yeni URL'leri ekle ve her birine sıralama numarası ver
+      const mevcutVideoSayisi = konu?.videolar ? konu.videolar.length : (konu?.konuAnlatimVideosuUrl || konu?.konu_anlatim_videosu_url || konu?.videoUrl || konu?.video_url ? 1 : 0);
+      
+      yeniUrls.forEach((url, index) => {
+        formData.append("videoUrls", url);
+        // Her video için sıralama numarası gönder (mevcut sayıdan başlayarak)
+        formData.append("siralama", (mevcutVideoSayisi + index + 1).toString());
+      });
+      formData.append("konuId", konuId);
+      // Video adı backend tarafından otomatik atanacak (sıralama numarasına göre)
+      
+      const { data } = await api.post("/api/files/upload-konu-videosu", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      setMsg(`${yeniUrls.length} yeni video URL başarıyla eklendi!`);
+      fetchKonular(seciliDersId);
+      closeVideoUrlInput();
+      
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e) {
+      console.error("Video URL kaydetme hatası:", e);
+      setMsg("Video URL'leri kaydedilemedi: " + errText(e));
+      setTimeout(() => setMsg(""), 5000);
+    } finally {
+      setUploadingVideoKonuId(null);
+    }
+  }
+
+  // Tek video URL kaydetme (geriye dönük uyumluluk için - artık kullanılmıyor)
+  async function saveVideoUrl(konuId) {
+    if (!videoUrlInput.trim()) {
+      setMsg("Lütfen geçerli bir video URL girin!");
+      setTimeout(() => setMsg(""), 3000);
+      return;
+    }
+
+    try {
+      setUploadingVideoKonuId(konuId);
+      setMsg("");
+      
+      const videoUrl = videoUrlInput.trim();
+      console.log("Video URL kaydediliyor:", { konuId, videoUrl });
+      
+      // Backend'e video URL'yi gönder
+      const response = await api.put(`/api/konu/${konuId}`, {
+        konuAnlatimVideosuUrl: videoUrl
+      });
+      
+      console.log("Backend response:", response.data);
+      
+      // Response'da video URL'nin kaydedildiğini kontrol et
+      const savedUrl = response.data?.konuAnlatimVideosuUrl || 
+                       response.data?.konu_anlatim_videosu_url || 
+                       response.data?.videoUrl;
+      
+      if (savedUrl) {
+        setMsg("Video URL başarıyla kaydedildi!");
+        await fetchKonular(seciliDersId);
+        closeVideoUrlInput();
+      } else {
+        console.warn("Backend response'da video URL bulunamadı:", response.data);
+        setMsg("Video URL gönderildi ancak response'da görünmüyor. Lütfen backend'i kontrol edin.");
+      }
+      
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e) {
+      console.error("Video URL kaydetme hatası:", e);
+      console.error("Error response:", e.response?.data);
+      
+      // 500 hatası için özel mesaj
+      if (e.response?.status === 500) {
+        const errorMsg = e.response?.data?.error || e.response?.data?.message || "Backend hatası";
+        if (errorMsg.includes("No static resource") || errorMsg.includes("NoResourceFoundException")) {
+          setMsg("❌ Backend'de endpoint bulunamadı! PUT /api/konu/{konuId} endpoint'i tanımlı değil. Backend geliştiricisine bildirin.");
+        } else {
+          setMsg("❌ Backend hatası (500): " + errorMsg);
+        }
+      } else {
+        setMsg("Video URL kaydedilemedi: " + errText(e));
+      }
+      
+      setTimeout(() => setMsg(""), 8000);
+    } finally {
+      setUploadingVideoKonuId(null);
     }
   }
 
@@ -2373,6 +2565,113 @@ export default function AdminPanel({ onBack }) {
               </div>
                 </form>
 
+            {/* KONU DÜZENLEME FORMU */}
+            {duzenlenenKonuId && (
+              <div className="admin-section-card" style={{ 
+                border: "2px solid #f59e0b",
+                background: "#fffbeb",
+                marginBottom: "20px"
+              }}>
+                <div className="section-title">
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+                    <span>Konu Düzenle</span>
+                    <span style={{ 
+                      fontSize: "12px", 
+                      padding: "4px 12px", 
+                      background: "#fef3c7", 
+                      color: "#92400e",
+                      borderRadius: "12px",
+                      fontWeight: 600
+                    }}>
+                      Düzenleme Modu
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelKonuEdit}
+                    className="admin-btn admin-btn-secondary"
+                    style={{ padding: "8px 16px", fontSize: "14px" }}
+                  >
+                    İptal
+                  </button>
+                </div>
+                
+                <form onSubmit={updateKonu}>
+                  <div className="admin-form-group">
+                    <label className="admin-label">Konu Adı *</label>
+                    <input
+                      className="admin-input"
+                      placeholder="Konu adı"
+                      value={konuForm.ad}
+                      onChange={(e) => setKonuForm(s => ({ ...s, ad: e.target.value }))}
+                      required
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-label">Açıklama</label>
+                    <textarea
+                      className="admin-textarea"
+                      rows={3}
+                      placeholder="Konu açıklaması (opsiyonel)"
+                      value={konuForm.aciklama}
+                      onChange={(e) => setKonuForm(s => ({ ...s, aciklama: e.target.value }))}
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-label">Video URL (YouTube veya Dosya Yolu)</label>
+                    <input
+                      className="admin-input"
+                      placeholder="https://www.youtube.com/watch?v=... veya /files/video.mp4"
+                      value={konuForm.konuAnlatimVideosuUrl}
+                      onChange={(e) => setKonuForm(s => ({ ...s, konuAnlatimVideosuUrl: e.target.value }))}
+                      disabled={saving}
+                    />
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      YouTube linki veya yüklenmiş video dosyası yolu (örn: /files/video.mp4)
+                    </small>
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-label">Döküman URL (PDF Dosya Yolu)</label>
+                    <input
+                      className="admin-input"
+                      placeholder="/files/document.pdf"
+                      value={konuForm.dokumanUrl}
+                      onChange={(e) => setKonuForm(s => ({ ...s, dokumanUrl: e.target.value }))}
+                      disabled={saving}
+                    />
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      Yüklenmiş PDF dosyası yolu (örn: /files/document.pdf)
+                    </small>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+                    <button
+                      type="submit"
+                      className="admin-btn admin-btn-primary"
+                      disabled={saving || !konuForm.ad.trim()}
+                      style={{ padding: "10px 20px" }}
+                    >
+                      {saving ? "Kaydediliyor..." : "Konuyu Güncelle"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelKonuEdit}
+                      className="admin-btn admin-btn-secondary"
+                      disabled={saving}
+                      style={{ padding: "10px 20px" }}
+                    >
+                      İptal
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
             {/* KONU DÖKÜMAN YÖNETİMİ */}
             <div className="documents-section">
               <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: "#111827" }}>
@@ -2382,24 +2681,60 @@ export default function AdminPanel({ onBack }) {
                 {konular.map((k) => (
                   <div 
                     key={k.id} 
-                    className={`document-item ${(k.dokumanUrl || k.dokuman_url) || (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) ? "has-document" : ""}`}
+                    className={`document-item ${(k.dokumanUrl || k.dokuman_url) || (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) ? "has-document" : ""} ${duzenlenenKonuId === k.id ? "editing" : ""}`}
                   >
                     <div className="document-info">
                       <div className="document-name">{k.ad}</div>
+                      {k.aciklama && (
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px", fontStyle: "italic" }}>
+                          {k.aciklama}
+                        </div>
+                      )}
                       <div style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>
                         {(k.dokumanUrl || k.dokuman_url) && (
-                          <span style={{ marginRight: "8px" }}>PDF mevcut</span>
+                          <span style={{ marginRight: "8px" }}>📄 PDF mevcut</span>
                         )}
                         {(k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) && (
-                          <span>Video mevcut</span>
+                          <span>🎥 Video mevcut</span>
                         )}
                         {!(k.dokumanUrl || k.dokuman_url) && !(k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) && (
-                          <span>Döküman ve video yüklenmedi</span>
+                          <span>⚠️ Döküman ve video yüklenmedi</span>
                         )}
               </div>
                     </div>
                     
                     <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        onClick={() => editKonu(k)}
+                        className="admin-btn"
+                        style={{ 
+                          padding: "6px 12px", 
+                          fontSize: "13px",
+                          background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                          color: "white",
+                          border: "none",
+                          cursor: "pointer",
+                          fontWeight: 600
+                        }}
+                        disabled={duzenlenenKonuId === k.id || saving || uploadingKonuId === k.id || uploadingVideoKonuId === k.id}
+                      >
+                        ✏️ Düzenle
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => deleteKonu(k.id)}
+                        className="admin-btn admin-btn-danger"
+                        style={{ 
+                          padding: "6px 12px", 
+                          fontSize: "13px"
+                        }}
+                        disabled={saving || uploadingKonuId === k.id || uploadingVideoKonuId === k.id}
+                      >
+                        🗑️ Sil
+                      </button>
+                      
                       {(k.dokumanUrl || k.dokuman_url) && (
                         <a 
                           href={fileUrl(k.dokumanUrl || k.dokuman_url)} 
@@ -2408,7 +2743,7 @@ export default function AdminPanel({ onBack }) {
                           className="document-view-btn"
                           style={{ padding: "6px 12px", fontSize: "13px" }}
                         >
-                          PDF Görüntüle
+                          📄 PDF Görüntüle
                         </a>
                       )}
                       
@@ -2420,31 +2755,191 @@ export default function AdminPanel({ onBack }) {
                           className="document-view-btn"
                           style={{ padding: "6px 12px", fontSize: "13px", background: "#dc2626" }}
                         >
-                          Video İzle
+                          🎥 Video İzle
                         </a>
                       )}
                       
                       <label className="document-upload-btn" style={{ padding: "6px 12px", fontSize: "13px" }}>
-                        {uploadingKonuId === k.id ? "Yükleniyor..." : (k.dokumanUrl || k.dokuman_url) ? "PDF Değiştir" : "PDF Yükle"}
+                        {uploadingKonuId === k.id ? "Yükleniyor..." : (k.dokumanUrl || k.dokuman_url) ? "📄 PDF Değiştir" : "📄 PDF Yükle"}
                         <input
                           type="file"
                           accept="application/pdf"
                           onChange={(e) => uploadDokuman(k.id, e.target.files?.[0])}
-                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id}
+                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id || duzenlenenKonuId === k.id}
                           style={{ display: "none" }}
                         />
                       </label>
                       
                       <label className="document-upload-btn" style={{ padding: "6px 12px", fontSize: "13px", background: "#dc2626" }}>
-                        {uploadingVideoKonuId === k.id ? "Yükleniyor..." : (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) ? "Video Değiştir" : "Video Yükle"}
+                        {uploadingVideoKonuId === k.id ? "Yükleniyor..." : "🎥 Video Yükle (Dosya)"}
                         <input
                           type="file"
                           accept="video/mp4,video/mpeg,video/quicktime,video/x-msvideo,video/webm,video/*,.mp4,.mov,.avi,.webm,.mkv,.flv,.wmv,.3gp,.m4v"
-                          onChange={(e) => uploadKonuVideosu(k.id, e.target.files?.[0])}
-                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id}
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length > 0) {
+                              uploadKonuVideosuMultiple(k.id, files);
+                            }
+                          }}
+                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id || duzenlenenKonuId === k.id || videoUrlAcikKonuId === k.id}
                           style={{ display: "none" }}
                         />
                       </label>
+                      
+                      <button
+                        type="button"
+                        onClick={() => openVideoUrlInput(k.id)}
+                        className="document-upload-btn"
+                        style={{ 
+                          padding: "6px 12px", 
+                          fontSize: "13px", 
+                          background: "#8b5cf6",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "white"
+                        }}
+                        disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id || duzenlenenKonuId === k.id}
+                      >
+                        🔗 URL Ekle/Düzenle
+                      </button>
+                      
+                      {/* Video listesi göster */}
+                      {((k.videolar && k.videolar.length > 0) || (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url)) && (
+                        <div style={{ 
+                          width: "100%", 
+                          marginTop: "12px", 
+                          padding: "12px", 
+                          background: "#f9fafb", 
+                          borderRadius: "8px",
+                          border: "1px solid #e5e7eb"
+                        }}>
+                          <div style={{ fontSize: "13px", fontWeight: 600, marginBottom: "8px", color: "#374151" }}>
+                            📹 Videolar ({((k.videolar && k.videolar.length) || (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) ? 1 : 0)})
+                          </div>
+                          {/* Yeni video listesi (backend'den gelen) */}
+                          {k.videolar && k.videolar.length > 0 && k.videolar
+                            .sort((a, b) => {
+                              // Sıralamaya göre sırala (eğer varsa)
+                              const siralamaA = a.siralama || a.sira || 0;
+                              const siralamaB = b.siralama || b.sira || 0;
+                              return siralamaA - siralamaB;
+                            })
+                            .map((video, idx) => {
+                              // Video adını belirle: backend'den gelen ad varsa ve benzersizse kullan, yoksa index'e göre oluştur
+                              let videoAdi = video.videoAdi || video.video_adi;
+                              
+                              // Eğer video adı yoksa, boşsa veya "Video" ile başlayıp sayı içeriyorsa, index'e göre oluştur
+                              // (Backend'den gelen video adları genellikle "Video 1" formatında geliyor ve hepsi aynı olabiliyor)
+                              if (!videoAdi || videoAdi.trim() === "" || videoAdi.match(/^Video\s*\d+$/i)) {
+                                // Index + 1 kullan (çünkü index 0'dan başlar)
+                                videoAdi = `Video ${idx + 1}`;
+                              }
+                              
+                              return (
+                                <div key={video.id || idx} style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "8px 12px",
+                                  background: "white",
+                                  borderRadius: "6px",
+                                  marginBottom: "6px",
+                                  border: "1px solid #e5e7eb"
+                                }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: "13px", fontWeight: 500, color: "#111827" }}>
+                                      {videoAdi}
+                                    </div>
+                                    <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "2px" }}>
+                                      {video.videoUrl || video.video_url || video.konuAnlatimVideosuUrl || "URL yok"}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteKonuVideo(video.id, k.id)}
+                                    className="admin-btn admin-btn-danger"
+                                    style={{ padding: "4px 8px", fontSize: "11px" }}
+                                    disabled={uploadingVideoKonuId === k.id}
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          {/* Eski video (geriye dönük uyumluluk) */}
+                          {!k.videolar && (k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url) && (
+                            <div style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "8px 12px",
+                              background: "white",
+                              borderRadius: "6px",
+                              border: "1px solid #e5e7eb"
+                            }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: "13px", fontWeight: 500, color: "#111827" }}>
+                                  Konu Anlatım Videosu
+                                </div>
+                                <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "2px" }}>
+                                  {k.konuAnlatimVideosuUrl || k.konu_anlatim_videosu_url || k.videoUrl || k.video_url}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {videoUrlAcikKonuId === k.id && (
+                        <div style={{ 
+                          width: "100%", 
+                          marginTop: "8px", 
+                          padding: "12px", 
+                          background: "#f3f4f6", 
+                          borderRadius: "8px",
+                          border: "1px solid #d1d5db"
+                        }}>
+                          <div style={{ marginBottom: "8px" }}>
+                            <label style={{ fontSize: "12px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "4px" }}>
+                              Video URL'leri (Her satırda bir URL)
+                            </label>
+                            <textarea
+                              className="admin-textarea"
+                              rows={6}
+                              placeholder="Her satırda bir video URL girin:&#10;https://www.youtube.com/watch?v=...&#10;https://www.youtube.com/watch?v=...&#10;/files/video.mp4"
+                              value={videoUrlsInput}
+                              onChange={(e) => setVideoUrlsInput(e.target.value)}
+                              disabled={uploadingVideoKonuId === k.id}
+                              style={{ width: "100%", fontSize: "13px", padding: "8px 12px", fontFamily: "monospace" }}
+                            />
+                            <small style={{ color: "#6b7280", fontSize: "11px", marginTop: "4px", display: "block" }}>
+                              Mevcut URL'ler yukarıda gösterilmiştir. Yeni URL eklemek için listeye ekleyin. Video adları otomatik olarak atanacaktır.
+                            </small>
+                          </div>
+                          
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              onClick={() => saveVideoUrls(k.id)}
+                              className="admin-btn admin-btn-primary"
+                              disabled={uploadingVideoKonuId === k.id || !videoUrlsInput.trim()}
+                              style={{ padding: "8px 16px", fontSize: "13px", whiteSpace: "nowrap" }}
+                            >
+                              {uploadingVideoKonuId === k.id ? "Kaydediliyor..." : "Yeni URL'leri Ekle"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={closeVideoUrlInput}
+                              className="admin-btn admin-btn-secondary"
+                              disabled={uploadingVideoKonuId === k.id}
+                              style={{ padding: "8px 16px", fontSize: "13px", whiteSpace: "nowrap" }}
+                            >
+                              İptal
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       
                       {(k.dokumanUrl || k.dokuman_url) && (
                         <button
@@ -2459,9 +2954,9 @@ export default function AdminPanel({ onBack }) {
                             cursor: "pointer",
                             color: "white"
                           }}
-                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id}
+                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id || duzenlenenKonuId === k.id}
                         >
-                          PDF Sil
+                          📄 PDF Sil
                         </button>
                       )}
                       
@@ -2478,9 +2973,9 @@ export default function AdminPanel({ onBack }) {
                             cursor: "pointer",
                             color: "white"
                           }}
-                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id}
+                          disabled={uploadingKonuId === k.id || uploadingVideoKonuId === k.id || duzenlenenKonuId === k.id}
                         >
-                          Video Sil
+                          🎥 Video Sil
                         </button>
                       )}
                     </div>

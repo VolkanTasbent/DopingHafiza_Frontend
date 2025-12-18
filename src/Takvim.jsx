@@ -22,11 +22,18 @@ ChartJS.register(
   Legend
 );
 
-export default function Takvim({ onBack }) {
+export default function Takvim({ onBack, me }) {
   const [raporlar, setRaporlar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("all"); // all, video, test, soru
   const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [pomodoroStats, setPomodoroStats] = useState({
+    today: { count: 0, minutes: 0 },
+    week: { count: 0, minutes: 0 },
+    month: { count: 0, minutes: 0 },
+    total: { count: 0, minutes: 0 }
+  });
+  const [pomodoroDailyStats, setPomodoroDailyStats] = useState({}); // Günlük pomodoro istatistikleri
 
   // Haftalık verileri hesapla
   const weeklyData = useMemo(() => {
@@ -43,11 +50,15 @@ export default function Takvim({ onBack }) {
       const dayDate = new Date(weekStart);
       dayDate.setDate(dayDate.getDate() + index);
 
-      // Bu güne ait raporları filtrele
+      // Bu güne ait raporları filtrele (timezone sorununu önlemek için local timezone kullan)
+      // Local timezone'da tarih string'i oluştur (UTC'ye çevirme)
+      const dayDateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
       const dayReports = raporlar.filter(rapor => {
         if (!rapor.finishedAt) return false;
         const reportDate = new Date(rapor.finishedAt);
-        return reportDate >= dayDate && reportDate < new Date(dayDate.getTime() + 24 * 60 * 60 * 1000);
+        // Local timezone'da tarih string'i oluştur (UTC'ye çevirme)
+        const reportDateStr = `${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}-${String(reportDate.getDate()).padStart(2, '0')}`;
+        return reportDateStr === dayDateStr;
       });
 
       // Çalışma saatlerini hesapla
@@ -61,6 +72,10 @@ export default function Takvim({ onBack }) {
         }
       });
 
+      // Pomodoro süresini ekle (dayDateStr zaten yukarıda tanımlı)
+      const dayPomodoroMinutes = pomodoroDailyStats[dayDateStr]?.minutes || 0;
+      totalMinutes += dayPomodoroMinutes;
+
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
 
@@ -71,16 +86,111 @@ export default function Takvim({ onBack }) {
         minutes,
         totalMinutes,
         reports: dayReports.length,
-        solved: dayReports.reduce((sum, r) => sum + (r.correctCount || 0) + (r.wrongCount || 0) + (r.emptyCount || 0), 0)
+        solved: dayReports.reduce((sum, r) => sum + (r.correctCount || 0) + (r.wrongCount || 0) + (r.emptyCount || 0), 0),
+        pomodoroMinutes: dayPomodoroMinutes,
+        pomodoroCount: pomodoroDailyStats[dayDateStr]?.count || 0
       };
     });
 
     return weekData;
-  }, [raporlar, selectedWeek]);
+  }, [raporlar, selectedWeek, pomodoroDailyStats]);
 
   useEffect(() => {
     loadData();
+    loadPomodoroStats();
   }, []);
+
+  useEffect(() => {
+    // Hafta değiştiğinde pomodoro istatistiklerini yenile
+    loadPomodoroDailyStats();
+  }, [selectedWeek]);
+
+  const loadPomodoroStats = async () => {
+    try {
+      const response = await api.get("/api/pomodoro/stats");
+      if (response.data) {
+        setPomodoroStats(response.data);
+        
+        // Günlük pomodoro istatistiklerini yükle
+        await loadPomodoroDailyStats();
+      }
+    } catch (error) {
+      console.error("Pomodoro istatistikleri yüklenemedi:", error);
+      // Local storage'dan yükle (kullanıcıya özel)
+      const userId = me?.id || "guest";
+      const storageKey = `pomodoroStats_${userId}`;
+      const localStats = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem("pomodoroStats") || "{}");
+      
+      // Günlük istatistikleri oluştur
+      const dailyStats = {};
+      Object.keys(localStats).forEach(dateKey => {
+        const dayStats = localStats[dateKey];
+        if (dayStats) {
+          dailyStats[dateKey] = {
+            count: dayStats.count || 0,
+            minutes: dayStats.minutes || 0
+          };
+        }
+      });
+      
+      setPomodoroDailyStats(dailyStats);
+    }
+  };
+
+  const loadPomodoroDailyStats = async () => {
+    try {
+      // Son 30 günün pomodoro istatistiklerini al
+      const weekStart = new Date(selectedWeek);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      weekStart.setHours(0, 0, 0, 0);
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      
+      // Backend'den günlük pomodoro istatistiklerini al
+      // Local timezone'da tarih string'i oluştur (UTC'ye çevirme)
+      const formatDateLocal = (date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+      const response = await api.get("/api/pomodoro/daily-stats", {
+        params: {
+          startDate: formatDateLocal(weekStart),
+          endDate: formatDateLocal(weekEnd)
+        }
+      });
+      
+      if (response.data && response.data.dailyStats) {
+        const dailyStats = {};
+        response.data.dailyStats.forEach(stat => {
+          dailyStats[stat.date] = {
+            count: stat.count || 0,
+            minutes: stat.minutes || 0
+          };
+        });
+        setPomodoroDailyStats(dailyStats);
+      }
+    } catch (error) {
+      console.error("Günlük pomodoro istatistikleri yüklenemedi:", error);
+      // Fallback: localStorage'dan yükle
+      const userId = me?.id || "guest";
+      const storageKey = `pomodoroStats_${userId}`;
+      const localStats = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem("pomodoroStats") || "{}");
+      
+      const dailyStats = {};
+      Object.keys(localStats).forEach(dateKey => {
+        const dayStats = localStats[dateKey];
+        if (dayStats) {
+          dailyStats[dateKey] = {
+            count: dayStats.count || 0,
+            minutes: dayStats.minutes || 0
+          };
+        }
+      });
+      
+      setPomodoroDailyStats(dailyStats);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -293,6 +403,9 @@ export default function Takvim({ onBack }) {
                     <div className="day-stats">
                       <span className="stat-item">{day.reports} oturum</span>
                       <span className="stat-item">{day.solved} soru</span>
+                      {day.pomodoroCount > 0 && (
+                        <span className="stat-item">🍅 {day.pomodoroCount} pomodoro</span>
+                      )}
                     </div>
                   </>
                 ) : (

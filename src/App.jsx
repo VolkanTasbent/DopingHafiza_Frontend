@@ -439,7 +439,7 @@ export default function App() {
           )}
 
           {page === "takvim" && (
-            <Takvim onBack={() => setPage("dersler")} />
+            <Takvim onBack={() => setPage("dersler")} me={me} />
           )}
 
           {page === "pomodoro" && (

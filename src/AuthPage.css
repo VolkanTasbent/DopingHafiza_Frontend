@@ -1,14 +1,39 @@
 /* ========================================
-   KURUMSAL GİRİŞ SAYFASI
+   DOPING HAFIZA GİRİŞ SAYFASI
+   Modern ve Kullanıcı Dostu Tasarım
    ======================================== */
 
 .auth-page-wrapper {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.3) 0%, transparent 50%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-page-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(255, 255, 255, 0.03) 4px
+    );
+  pointer-events: none;
 }
 
 .auth-container {
@@ -18,10 +43,24 @@
   width: 100%;
   background: white;
   border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
   overflow: hidden;
   min-height: 650px;
   max-height: 90vh;
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ========================================
@@ -112,17 +151,31 @@
 
 .auth-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
 .auth-title {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: #111827;
+  margin: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -197,21 +250,28 @@
 
 .form-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 16px;
   border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 15px;
   color: #111827;
-  background: white;
+  background: #f9fafb;
   transition: all 0.3s ease;
   font-family: inherit;
   box-sizing: border-box;
 }
 
+.form-input:hover:not(:disabled) {
+  background: white;
+  border-color: #d1d5db;
+}
+
 .form-input:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
 }
 
 .form-input:disabled {
@@ -222,6 +282,16 @@
 
 .form-input::placeholder {
   color: #9ca3af;
+}
+
+.form-input.input-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.form-input.input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
 }
 
 .form-input select {
@@ -252,6 +322,42 @@
   font-size: 12px;
   color: #9ca3af;
   font-weight: 400;
+}
+
+/* ========================================
+   ALAN BAZLI HATA MESAJLARI
+   ======================================== */
+
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-icon {
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* ========================================
@@ -293,27 +399,45 @@
 
 .auth-submit-btn {
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 4px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  margin-top: 8px;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.auth-submit-btn:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .auth-submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
 }
 
 .auth-submit-btn:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
 }
 
 .auth-submit-btn:disabled {

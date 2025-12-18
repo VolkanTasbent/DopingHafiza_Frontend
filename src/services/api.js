@@ -21,4 +21,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor - hataları daha iyi handle etmek için
+api.interceptors.response.use(
+  (response) => {
+    // Başarılı response'ları olduğu gibi döndür
+    return response;
+  },
+  (error) => {
+    // Hata response'unu daha iyi formatla
+    if (error.response) {
+      // Backend'den gelen hata response'u
+      const { data, status } = error.response;
+      
+      // Eğer data string ise ve JSON formatında ise parse et
+      if (typeof data === 'string' && data.trim().startsWith('{')) {
+        try {
+          error.response.data = JSON.parse(data);
+        } catch (e) {
+          // Parse edilemezse olduğu gibi bırak
+          console.warn("Could not parse error response as JSON:", data);
+        }
+      }
+    }
+    
+    // Hata'yı tekrar fırlat (catch bloğuna düşsün)
+    return Promise.reject(error);
+  }
+);
+
 export default api;
