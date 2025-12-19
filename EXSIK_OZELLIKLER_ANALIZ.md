@@ -418,3 +418,4 @@ Bu özellikler nispeten kolay eklenebilir ve yüksek değer katabilir:
 
 Bu 3 özellik eklenerek sistem Doping Hafıza'nın temel özelliklerine çok yaklaşır ve kullanıcı deneyimi önemli ölçüde iyileşir.
 
+

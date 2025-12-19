@@ -508,3 +508,4 @@ public interface VideoNoteRepository extends JpaRepository<VideoNote, Long> {
 - **Frontend:** `src/DersDetay.jsx` (Video not alma UI)
 - **Backend:** `VideoNoteController.java`, `VideoNoteRepository.java`
 
+

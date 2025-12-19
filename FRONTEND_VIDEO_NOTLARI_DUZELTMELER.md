@@ -152,3 +152,4 @@ Backend'de yapılması gerekenler için `BACKEND_VIDEO_NOTLARI_VIDEO_ID.md` dosy
    - `GET /api/video-notes?konuId=X&videoId=Y` - videoId'ye göre filtreleme
    - `POST /api/video-notes` - videoId ile not kaydetme
 
+

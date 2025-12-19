@@ -291,3 +291,4 @@ const loadPomodoroDailyStats = async () => {
 
 Eğer backend endpoint'i yoksa, frontend localStorage'dan veri yükleyecektir (kullanıcıya özel).
 
+

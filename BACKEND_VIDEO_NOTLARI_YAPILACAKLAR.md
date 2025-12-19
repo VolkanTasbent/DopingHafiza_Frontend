@@ -509,3 +509,4 @@ WHERE konu_id = 123;
 3. Database'de notlar var mı kontrol edin
 4. `videoId` ve `videoUrl` filtrelemesi doğru çalışıyor mu kontrol edin
 
+

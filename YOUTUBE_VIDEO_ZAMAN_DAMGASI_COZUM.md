@@ -535,3 +535,4 @@ DELETE /api/video-notes/{noteId}
 
 Bu çözüm ile YouTube videolarında zaman damgası takibi başarıyla yapılmaktadır. Hem otomatik takip (YouTube API) hem de manuel kontrol (input) imkanı sunulmaktadır.
 
+

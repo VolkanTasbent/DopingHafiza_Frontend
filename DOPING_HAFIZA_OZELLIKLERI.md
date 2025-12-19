@@ -323,3 +323,4 @@
 - Öncelik kullanıcı ihtiyaçlarına göre belirlenmeli
 - Her özellik için ayrı dokümantasyon oluşturulmalı
 
+

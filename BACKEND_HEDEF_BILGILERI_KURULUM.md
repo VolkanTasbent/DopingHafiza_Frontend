@@ -364,3 +364,4 @@ public class UserResponse {
   - `RegisterRequest.java`, `UpdateUserRequest.java`, `UserResponse.java` - DTO'lar
 
 
+
