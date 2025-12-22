@@ -333,3 +333,7 @@ public class KonuController {
 Backend'de `PUT /api/konu/{konuId}` endpoint'ini yukarıdaki örneklere göre ekleyin. Endpoint tanımlandıktan sonra 500 hatası çözülecektir.
 
 
+
+
+
+

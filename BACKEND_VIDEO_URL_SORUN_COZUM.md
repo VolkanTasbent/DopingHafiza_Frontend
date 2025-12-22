@@ -294,3 +294,7 @@ await api.put(`/api/konu/${konuId}/video-url`, {
 Bu adımları takip ederseniz video URL kaydetme sorunu çözülecektir.
 
 
+
+
+
+

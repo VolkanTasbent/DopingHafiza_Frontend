@@ -442,9 +442,9 @@ export default function App() {
             <Takvim onBack={() => setPage("dersler")} me={me} />
           )}
 
-          {page === "pomodoro" && (
-            <PomodoroTimer onBack={() => setPage("dersler")} me={me} />
-          )}
+      {page === "pomodoro" && (
+  <PomodoroTimer me={me} />
+)}
 
         </main>
       </div>

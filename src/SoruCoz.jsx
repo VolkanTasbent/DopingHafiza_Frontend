@@ -24,6 +24,12 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
   const [msg, setMsg] = useState("");
   const [autoLoadTriggered, setAutoLoadTriggered] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState(new Set());
+  
+  // Arama ve filtreleme
+  const [dersArama, setDersArama] = useState("");
+  const [konuArama, setKonuArama] = useState("");
+  const [showDersModal, setShowDersModal] = useState(false);
+  const [showKonuModal, setShowKonuModal] = useState(false);
 
   // --- helpers ---
   const errText = (e) =>
@@ -74,7 +80,10 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
   // Otomatik soru getirme fonksiyonu
   async function autoGetirSorular(dersId) {
     try {
-      const params = { dersId: Number(dersId), limit: 100 };
+      const params = { 
+        dersId: Number(dersId),
+        limit: 10000 // Çok yüksek limit - tüm konulardan tüm sorular gelsin
+      };
       // Deneme sınavı sorularını hariç tutmak için parametre ekle
       params.excludeDenemeSinavi = true;
       
@@ -162,12 +171,67 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
   async function getirSorular() {
     if (!seciliDersId) return setMsg("Önce ders seçin.");
     try {
-      const params = { dersId: Number(seciliDersId), limit: 100 };
-      if (seciliKonuId) params.konuId = Number(seciliKonuId);
-      // Deneme sınavı sorularını hariç tutmak için parametre ekle
-      params.excludeDenemeSinavi = true;
+      setMsg("Sorular yükleniyor...");
       
-      const { data } = await api.get("/api/sorular", { params });
+      // Tüm soruları çekmek için sayfalama kullan
+      let allSorular = [];
+      let page = 1;
+      const pageSize = 1000; // Her sayfada 1000 soru
+      let hasMore = true;
+      
+      while (hasMore) {
+        const params = { 
+          dersId: Number(seciliDersId),
+          limit: pageSize
+        };
+        
+        // Sayfalama için offset veya page parametresi dene
+        // Backend'de offset varsa offset kullan, yoksa page kullan
+        if (page > 1) {
+          // Önce offset dene
+          params.offset = (page - 1) * pageSize;
+          // Eğer backend page parametresi kullanıyorsa, page de ekle
+          params.page = page;
+        }
+        
+        // Konu seçildiyse konuId ekle
+        if (seciliKonuId) {
+          params.konuId = Number(seciliKonuId);
+        }
+        
+        // Deneme sınavı sorularını hariç tutmak için parametre ekle
+        params.excludeDenemeSinavi = true;
+        
+        try {
+          const { data } = await api.get("/api/sorular", { params });
+          
+          if (!data || data.length === 0) {
+            hasMore = false;
+          } else {
+            allSorular = [...allSorular, ...data];
+            
+            // Eğer gelen soru sayısı pageSize'dan azsa, son sayfadayız
+            if (data.length < pageSize) {
+              hasMore = false;
+            } else {
+              page++;
+              // Güvenlik için maksimum 100 sayfa (100,000 soru)
+              if (page > 100) {
+                console.warn("Maksimum sayfa limitine ulaşıldı (100,000 soru)");
+                hasMore = false;
+              }
+            }
+          }
+        } catch (pageError) {
+          // Sayfalama hatası varsa, sadece ilk sayfayı kullan
+          console.warn("Sayfalama hatası, sadece ilk sayfa kullanılıyor:", pageError);
+          hasMore = false;
+        }
+      }
+      
+      console.log(`Toplam ${allSorular.length} soru çekildi (${page - 1} sayfa)`);
+      
+      const data = allSorular;
       
       // Debug: İlk sorunun yapısını kontrol et
       if (data && data.length > 0) {
@@ -236,7 +300,7 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
         setMsg("Bu filtrede soru bulunamadı.");
         setStep("select");
       } else {
-        setMsg("");
+        setMsg(`✅ ${normalSorular.length} soru yüklendi!`);
         setStep("ready"); // Teste Başla butonunu göster
       }
     } catch (e) {
@@ -295,6 +359,26 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
   const emptyCount = sorular.filter(s => secimler[s.id] === undefined).length;
   const progressPercent = sorular.length > 0 ? (answeredCount / sorular.length) * 100 : 0;
 
+  // Filtrelenmiş dersler ve konular
+  const filtrelenmisDersler = useMemo(() => {
+    if (!dersArama) return dersler;
+    const arama = dersArama.toLowerCase();
+    return dersler.filter(d => 
+      (d.ad || '').toLowerCase().includes(arama)
+    );
+  }, [dersler, dersArama]);
+
+  const filtrelenmisKonular = useMemo(() => {
+    if (!konuArama) return konular;
+    const arama = konuArama.toLowerCase();
+    return konular.filter(k => 
+      (k.ad || '').toLowerCase().includes(arama)
+    );
+  }, [konular, konuArama]);
+
+  const seciliDersObj = dersler.find(d => d.id === Number(seciliDersId));
+  const seciliKonuObj = konular.find(k => k.id === Number(seciliKonuId));
+
   async function submitTest() {
     try {
       stopTimer();
@@ -328,16 +412,16 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
   const saveQuizActivity = async (quizResult) => {
     try {
       // Ders bilgilerini al
-      const ders = dersler.find(d => d.id === Number(seciliDersId));
-      const dersAd = ders?.ad || "Bilinmeyen Ders";
+      const dersObj = dersler.find(d => d.id === Number(seciliDersId));
+      const dersAd = dersObj?.ad || "Bilinmeyen Ders";
       
       // Konu bilgilerini al (eğer seçiliyse)
       let konuAd = "";
       let konuId = null;
       if (seciliKonuId) {
-        const konu = konular.find(k => k.id === Number(seciliKonuId));
-        konuAd = konu?.ad || "";
-        konuId = konu?.id || null;
+        const konuObj = konular.find(k => k.id === Number(seciliKonuId));
+        konuAd = konuObj?.ad || "";
+        konuId = konuObj?.id || null;
       }
       
       // Aktivite başlığı oluştur
@@ -350,7 +434,7 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
         activityTitle: activityTitle,
         activitySubtitle: `${quizResult.correct || 0} doğru, ${quizResult.wrong || 0} yanlış`,
         activityIcon: "abc",
-        dersId: ders?.id || Number(seciliDersId),
+        dersId: dersObj?.id || Number(seciliDersId),
         konuId: konuId,
         raporId: quizResult.oturumId,
         createdAt: new Date().toISOString(),
@@ -434,26 +518,261 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
             </div>
           )}
 
-          {/* Seçim Barı */}
+          {/* Modern Seçim Arayüzü */}
           {(step === "select" || step === "ready") && (
-            <div className="select-bar">
-              <select value={seciliDersId} onChange={(e) => setSeciliDersId(e.target.value)}>
-                <option value="">📚 Ders Seçin</option>
-                {dersler.map((d) => (
-                  <option key={d.id} value={d.id}>{d.ad}</option>
-                ))}
-              </select>
+            <div className="modern-select-container">
+              <div className="selection-cards">
+                {/* Ders Seçim Kartı */}
+                <div className="selection-card">
+                  <div className="selection-card-header">
+                    <div className="selection-icon">📚</div>
+                    <div className="selection-title-group">
+                      <h3 className="selection-title">Ders Seçin</h3>
+                      <p className="selection-subtitle">Çözmek istediğiniz dersi seçin</p>
+                    </div>
+                  </div>
+                  
+                  {seciliDersObj ? (
+                    <div className="selected-item">
+                      <div className="selected-item-content">
+                        <div className="selected-item-icon">📖</div>
+                        <div className="selected-item-info">
+                          <div className="selected-item-name">{seciliDersObj.ad}</div>
+                          <div className="selected-item-hint">Seçili ders</div>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        className="change-btn"
+                        onClick={() => {
+                          setSeciliDersId("");
+                          setSeciliKonuId("");
+                          setSorular([]);
+                          setStep("select");
+                          setShowDersModal(true);
+                        }}
+                      >
+                        Değiştir
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      type="button"
+                      className="select-btn"
+                      onClick={() => setShowDersModal(true)}
+                    >
+                      <span className="select-btn-icon">➕</span>
+                      <span>Ders Seç</span>
+                    </button>
+                  )}
+                </div>
 
-              <select value={seciliKonuId} onChange={(e) => setSeciliKonuId(e.target.value)} disabled={!seciliDersId}>
-                <option value="">📖 Konu Seçin (İsteğe bağlı)</option>
-                {konular.map((k) => (
-                  <option key={k.id} value={k.id}>{k.ad}</option>
-                ))}
-              </select>
+                {/* Konu Seçim Kartı */}
+                <div className="selection-card">
+                  <div className="selection-card-header">
+                    <div className="selection-icon">📖</div>
+                    <div className="selection-title-group">
+                      <h3 className="selection-title">Konu Seçin</h3>
+                      <p className="selection-subtitle">İsteğe bağlı - Tüm konulardan soru getirmek için boş bırakın</p>
+                    </div>
+                  </div>
+                  
+                  {seciliKonuObj ? (
+                    <div className="selected-item">
+                      <div className="selected-item-content">
+                        <div className="selected-item-icon">🎯</div>
+                        <div className="selected-item-info">
+                          <div className="selected-item-name">{seciliKonuObj.ad}</div>
+                          <div className="selected-item-hint">Seçili konu</div>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        className="change-btn"
+                        onClick={() => {
+                          setSeciliKonuId("");
+                          setSorular([]);
+                          setStep("select");
+                          if (seciliDersId) {
+                            setShowKonuModal(true);
+                          }
+                        }}
+                      >
+                        Değiştir
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      type="button"
+                      className={`select-btn ${!seciliDersId ? 'disabled' : ''}`}
+                      onClick={() => seciliDersId && setShowKonuModal(true)}
+                      disabled={!seciliDersId}
+                    >
+                      <span className="select-btn-icon">➕</span>
+                      <span>{seciliDersId ? "Konu Seç (İsteğe Bağlı)" : "Önce ders seçin"}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
 
-              <button type="button" onClick={getirSorular} className="getir-btn">
-                Soruları Getir
-              </button>
+              {/* Soruları Getir Butonu */}
+              {seciliDersId && (
+                <div className="action-section">
+                  <button 
+                    type="button" 
+                    onClick={getirSorular} 
+                    className="getir-btn-modern"
+                    disabled={!seciliDersId}
+                  >
+                    <span className="getir-btn-icon">🚀</span>
+                    <span>Soruları Getir</span>
+                  </button>
+                  {seciliKonuObj && (
+                    <div className="selection-summary">
+                      <span className="summary-text">
+                        {seciliDersObj?.ad} {seciliKonuObj && `> ${seciliKonuObj.ad}`} için sorular getirilecek
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Ders Seçim Modal */}
+              {showDersModal && (
+                <div className="modal-overlay" onClick={() => setShowDersModal(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h2 className="modal-title">📚 Ders Seçin</h2>
+                      <button 
+                        type="button"
+                        className="modal-close"
+                        onClick={() => setShowDersModal(false)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div className="modal-search">
+                      <input
+                        type="text"
+                        placeholder="🔍 Ders ara..."
+                        value={dersArama}
+                        onChange={(e) => setDersArama(e.target.value)}
+                        className="search-input"
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="modal-list">
+                      {filtrelenmisDersler.length === 0 ? (
+                        <div className="empty-state">
+                          <div className="empty-icon">🔍</div>
+                          <p>Ders bulunamadı</p>
+                        </div>
+                      ) : (
+                        filtrelenmisDersler.map((d) => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            className={`modal-item ${seciliDersId === d.id.toString() ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSeciliDersId(d.id.toString());
+                              setSeciliKonuId("");
+                              setSorular([]);
+                              setStep("select");
+                              setShowDersModal(false);
+                              setDersArama("");
+                            }}
+                          >
+                            <div className="modal-item-icon">📚</div>
+                            <div className="modal-item-name">{d.ad}</div>
+                            {seciliDersId === d.id.toString() && (
+                              <div className="modal-item-check">✓</div>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Konu Seçim Modal */}
+              {showKonuModal && (
+                <div className="modal-overlay" onClick={() => setShowKonuModal(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h2 className="modal-title">📖 Konu Seçin</h2>
+                      <button 
+                        type="button"
+                        className="modal-close"
+                        onClick={() => setShowKonuModal(false)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div className="modal-search">
+                      <input
+                        type="text"
+                        placeholder="🔍 Konu ara..."
+                        value={konuArama}
+                        onChange={(e) => setKonuArama(e.target.value)}
+                        className="search-input"
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="modal-list">
+                      <button
+                        type="button"
+                        className={`modal-item ${!seciliKonuId ? 'selected' : ''}`}
+                        onClick={() => {
+                          setSeciliKonuId("");
+                          setSorular([]);
+                          setStep("select");
+                          setShowKonuModal(false);
+                          setKonuArama("");
+                        }}
+                      >
+                        <div className="modal-item-icon">🌐</div>
+                        <div className="modal-item-name">Tüm Konular</div>
+                        {!seciliKonuId && (
+                          <div className="modal-item-check">✓</div>
+                        )}
+                      </button>
+                      
+                      {filtrelenmisKonular.length === 0 ? (
+                        <div className="empty-state">
+                          <div className="empty-icon">🔍</div>
+                          <p>Konu bulunamadı</p>
+                        </div>
+                      ) : (
+                        filtrelenmisKonular.map((k) => (
+                          <button
+                            key={k.id}
+                            type="button"
+                            className={`modal-item ${seciliKonuId === k.id.toString() ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSeciliKonuId(k.id.toString());
+                              setSorular([]);
+                              setStep("select");
+                              setShowKonuModal(false);
+                              setKonuArama("");
+                            }}
+                          >
+                            <div className="modal-item-icon">🎯</div>
+                            <div className="modal-item-name">{k.ad}</div>
+                            {seciliKonuId === k.id.toString() && (
+                              <div className="modal-item-check">✓</div>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

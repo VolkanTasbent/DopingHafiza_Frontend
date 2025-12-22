@@ -153,3 +153,7 @@ Backend'de yapılması gerekenler için `BACKEND_VIDEO_NOTLARI_VIDEO_ID.md` dosy
    - `POST /api/video-notes` - videoId ile not kaydetme
 
 
+
+
+
+

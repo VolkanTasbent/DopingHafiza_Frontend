@@ -514,3 +514,7 @@ curl -X GET "http://localhost:8080/api/video-notes?konuId=123&videoUrl=https://w
 **Daha detaylı bilgi için:** `BACKEND_VIDEO_NOTLARI_YAPILACAKLAR.md` dosyasına bakın.
 
 
+
+
+
+

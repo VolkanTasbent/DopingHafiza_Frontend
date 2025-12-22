@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import PomodoroTimer from "./PomodoroTimer";
+
 import { calculateUserScoreFromReports } from "./services/scoring";
 import "./Dashboard.css";
 
@@ -145,15 +145,14 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
       }
     });
     
-    // Pomodoro süresini ekle (fallback - sadece backend verisi yoksa)
-    // NOT: Backend'den gelen veride pomodoro süresi zaten dahil olmalı
-    totalMinutes += pomodoroStats.today.minutes || 0;
+    // NOT: Backend'den gelen dailyStudyTimes zaten pomodoro süresini içeriyor
+    // Pomodoro süresini tekrar eklemeye gerek yok (çift sayma olur)
     
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     
     return { hours, minutes, totalMinutes };
-  }, [dailyStudyTimes, raporlar, pomodoroStats]);
+  }, [dailyStudyTimes, raporlar]);
 
   // Grafik verilerini hesapla (backend'den gelen veriyi kullan)
   const grafikVerileri = useMemo(() => {
@@ -677,6 +676,7 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
     try {
       const response = await api.get("/api/pomodoro/stats");
       if (response.data) {
+        console.log("🍅 Dashboard - Pomodoro istatistikleri backend'den geldi:", response.data);
         setPomodoroStats(response.data);
       }
     } catch (error) {
@@ -1691,8 +1691,39 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
             </div>
           </div>
 
-          {/* Pomodoro Timer Widget */}
-          <PomodoroTimer isWidget={true} onNavigate={onNavigate} me={me} />
+          {/* Pomodoro İstatistikleri Widget */}
+          <div className="dashboard-card-modern">
+            <div className="dashboard-card-header">
+              <h3 className="dashboard-card-title">🍅 Pomodoro İstatistikleri</h3>
+            </div>
+            <div className="dashboard-card-content">
+              <div className="pomodoro-stats-modern">
+                <div className="pomodoro-stat-item">
+                  <div className="pomodoro-stat-label">Bugün</div>
+                  <div className="pomodoro-stat-value">{pomodoroStats.today.count} oturum</div>
+                  <div className="pomodoro-stat-detail">{pomodoroStats.today.minutes} dakika</div>
+                </div>
+                <div className="pomodoro-stat-item">
+                  <div className="pomodoro-stat-label">Bu Hafta</div>
+                  <div className="pomodoro-stat-value">{pomodoroStats.week.count} oturum</div>
+                  <div className="pomodoro-stat-detail">{pomodoroStats.week.minutes} dakika</div>
+                </div>
+                <div className="pomodoro-stat-item">
+                  <div className="pomodoro-stat-label">Toplam</div>
+                  <div className="pomodoro-stat-value">{pomodoroStats.total.count} oturum</div>
+                  <div className="pomodoro-stat-detail">{pomodoroStats.total.minutes} dakika</div>
+                </div>
+              </div>
+              <div className="pomodoro-action-modern">
+                <button 
+                  className="pomodoro-start-button"
+                  onClick={() => onNavigate && onNavigate("pomodoro")}
+                >
+                  🍅 Pomodoro Başlat
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Günlük Görevler */}
           <div className="dashboard-card-modern">

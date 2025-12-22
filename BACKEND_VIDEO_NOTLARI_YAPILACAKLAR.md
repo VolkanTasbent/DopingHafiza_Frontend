@@ -510,3 +510,7 @@ WHERE konu_id = 123;
 4. `videoId` ve `videoUrl` filtrelemesi doğru çalışıyor mu kontrol edin
 
 
+
+
+
+
