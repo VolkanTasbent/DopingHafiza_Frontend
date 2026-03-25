@@ -21,6 +21,9 @@ dist-ssr
 .venv/
 **/.venv/
 
+# Backend ayri GitHub reposunda; ayni workspace'te klon varsa frontend commit'ine karismasin
+DopingHafiza_Backend/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
