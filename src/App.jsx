@@ -21,6 +21,8 @@ import Takvim from "./Takvim";
 import SearchModal from "./SearchModal";
 import PomodoroTimer from "./PomodoroTimer";
 import NotificationCenter from "./NotificationCenter";
+import AIAssistant from "./AIAssistant";
+import CalismaProgrami from "./CalismaProgrami";
 
 
 import "./App.css";
@@ -254,6 +256,20 @@ export default function App() {
           </button>
 
           <button
+            className={`menu-item ${page === "calisma-programi" ? "active" : ""}`}
+            onClick={() => setPage("calisma-programi")}
+          >
+            📋 Çalışma programı
+          </button>
+
+          <button
+            className={`menu-item ${page === "ai" ? "active" : ""}`}
+            onClick={() => setPage("ai")}
+          >
+            🤖 AI Kocum
+          </button>
+
+          <button
             className={`menu-item ${page === "pomodoro" ? "active" : ""}`}
             onClick={() => setPage("pomodoro")}
           >
@@ -445,6 +461,14 @@ export default function App() {
       {page === "pomodoro" && (
   <PomodoroTimer me={me} />
 )}
+
+          {page === "ai" && (
+            <AIAssistant onBack={() => setPage("dersler")} />
+          )}
+
+          {page === "calisma-programi" && (
+            <CalismaProgrami onBack={() => setPage("dersler")} />
+          )}
 
         </main>
       </div>

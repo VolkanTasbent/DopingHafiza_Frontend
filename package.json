@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ai:start": "bash ./DopingHafiza_Backend/scripts/start_ai_stack.sh",
+    "ai:train-start": "bash ./DopingHafiza_Backend/scripts/start_ai_stack.sh --train",
+    "ai:status": "bash ./DopingHafiza_Backend/scripts/status_ai_stack.sh",
+    "ai:stop": "bash ./DopingHafiza_Backend/scripts/stop_ai_stack.sh",
+    "dev:all": "bash ./DopingHafiza_Backend/scripts/start_dev_all.sh",
+    "dev:all:train": "bash ./DopingHafiza_Backend/scripts/start_dev_all.sh --train",
+    "dev:all:status": "bash ./DopingHafiza_Backend/scripts/status_dev_all.sh",
+    "dev:all:stop": "bash ./DopingHafiza_Backend/scripts/stop_dev_all.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

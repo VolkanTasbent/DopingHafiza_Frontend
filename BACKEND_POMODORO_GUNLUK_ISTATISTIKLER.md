@@ -296,3 +296,7 @@ Eğer backend endpoint'i yoksa, frontend localStorage'dan veri yükleyecektir (k
 
 
 
+
+
+
+

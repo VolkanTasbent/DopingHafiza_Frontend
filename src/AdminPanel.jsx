@@ -39,6 +39,7 @@ export default function AdminPanel({ onBack }) {
 
   // --- ui ---
   const [msg, setMsg] = useState("");
+  const [aiEngineInfo, setAiEngineInfo] = useState({ source: "heuristic", modelVersion: null });
   const [soruListesiAcik, setSoruListesiAcik] = useState(false);
   const [duzenlenenSoruId, setDuzenlenenSoruId] = useState(null);
   
@@ -270,7 +271,10 @@ export default function AdminPanel({ onBack }) {
   };
 
   // --------- EFFECTS ----------
-  useEffect(() => { fetchDersler(); }, []);
+  useEffect(() => {
+    fetchDersler();
+    fetchAiEngineInfo();
+  }, []);
 
   useEffect(() => {
     if (seciliDersId) {
@@ -297,6 +301,23 @@ export default function AdminPanel({ onBack }) {
       const { data } = await api.get("/api/ders");
       setDersler(data || []);
     } catch (e) { setMsg("Dersler alınamadı: " + errText(e)); }
+  }
+
+  async function fetchAiEngineInfo() {
+    try {
+      const { data } = await api.get("/api/ai/analyze-weak-topics", { params: { days: 30, limit: 1 } });
+      const top = Array.isArray(data?.weakTopics) && data.weakTopics[0] ? data.weakTopics[0] : null;
+      if (!top) {
+        setAiEngineInfo({ source: "heuristic", modelVersion: null });
+        return;
+      }
+      setAiEngineInfo({
+        source: top.source || "heuristic",
+        modelVersion: top.modelVersion || null,
+      });
+    } catch {
+      setAiEngineInfo({ source: "heuristic", modelVersion: null });
+    }
   }
 
   async function addDers(e) {
@@ -1227,12 +1248,13 @@ export default function AdminPanel({ onBack }) {
     }
   }
 
-  async function fetchSorular() {
+  async function fetchSorular(konuIdParam = null) {
     if (!seciliDersId) return;
     setLoading(true);
     try {
-      const params = { dersId: Number(seciliDersId), limit: 100 };
-      if (listeKonuId) params.konuId = Number(listeKonuId);
+      const params = { dersId: Number(seciliDersId), limit: 10000 }; // Tüm soruları getirmek için yüksek limit
+      const konuId = konuIdParam !== null ? konuIdParam : listeKonuId;
+      if (konuId) params.konuId = Number(konuId);
       const { data } = await api.get("/api/sorular", { params });
       // Admin Panel'de TÜM sorular gösterilmeli (hem normal hem deneme sınavı soruları)
       // Filtreleme yapılmıyor - tüm sorular gösteriliyor
@@ -1954,6 +1976,10 @@ export default function AdminPanel({ onBack }) {
         <div className="admin-header-content">
           <h1 className="admin-main-title">Admin Panel</h1>
           <p className="admin-subtitle-text">Ders, konu ve soru yönetim paneli</p>
+          <p className="admin-subtitle-text" style={{ marginTop: 6 }}>
+            AI motoru: <strong>{aiEngineInfo.source}</strong>
+            {aiEngineInfo.modelVersion ? ` (${aiEngineInfo.modelVersion})` : ""}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {/* Tab Navigation */}
@@ -3196,10 +3222,7 @@ export default function AdminPanel({ onBack }) {
               onClick={() => {
                 const yeniDurum = !soruListesiAcik;
                 setSoruListesiAcik(yeniDurum);
-                // Liste açılırken soruları yükle
-                if (yeniDurum) {
-                  fetchSorular();
-                }
+                // Liste açılırken soruları yükleme - kullanıcı konu seçtiğinde yüklenecek
               }}
             >
               <span style={{ flex: 1 }}>Elimizdeki Sorular {sorular.length > 0 && `(${sorular.length})`}</span>
@@ -3217,26 +3240,44 @@ export default function AdminPanel({ onBack }) {
                   <select 
                     className="admin-select"
                     value={listeKonuId} 
-                    onChange={(e) => setListeKonuId(e.target.value)}
+                    onChange={(e) => {
+                      const secilenKonuId = e.target.value;
+                      setListeKonuId(secilenKonuId);
+                      // Konu seçildiğinde otomatik olarak soruları yükle
+                      if (secilenKonuId) {
+                        fetchSorular(secilenKonuId);
+                      } else {
+                        // "Lütfen bir konu seçin" seçildiğinde listeyi temizle
+                        setSorular([]);
+                      }
+                    }}
                   >
-                  <option value="">Tüm konular</option>
+                  <option value="">Lütfen bir konu seçin</option>
                   {konular.map((k) => (
                     <option key={k.id} value={k.id}>{k.ad}</option>
                   ))}
                 </select>
-                  <button 
-                    type="button" 
-                    onClick={fetchSorular} 
-                    disabled={loading}
-                    className="admin-btn admin-btn-secondary"
-                  >
-                  {loading ? "Yükleniyor..." : "Listeyi Yenile"}
-                </button>
+                  {listeKonuId && (
+                    <button 
+                      type="button" 
+                      onClick={fetchSorular} 
+                      disabled={loading}
+                      className="admin-btn admin-btn-secondary"
+                    >
+                      {loading ? "Yükleniyor..." : "Listeyi Yenile"}
+                    </button>
+                  )}
               </div>
 
-                {sorular.length === 0 && (
+                {!listeKonuId && (
                   <p style={{ color: "#6b7280", fontStyle: "italic", textAlign: "center", padding: "40px" }}>
-                    Seçilen ölçütlerde soru yok.
+                    Soruları görmek için yukarıdan bir konu seçin.
+                  </p>
+                )}
+
+                {listeKonuId && sorular.length === 0 && !loading && (
+                  <p style={{ color: "#6b7280", fontStyle: "italic", textAlign: "center", padding: "40px" }}>
+                    Seçilen konuda soru bulunamadı.
                   </p>
                 )}
 
