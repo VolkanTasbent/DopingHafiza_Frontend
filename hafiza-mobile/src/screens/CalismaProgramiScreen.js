@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { Card, PrimaryButton, SecondaryButton, SectionTitle } from "../components/ui";
+import { Card, PrimaryButton, SectionTitle } from "../components/ui";
 import { fetchAiStudyPlan } from "../services/quiz";
 import { loadSavedPlans } from "../services/aiCoachStorage";
 import {
@@ -19,7 +19,7 @@ import {
   loadWeekdayAvailabilityAsync,
   saveWeekdayAvailabilityAsync,
 } from "../utils/calismaProgramiSchedule";
-import { colors } from "../theme";
+import { aiCoach, colors } from "../theme";
 
 const DAY_LABELS = ["Pzt", "Sal", "Car", "Per", "Cum", "Cmt", "Paz"];
 
@@ -231,7 +231,9 @@ export default function CalismaProgramiScreen({ navigation }) {
           </View>
           <View style={styles.btnRow}>
             <PrimaryButton title={loading ? "..." : "AI programini yenile"} onPress={onRefreshAi} disabled={loading} />
-            <SecondaryButton title="Kayitlari yenile" onPress={reloadSaved} />
+            <Pressable style={styles.outlineBtn} onPress={reloadSaved}>
+              <Text style={styles.outlineBtnText}>Kayitlari yenile</Text>
+            </Pressable>
           </View>
           <Text style={styles.activeLine}>
             <Text style={styles.bold}>Aktif:</Text> {activeLabel || "Secilmedi"}
@@ -265,20 +267,24 @@ export default function CalismaProgramiScreen({ navigation }) {
             ))
           )}
           {aiPlan?.tasks?.length ? (
-            <SecondaryButton
-              title="AI onerisine don"
+            <Pressable
+              style={[styles.outlineBtn, styles.outlineBtnDashed, { marginTop: 8 }]}
               onPress={() => {
                 setActivePlan(aiPlan);
                 setActiveLabel("AI onerisi (guncel)");
                 if (aiPlan?.dailyMinutes != null) setScheduleDailyCap(String(Number(aiPlan.dailyMinutes) || 120));
               }}
-            />
+            >
+              <Text style={styles.outlineBtnText}>AI onerisine don</Text>
+            </Pressable>
           ) : null}
         </Card>
 
         <Card style={styles.card}>
           <View style={styles.weekNav}>
-            <SecondaryButton title="Onceki" onPress={() => setSelectedWeek((d) => addDays(d, -7))} />
+            <Pressable style={[styles.outlineBtn, styles.outlineBtnSm]} onPress={() => setSelectedWeek((d) => addDays(d, -7))}>
+              <Text style={[styles.outlineBtnText, styles.outlineBtnTextSm]}>Onceki</Text>
+            </Pressable>
             <View style={styles.weekMid}>
               <Text style={styles.weekRange}>
                 {weekRangeText.start} – {weekRangeText.end}
@@ -287,7 +293,9 @@ export default function CalismaProgramiScreen({ navigation }) {
                 <Text style={styles.todayLink}>Bu hafta</Text>
               </Pressable>
             </View>
-            <SecondaryButton title="Sonraki" onPress={() => setSelectedWeek((d) => addDays(d, 7))} />
+            <Pressable style={[styles.outlineBtn, styles.outlineBtnSm]} onPress={() => setSelectedWeek((d) => addDays(d, 7))}>
+              <Text style={[styles.outlineBtnText, styles.outlineBtnTextSm]}>Sonraki</Text>
+            </Pressable>
           </View>
           <Text style={styles.summary}>
             Bu hafta toplam: <Text style={styles.bold}>{totalWeekMinutes} dk</Text>
@@ -367,7 +375,9 @@ export default function CalismaProgramiScreen({ navigation }) {
           </Text>
         </View>
 
-        <SecondaryButton title="Manuel haftalik plan (ders / soru hedefi)" onPress={() => navigation.navigate("StudyPlan")} />
+        <Pressable style={styles.outlineBtn} onPress={() => navigation.navigate("StudyPlan")}>
+          <Text style={styles.outlineBtnText}>Manuel haftalik plan (ders / soru hedefi)</Text>
+        </Pressable>
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -375,75 +385,97 @@ export default function CalismaProgramiScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: aiCoach.pageBg },
   scroll: { paddingHorizontal: 16, paddingBottom: 32 },
   card: { marginBottom: 10 },
+  outlineBtn: {
+    backgroundColor: aiCoach.ghostBg,
+    borderWidth: 1,
+    borderColor: aiCoach.ghostBorder,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outlineBtnDashed: { borderStyle: "dashed" },
+  outlineBtnText: { color: aiCoach.ghostText, fontWeight: "700", fontSize: 15 },
+  outlineBtnSm: { paddingVertical: 10, paddingHorizontal: 12, minWidth: 88 },
+  outlineBtnTextSm: { fontSize: 14 },
   rowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   field: { minWidth: "28%", flexGrow: 1 },
-  label: { fontSize: 11, fontWeight: "700", color: colors.muted, marginBottom: 4 },
+  label: { fontSize: 11, fontWeight: "700", color: aiCoach.muted, marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: aiCoach.border,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    backgroundColor: "#fff",
+    backgroundColor: aiCoach.cardBg,
     fontSize: 14,
-    color: colors.text,
+    color: aiCoach.text,
   },
   btnRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
-  activeLine: { marginTop: 12, fontSize: 13, color: colors.text, lineHeight: 20 },
+  activeLine: { marginTop: 12, fontSize: 13, color: aiCoach.text, lineHeight: 20 },
   bold: { fontWeight: "800" },
-  subLabel: { marginTop: 12, fontSize: 11, fontWeight: "800", color: colors.muted },
+  subLabel: { marginTop: 12, fontSize: 11, fontWeight: "800", color: aiCoach.muted },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 2 },
-  chipOn: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  chipOff: { backgroundColor: "#f1f5f9", borderColor: "#e2e8f0", opacity: 0.75 },
+  chipOn: { backgroundColor: aiCoach.primarySoft, borderColor: aiCoach.primary },
+  chipOff: { backgroundColor: aiCoach.cardMuted, borderColor: aiCoach.border, opacity: 0.75 },
   chipText: { fontSize: 12, fontWeight: "800" },
-  chipTextOn: { color: colors.primary },
-  chipTextOff: { color: colors.muted },
-  h2: { fontSize: 16, fontWeight: "800", color: colors.text, marginBottom: 4 },
-  hint: { fontSize: 12, color: colors.muted, marginBottom: 8 },
-  muted: { fontSize: 13, color: colors.muted },
+  chipTextOn: { color: aiCoach.chipText },
+  chipTextOff: { color: aiCoach.muted },
+  h2: { fontSize: 16, fontWeight: "800", color: aiCoach.text, marginBottom: 4 },
+  hint: { fontSize: 12, color: aiCoach.muted, marginBottom: 8 },
+  muted: { fontSize: 13, color: aiCoach.muted },
   savedItem: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: aiCoach.border,
     borderRadius: 10,
     padding: 10,
     marginBottom: 8,
-    backgroundColor: "#fafbff",
+    backgroundColor: aiCoach.savedCardBg,
   },
-  savedTitle: { fontWeight: "800", color: colors.text },
-  savedDate: { fontSize: 11, color: colors.muted, marginTop: 4 },
+  savedTitle: { fontWeight: "800", color: aiCoach.text },
+  savedDate: { fontSize: 11, color: aiCoach.muted, marginTop: 4 },
   weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 },
   weekMid: { flex: 1, alignItems: "center" },
-  weekRange: { fontSize: 12, fontWeight: "700", color: colors.text, textAlign: "center" },
-  todayLink: { fontSize: 12, fontWeight: "800", color: colors.primary, marginTop: 4 },
-  summary: { fontSize: 14, color: colors.text, marginBottom: 6 },
-  miniHint: { fontSize: 11, color: colors.muted, lineHeight: 16 },
+  weekRange: { fontSize: 12, fontWeight: "700", color: aiCoach.text, textAlign: "center" },
+  todayLink: { fontSize: 12, fontWeight: "800", color: aiCoach.primary, marginTop: 4 },
+  summary: { fontSize: 14, color: aiCoach.textBody, marginBottom: 6 },
+  miniHint: { fontSize: 11, color: aiCoach.muted, lineHeight: 16 },
   warnBox: {
     marginTop: 10,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: "#fff7ed",
+    backgroundColor: aiCoach.riskBg,
     borderWidth: 1,
     borderColor: "#fed7aa",
   },
-  warnText: { fontSize: 12, color: "#9a3412", lineHeight: 18 },
+  warnText: { fontSize: 12, color: aiCoach.riskText, lineHeight: 18 },
   center: { padding: 24, alignItems: "center" },
   dayCard: { marginBottom: 8 },
-  dayToday: { borderWidth: 2, borderColor: colors.primary },
-  dayOff: { opacity: 0.72, backgroundColor: "#f8fafc" },
+  dayToday: { borderWidth: 2, borderColor: aiCoach.primary },
+  dayOff: { opacity: 0.72, backgroundColor: aiCoach.cardMuted },
   dayOver: { borderWidth: 2, borderColor: "#fb923c" },
   dayHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  dayName: { fontSize: 15, fontWeight: "800", color: colors.text },
-  todayBadge: { fontSize: 10, fontWeight: "800", color: colors.primary, backgroundColor: colors.primarySoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  offBadge: { fontSize: 10, fontWeight: "800", color: colors.muted, marginBottom: 6 },
-  minutesLine: { fontSize: 12, fontWeight: "800", color: colors.primary, marginBottom: 8 },
+  dayName: { fontSize: 15, fontWeight: "800", color: aiCoach.text },
+  todayBadge: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: aiCoach.primary,
+    backgroundColor: aiCoach.primarySoft,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  offBadge: { fontSize: 10, fontWeight: "800", color: aiCoach.muted, marginBottom: 6 },
+  minutesLine: { fontSize: 12, fontWeight: "800", color: aiCoach.primary, marginBottom: 8 },
   overflowTag: { fontSize: 10, fontWeight: "800", color: "#c2410c" },
   taskBox: {
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: aiCoach.border,
     paddingTop: 10,
     marginTop: 8,
   },
@@ -462,10 +494,10 @@ const styles = StyleSheet.create({
   badgeQuiz: { backgroundColor: "#dcfce7", color: "#15803d" },
   badgeReview: { backgroundColor: "#ffedd5", color: "#c2410c" },
   badgeDefault: { backgroundColor: "#e2e8f0", color: "#475569" },
-  taskTitle: { fontSize: 13, fontWeight: "700", color: colors.text },
-  taskMeta: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: "600" },
-  taskDesc: { fontSize: 12, color: colors.muted, marginTop: 4, lineHeight: 18 },
+  taskTitle: { fontSize: 13, fontWeight: "700", color: aiCoach.text },
+  taskMeta: { fontSize: 11, color: aiCoach.muted, marginTop: 2, fontWeight: "600" },
+  taskDesc: { fontSize: 12, color: aiCoach.muted, marginTop: 4, lineHeight: 18 },
   legend: { flexDirection: "row", flexWrap: "wrap", gap: 16, marginVertical: 14, paddingHorizontal: 4 },
-  legendItem: { fontSize: 12, color: colors.muted, fontWeight: "600" },
+  legendItem: { fontSize: 12, color: aiCoach.muted, fontWeight: "600" },
   dot: { width: 10, height: 10, borderRadius: 2, marginRight: 6 },
 });

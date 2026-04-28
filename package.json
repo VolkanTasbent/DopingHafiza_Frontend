@@ -15,7 +15,9 @@
     "dev:all": "bash ./DopingHafiza_Backend/scripts/start_dev_all.sh",
     "dev:all:train": "bash ./DopingHafiza_Backend/scripts/start_dev_all.sh --train",
     "dev:all:status": "bash ./DopingHafiza_Backend/scripts/status_dev_all.sh",
-    "dev:all:stop": "bash ./DopingHafiza_Backend/scripts/stop_dev_all.sh"
+    "dev:all:stop": "bash ./DopingHafiza_Backend/scripts/stop_dev_all.sh",
+    "dev:web+browsers": "bash ./DopingHafiza_Backend/scripts/start_dev_web_browsers.sh",
+    "dev:web+browsers:train": "bash ./DopingHafiza_Backend/scripts/start_dev_web_browsers.sh --train"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

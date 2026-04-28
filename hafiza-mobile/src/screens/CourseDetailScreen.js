@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SectionTitle, SecondaryButton } from "../components/ui";
+import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { fetchKonular, fetchRaporlar } from "../services/quiz";
 import { colors } from "../theme";
 
@@ -24,7 +25,7 @@ function toAbsoluteUrl(url) {
   const raw = String(url || "").trim();
   if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  const base = String(process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
+  const base = getApiBaseUrl();
   if (!base) return raw;
   return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }

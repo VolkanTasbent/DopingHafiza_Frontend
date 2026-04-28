@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { aiCoachTheme as t } from "./aiCoachTheme";
 import api from "./services/api";
 import { loadSavedPlans, removeSavedPlan, saveStudyPlanEntry } from "./services/aiCoachStorage";
 
@@ -15,7 +16,6 @@ export default function AIAssistant({ onBack }) {
   const [dailyMinutes, setDailyMinutes] = useState(120);
   const [analysis, setAnalysis] = useState(null);
   const [plan, setPlan] = useState(null);
-  const [abCompare, setAbCompare] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -38,12 +38,6 @@ export default function AIAssistant({ onBack }) {
       ]);
       setAnalysis(aRes.data || null);
       setPlan(pRes.data || null);
-      try {
-        const { data } = await api.get("/api/ai/ab-compare", { params: { days, limit: 6 } });
-        setAbCompare(data || null);
-      } catch {
-        setAbCompare(null);
-      }
     } catch (e) {
       console.error("AI ekrani yuklenemedi", e);
       alert("AI verileri yuklenemedi.");
@@ -101,34 +95,40 @@ export default function AIAssistant({ onBack }) {
       borderRadius: 18,
       padding: 22,
       color: "#fff",
-      background: "linear-gradient(135deg, #111827 0%, #312e81 100%)",
-      boxShadow: "0 16px 36px rgba(15,23,42,0.24)",
+      background: t.heroGradient,
+      boxShadow: t.heroShadow,
     },
     heroTitle: { marginTop: 0, color: "#fff", fontSize: 24, fontWeight: 800 },
-    heroSub: { color: "#cbd5e1", marginTop: 4, marginBottom: 12 },
+    heroSub: { color: t.heroTextMuted, marginTop: 4, marginBottom: 12 },
     metrics: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 },
-    metricPill: { borderRadius: 12, padding: "10px 12px", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.2)" },
-    metricLabel: { color: "#cbd5e1", fontSize: 12, fontWeight: 600 },
+    metricPill: { borderRadius: 12, padding: "10px 12px", background: t.heroPillBg, border: `1px solid ${t.heroPillBorder}` },
+    metricLabel: { color: t.heroTextMuted, fontSize: 12, fontWeight: 600 },
     metricValue: { color: "#fff", fontSize: 16, fontWeight: 800 },
     controls: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 },
-    input: { padding: "10px 12px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#fff" },
-    primaryBtn: { padding: "10px 14px", borderRadius: 10, border: "1px solid #4f46e5", background: "#4f46e5", color: "#fff", fontWeight: 700 },
-    ghostBtn: { padding: "10px 14px", borderRadius: 10, border: "1px solid #334155", background: "#fff", color: "#334155", fontWeight: 700 },
+    input: {
+      padding: "10px 12px",
+      borderRadius: 10,
+      border: `1px solid ${t.border}`,
+      background: t.cardBg,
+      color: t.text,
+      caretColor: t.primary,
+    },
+    primaryBtn: { padding: "10px 14px", borderRadius: 10, border: `1px solid ${t.primaryDark}`, background: t.primary, color: "#fff", fontWeight: 700 },
+    ghostBtn: { padding: "10px 14px", borderRadius: 10, border: `1px solid ${t.ghostBorder}`, background: t.ghostBg, color: t.ghostText, fontWeight: 700 },
     sectionTitle: { fontSize: 20, marginBottom: 10 },
     list: { display: "grid", gap: 10 },
-    row: { border: "1px solid #e2e8f0", borderRadius: 12, padding: 10, background: "#fcfdff" },
+    row: { border: `1px solid ${t.border}`, borderRadius: 12, padding: 10, background: t.rowBg },
     rowTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
     rowTitle: { fontWeight: 700 },
-    meta: { fontSize: 13, color: "#64748b", marginTop: 2 },
-    riskPill: { borderRadius: 999, padding: "4px 9px", fontSize: 12, fontWeight: 800, background: "#ffedd5", color: "#9a3412" },
-    sourcePill: { borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, background: "#e0e7ff", color: "#3730a3", marginLeft: 6 },
+    meta: { fontSize: 13, color: t.muted, marginTop: 2 },
+    riskPill: { borderRadius: 999, padding: "4px 9px", fontSize: 12, fontWeight: 800, background: t.riskBg, color: t.riskText },
     chatBox: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" },
-    bubbleUser: { alignSelf: "flex-end", background: "#4f46e5", color: "#fff", padding: 12, borderRadius: 14, maxWidth: "92%", whiteSpace: "pre-wrap" },
-    bubbleAsst: { alignSelf: "flex-start", background: "#f8fafc", border: "1px solid #e2e8f0", padding: 12, borderRadius: 14, maxWidth: "92%", whiteSpace: "pre-wrap", lineHeight: 1.55 },
+    bubbleUser: { alignSelf: "flex-end", background: t.bubbleUser, color: "#fff", padding: 12, borderRadius: 14, maxWidth: "92%", whiteSpace: "pre-wrap" },
+    bubbleAsst: { alignSelf: "flex-start", background: t.bubbleAsstBg, border: `1px solid ${t.bubbleAsstBorder}`, padding: 12, borderRadius: 14, maxWidth: "92%", whiteSpace: "pre-wrap", lineHeight: 1.55 },
     thread: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 },
     presetRow: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-    chip: { padding: "8px 12px", borderRadius: 999, border: "1px solid #c7d2fe", background: "#eef2ff", color: "#3730a3", fontWeight: 700, fontSize: 13, cursor: "pointer" },
-    savedCard: { border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 10, background: "#fafbff" },
+    chip: { padding: "8px 12px", borderRadius: 999, border: `1px solid ${t.chipBorder}`, background: t.chipBg, color: t.chipText, fontWeight: 700, fontSize: 13, cursor: "pointer" },
+    savedCard: { border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, marginBottom: 10, background: t.savedCardBg },
     planHead: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" },
   };
 
@@ -167,7 +167,7 @@ export default function AIAssistant({ onBack }) {
 
       <div className="card">
         <h3 style={ui.sectionTitle}>AI asistan sohbeti</h3>
-        <p style={{ color: "#64748b", marginTop: 0 }}>Hazir aksiyonlar mesaji otomatik gonderir. Cevaplar cok satirli olabilir.</p>
+        <p style={{ color: t.muted, marginTop: 0 }}>Hazir aksiyonlar mesaji otomatik gonderir. Cevaplar cok satirli olabilir.</p>
         <div style={ui.presetRow}>
           {PRESET.map((p) => (
             <button key={p.label} type="button" style={ui.chip} onClick={() => sendChat(p.text)} disabled={sending}>
@@ -177,7 +177,7 @@ export default function AIAssistant({ onBack }) {
         </div>
         <div style={ui.thread}>
           {messages.length === 0 ? (
-            <p style={{ color: "#64748b" }}>Henuz mesaj yok. Yukaridaki bir aksiyona tikla veya asagiya yaz.</p>
+            <p style={{ color: t.muted }}>Henuz mesaj yok. Yukaridaki bir aksiyona tikla veya asagiya yaz.</p>
           ) : (
             messages.map((msg, i) => (
               <div key={`m-${i}`} style={msg.role === "user" ? ui.bubbleUser : ui.bubbleAsst}>
@@ -202,7 +202,7 @@ export default function AIAssistant({ onBack }) {
         </div>
         {quickReplies.length > 0 ? (
           <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>Onerilen sonraki sorular</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, marginBottom: 6 }}>Onerilen sonraki sorular</div>
             <div style={ui.presetRow}>
               {quickReplies.map((q) => (
                 <button key={q} type="button" style={ui.chip} onClick={() => sendChat(q)} disabled={sending}>
@@ -216,9 +216,9 @@ export default function AIAssistant({ onBack }) {
 
       <div className="card">
         <h3 style={ui.sectionTitle}>Kayitli calisma programlarim</h3>
-        <p style={{ color: "#64748b" }}>Programlar hesabina bagli olarak sunucuda saklanir (en fazla 20 kayit).</p>
+        <p style={{ color: t.muted }}>Programlar hesabina bagli olarak sunucuda saklanir (en fazla 20 kayit).</p>
         {savedPlans.length === 0 ? (
-          <p style={{ color: "#64748b" }}>Henuz kayitli program yok.</p>
+          <p style={{ color: t.muted }}>Henuz kayitli program yok.</p>
         ) : (
           savedPlans.map((sp) => (
             <div key={sp.id} style={ui.savedCard}>
@@ -232,11 +232,11 @@ export default function AIAssistant({ onBack }) {
                   Sil
                 </button>
               </div>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>{new Date(sp.savedAt).toLocaleString("tr-TR")}</div>
-              <p style={{ margin: "6px 0", color: "#334155" }}>{sp.summary}</p>
-              {(sp.tasks || []).slice(0, 8).map((t, i) => (
-                <div key={`${sp.id}-t-${i}`} style={{ fontSize: 13, color: "#475569" }}>
-                  {i + 1}. {t.title} ({t.estimatedMinutes} dk)
+              <div style={{ fontSize: 12, color: t.muted, marginBottom: 6 }}>{new Date(sp.savedAt).toLocaleString("tr-TR")}</div>
+              <p style={{ margin: "6px 0", color: t.textBody }}>{sp.summary}</p>
+              {(sp.tasks || []).slice(0, 8).map((task, i) => (
+                <div key={`${sp.id}-t-${i}`} style={{ fontSize: 13, color: t.textBody }}>
+                  {i + 1}. {task.title} ({task.estimatedMinutes} dk)
                 </div>
               ))}
             </div>
@@ -251,7 +251,7 @@ export default function AIAssistant({ onBack }) {
             Programi kaydet
           </button>
         </div>
-        <p style={{ color: "#334155" }}>{plan?.summary || "Program henuz olusmadi."}</p>
+        <p style={{ color: t.textBody }}>{plan?.summary || "Program henuz olusmadi."}</p>
         <div style={ui.list}>
           {(plan?.tasks || []).map((task, i) => (
             <div key={`${task.title}-${i}`} style={ui.row}>
@@ -270,7 +270,7 @@ export default function AIAssistant({ onBack }) {
       <div className="card">
         <h3 style={ui.sectionTitle}>Eksik konularim</h3>
         {(analysis?.weakTopics || []).length === 0 ? (
-          <p style={{ color: "#64748b" }}>Yeterli veri yok.</p>
+          <p style={{ color: t.muted }}>Yeterli veri yok.</p>
         ) : (
           <div style={ui.list}>
             {(analysis?.weakTopics || []).map((t, i) => (
@@ -279,40 +279,13 @@ export default function AIAssistant({ onBack }) {
                   <div style={ui.rowTitle}>
                     {t.dersAd} / {t.konuAd}
                   </div>
-                  <div>
-                    <span style={ui.riskPill}>Risk %{t.riskScore}</span>
-                    <span style={ui.sourcePill}>
-                      {t.source || "heuristic"}
-                      {t.modelVersion ? ` • ${t.modelVersion}` : ""}
-                    </span>
-                  </div>
+                  <span style={ui.riskPill}>Risk %{t.riskScore}</span>
                 </div>
                 <div style={ui.meta}>Basari %{t.successRate}</div>
                 <div style={{ fontSize: 14, marginTop: 4 }}>{t.recommendation}</div>
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h3 style={ui.sectionTitle}>A/B Karsilastirma (ML vs Heuristic)</h3>
-        {abCompare?.topics?.length ? (
-          <div style={ui.list}>
-            {abCompare.topics.map((x, i) => (
-              <div key={`${x.konuId || i}`} style={ui.row}>
-                <div style={ui.rowTitle}>
-                  {x.dersAd} / {x.konuAd}
-                </div>
-                <div style={ui.meta}>
-                  H: %{x.heuristicRisk} | ML: %{x.mlRisk ?? "-"} | Delta:{" "}
-                  <b style={{ color: Number(x.delta || 0) >= 0 ? "#0f766e" : "#b91c1c" }}>{x.delta ?? "-"}</b> | Aktif: {x.activeSource}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: "#64748b" }}>A/B verisi su an kullanilamiyor.</p>
         )}
       </div>
     </div>

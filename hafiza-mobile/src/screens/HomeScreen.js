@@ -38,10 +38,10 @@ const TILE_ACCENTS = {
   gorev: "#f97316",
   rozet: "#e11d48",
   takvim: "#8b5cf6",
-  calisma: "#6366f1",
+  calisma: colors.primary,
   pomodoro: "#ef4444",
   flash: "#10b981",
-  ai: "#111827",
+  ai: colors.primary,
 };
 const MOBILE_BUILD_TAG = "mobile-build-2026-03-08-01";
 
@@ -322,7 +322,7 @@ export default function HomeScreen({ navigation }) {
             style={[
               styles.tileCard,
               { backgroundColor: tile.bg, borderColor: `${TILE_ACCENTS[tile.id] || colors.primary}22` },
-              tile.id === "ai" ? styles.aiTile : null,
+              tile.id === "ai" || tile.id === "calisma" ? styles.coachFlowTile : null,
             ]}
             onPress={() => navigateTo(tile.action)}
           >
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   tileIcon: { fontSize: 22 },
   tileText: { flex: 1, color: colors.text, fontWeight: "800", fontSize: 13 },
   tileTextLight: { color: "#fff" },
-  aiTile: { borderColor: "#11182733", backgroundColor: "#f8f9ff" },
+  coachFlowTile: { borderColor: "rgba(74, 84, 255, 0.35)", backgroundColor: colors.primarySoft },
   aiTileSub: { marginTop: 2, color: colors.muted, fontSize: 11, fontWeight: "600" },
   activityCard: { marginBottom: 12 },
   continueCard: { marginBottom: 10 },

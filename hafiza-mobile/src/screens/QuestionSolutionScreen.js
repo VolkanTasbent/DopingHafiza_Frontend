@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { Card, SectionTitle } from "../components/ui";
+import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { colors } from "../theme";
 
 function analyzeItem(item) {
@@ -39,7 +40,7 @@ function toAbsoluteUrl(url) {
   const raw = String(url || "").trim();
   if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  const base = String(process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
+  const base = getApiBaseUrl();
   if (!base) return raw;
   return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }

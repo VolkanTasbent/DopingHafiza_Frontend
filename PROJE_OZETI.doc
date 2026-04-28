@@ -1,0 +1,134 @@
+HAFIZA AKADEMI PROJESI - DETAYLI KULLANICI OZETI
+Tarih: 28.04.2026
+
+1) PROJENIN AMACI
+Hafiza Akademi projesinin amaci, ogrencinin tum ders calisma surecini tek platformda yonetmesini saglamaktir.
+Kullanici bu sistemde plan yapar, soru cozer, deneme olur, gelisimini izler ve AI destegiyle calisma stratejisini iyilestirir.
+
+2) PROJENIN MANTIGI
+- Kullanici sisteme kayit olur/giris yapar.
+- Uygulama kullanicinin ders, soru, deneme ve rapor verilerini backend'den ceker.
+- Kullanici uygulama icinde yaptigi her islemle kendi ilerleme verisini olusturur.
+- Bu veriler rapor, grafik, takvim, gamification ve AI ekranlarinda tekrar kullaniciya geri sunulur.
+- Boylece sistem "calis -> olc -> analiz et -> duzelt -> tekrar calis" dongusuyle ilerler.
+
+3) KULLANICININ YAPABILECEGI TUM ANA ISLEMLER
+
+3.1 Hesap ve oturum islemleri
+- Kayit olma
+- Giris yapma
+- Cikis yapma
+- Oturumun cihazda hatirlanmasi
+- Profil bilgilerini guncelleme
+- Profil resmi/avatar yukleme
+
+3.2 Ana sayfa ve genel takip
+- Ana panelden guncel durumunu gorme
+- Hizli erisim kartlari ile modullere gecme
+- O gunun calisma akisina genel bakis alma
+
+3.3 Ders ve konu islemleri
+- Ders listesini gorme
+- Secilen derse ait konulari listeleme
+- Konu bazli ilerleme akisina girme
+- Ders detayinda ilgili icerikleri inceleme
+
+3.4 Soru ve quiz islemleri
+- Konuya gore soru listeleme
+- Soru detayini inceleme
+- Soruyu cevaplama
+- Quiz baslatma ve bitirme
+- Quiz sonucunu sisteme gonderme
+- Sonuc bilgisi uzerinden performansini gorme
+
+3.5 Deneme sinavi islemleri
+- Deneme sinavi listesine girme
+- Bir denemeyi secip sorulari cozmeye baslama
+- Deneme sonucunu kaydetme
+- Deneme performansini rapor ekranlarinda gorme
+
+3.6 Raporlama ve performans analizi
+- Raporlar listesine ulasma
+- Tek bir raporun detayini acma
+- Grafik ekraninda basari/gelisim trendini gorme
+- Takvimde hangi gun ne kadar calistigini izleme
+- Pomodoro bazli gunluk calisma istatistigi gorme
+- Zaman icindeki gelisimini karsilastirma
+
+3.7 Pomodoro ve odak yonetimi
+- Pomodoro zamanlayiciyi baslatma/durdurma/resetleme
+- Odak suresi takibi yapma
+- Kisa/uzun mola akislarini kullanma
+- Yapilan odak oturumlarini gunluk/toplam olarak izleme
+
+3.8 Gunluk planlama ve gorev yonetimi
+- Gunluk gorev olusturma
+- Gorevleri tamamlama/duzenleme
+- Gunluk hedef belirleme
+- Calisma programi olusturma ve takip etme
+- Hatirlatici akisini kullanarak duzenli calisma rutini kurma
+
+3.9 Takvim ve plan ekranlari
+- Takvim uzerinden gun secme
+- O gun yapilan calisma verilerini gorme
+- Calisma dagilimini tarih bazinda takip etme
+- Planli calisma programina gore ilerleme kontrolu
+
+3.10 Video ve not ozellikleri
+- Video ders listesini gorme
+- Dersle ilgili videolari acma
+- Video notu ekleme
+- Mevcut video notunu guncelleme/silme
+- Notlar ile tekrar calismasi yapma
+
+3.11 Flashcard ve tekrar
+- Flashcard ekraninda tekrar yapma
+- Kartlar uzerinden hizli bilgi tazeleme
+- Konu tekrarini parcalara bolerek ilerleme
+
+3.12 Arama ve kesif
+- Uygulama ici arama yapma
+- Iceriklere daha hizli ulasma
+- Ders/soru/ekran baglantilarina hizli gecis
+
+3.13 Bildirim ve hatirlatma
+- Bildirim ekraninda guncel bildirimleri gorme
+- Hatirlaticilar ile calisma duzenini surdurme
+
+3.14 Gamification (motivasyon)
+- XP kazanma
+- Seviye atlama
+- Rozet kazanma
+- Liderlik tablosunda yer alma
+- Market ekraninda odul/puan mantigini kullanma
+
+3.15 AI destekli ozellikler
+- Zayif konu analizi alma
+- AI tarafindan calisma plani onerisi alma
+- AI sohbet/koc ekranindan yonlendirme alma
+- Veriye dayali olarak hangi konuya agirlik verecegini belirleme
+
+3.16 Yonetimsel alanlar (yetkiye bagli)
+- Admin paneline ulasma
+- Yonetim odakli ekranlarda listeleme/duzenleme islemleri
+
+4) KULLANICININ ELDE ETTIGI DEGER
+- Ne calisacagini daha net planlar.
+- Nerede eksik oldugunu gorur.
+- Verimliligini olcebilir.
+- Motivasyonunu oyunlastirma ile korur.
+- AI yardimi ile stratejisini hizli gunceller.
+
+5) KISA TEKNOLOJI OZETI
+- Web: React, Vite, Axios
+- Mobil: Expo (React Native), React Navigation, Axios
+- Grafik: Chart.js
+- Mobil yerel veri: AsyncStorage
+- API baglantisi: REST endpointleri
+
+6) SONUC
+Bu proje, kullanicinin basit bir soru cozumunden daha fazlasini yapmasini saglar.
+Kullanici planlama, uygulama, takip, analiz ve gelisim adimlarini tek yerde yonetebilir.
+Yani sistem bir "ders calisma ekosistemi" olarak tasarlanmistir.
+
+Belge sonu.

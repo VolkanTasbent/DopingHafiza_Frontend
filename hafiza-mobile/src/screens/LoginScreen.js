@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { PrimaryButton } from "../components/ui";
+import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { colors } from "../theme";
 
 export default function LoginScreen() {
@@ -42,7 +43,15 @@ export default function LoginScreen() {
         await login(email, password);
       }
     } catch (e) {
-      const errMsg = e?.response?.data?.message || e?.response?.data?.error || "Islem basarisiz.";
+      const isNetwork =
+        e?.code === "ECONNABORTED" ||
+        e?.code === "ERR_NETWORK" ||
+        e?.message === "Network Error" ||
+        (!e?.response && e?.request);
+      const base = getApiBaseUrl();
+      const errMsg = isNetwork
+        ? `Sunucuya ulasilamadi.\n\nUygulamanin denedigi adres:\n${base}\n\n1) Web (Vite) ile ayni port: varsayilan 8085; backend baska porttaysa EXPO_PUBLIC_API_PORT ile esitleyin.\n2) Mac ve telefon ayni Wi-Fi; Spring ayakta olsun.\n3) Gerekirse hafiza-mobile/.env:\nEXPO_PUBLIC_API_URL=http://<Mac_LAN_IP>:8085\n4) Veya app.json -> expo.extra.apiBaseUrl ile tam URL.\n5) Degisiklikten sonra Metro'yu yeniden baslat (npm start).`
+        : e?.response?.data?.message || e?.response?.data?.error || e?.message || "Islem basarisiz.";
       Alert.alert("Hata", String(errMsg));
     }
   }

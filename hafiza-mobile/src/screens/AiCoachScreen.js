@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Card, PrimaryButton, SecondaryButton, SectionTitle } from "../components/ui";
-import { fetchAiAbCompare, fetchAiStudyPlan, fetchAiWeakTopics, sendAiChat } from "../services/quiz";
+import { Card, PrimaryButton, SectionTitle } from "../components/ui";
+import { fetchAiStudyPlan, fetchAiWeakTopics, sendAiChat } from "../services/quiz";
 import { loadSavedPlans, removeSavedPlan, saveStudyPlanEntry } from "../services/aiCoachStorage";
-import { colors } from "../theme";
+import { aiCoach, colors } from "../theme";
 
 const PRESET_PROMPTS = [
   { label: "Eksiklerim neler?", text: "Eksiklerim neler?" },
@@ -20,7 +20,6 @@ export default function AiCoachScreen({ navigation }) {
   const [dailyMinutes, setDailyMinutes] = useState("120");
   const [analysis, setAnalysis] = useState(null);
   const [plan, setPlan] = useState(null);
-  const [abCompare, setAbCompare] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [quickReplies, setQuickReplies] = useState([]);
@@ -47,12 +46,6 @@ export default function AiCoachScreen({ navigation }) {
       ]);
       setAnalysis(a);
       setPlan(p);
-      try {
-        const ab = await fetchAiAbCompare({ days: dayNum, limit: 6 });
-        setAbCompare(ab);
-      } catch {
-        setAbCompare(null);
-      }
     } catch (e) {
       Alert.alert("Hata", "AI analiz verisi alinamadi.");
     } finally {
@@ -119,11 +112,12 @@ export default function AiCoachScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <SectionTitle title="AI Ders Kocu" subtitle="Sohbet, eksik analizi ve kayitli programlar" />
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-        <SecondaryButton
-          title="Haftalik calisma programi takvimi"
+        <Pressable
+          style={[styles.ghostNavBtn, { marginBottom: 10 }]}
           onPress={() => navigation.navigate("CalismaProgrami")}
-          style={{ marginBottom: 10 }}
-        />
+        >
+          <Text style={styles.ghostNavBtnText}>Haftalik calisma programi takvimi</Text>
+        </Pressable>
         <Card style={styles.heroCard}>
           <Text style={styles.heroTitle}>Bugun neye odaklanmaliyim?</Text>
           <Text style={styles.heroSub}>Asistan mesajlari gercek performans verine gore uretir; asagidan hazir sorularla da devam edebilirsin.</Text>
@@ -171,6 +165,7 @@ export default function AiCoachScreen({ navigation }) {
             <TextInput
               style={[styles.input, { flex: 1, marginBottom: 0 }]}
               placeholder="Mesaj yaz..."
+              placeholderTextColor={aiCoach.muted}
               value={message}
               onChangeText={setMessage}
               onSubmitEditing={onSend}
@@ -223,6 +218,7 @@ export default function AiCoachScreen({ navigation }) {
             <TextInput
               style={[styles.input, { flex: 1, marginBottom: 0 }]}
               placeholder="Analiz gunu"
+              placeholderTextColor={aiCoach.muted}
               keyboardType="number-pad"
               value={days}
               onChangeText={setDays}
@@ -230,6 +226,7 @@ export default function AiCoachScreen({ navigation }) {
             <TextInput
               style={[styles.input, { flex: 1, marginBottom: 0 }]}
               placeholder="Gunluk dakika"
+              placeholderTextColor={aiCoach.muted}
               keyboardType="number-pad"
               value={dailyMinutes}
               onChangeText={setDailyMinutes}
@@ -241,7 +238,7 @@ export default function AiCoachScreen({ navigation }) {
         <Card style={styles.card}>
           <View style={styles.planHead}>
             <Text style={styles.h2}>Kisisel programim</Text>
-            <SecondaryButton title="Kaydet" onPress={onSavePlan} disabled={loading || !plan?.tasks?.length} />
+            <PrimaryButton title="Kaydet" onPress={onSavePlan} disabled={loading || !plan?.tasks?.length} style={{ flex: 0, minWidth: 100 }} />
           </View>
           <Text style={styles.desc}>{plan?.summary || "Program henuz olusturulmadi."}</Text>
           {(plan?.tasks || []).map((task, idx) => (
@@ -281,30 +278,8 @@ export default function AiCoachScreen({ navigation }) {
                   </Text>
                   <Text style={styles.riskBadge}>Risk %{t.riskScore}</Text>
                 </View>
-                <Text style={styles.meta}>
-                  Basari: %{t.successRate} | Kaynak: {t.source || "heuristic"}
-                  {t.modelVersion ? ` (${t.modelVersion})` : ""}
-                </Text>
+                <Text style={styles.meta}>Basari: %{t.successRate}</Text>
                 <Text style={styles.desc}>{t.recommendation}</Text>
-              </View>
-            ))
-          )}
-        </Card>
-
-        <Card style={styles.card}>
-          <Text style={styles.h2}>A/B Karsilastirma</Text>
-          {(abCompare?.topics || []).length === 0 ? (
-            <Text style={styles.muted}>A/B verisi su an kullanilamiyor.</Text>
-          ) : (
-            (abCompare?.topics || []).map((x, idx) => (
-              <View key={`${x.konuId || idx}`} style={styles.item}>
-                <Text style={styles.title}>
-                  {x.dersAd} / {x.konuAd}
-                </Text>
-                <Text style={styles.meta}>
-                  H:%{x.heuristicRisk} | ML:%{x.mlRisk ?? "-"} | Delta:
-                  <Text style={[styles.delta, Number(x.delta || 0) >= 0 ? styles.deltaUp : styles.deltaDown]}>{x.delta ?? "-"}</Text> | Aktif:{x.activeSource}
-                </Text>
               </View>
             ))
           )}
@@ -315,47 +290,112 @@ export default function AiCoachScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
+  container: { flex: 1, backgroundColor: aiCoach.pageBg, padding: 16 },
   card: { marginBottom: 10, borderRadius: 16 },
-  heroCard: { marginBottom: 10, backgroundColor: "#111827", borderColor: "#1f2937", borderWidth: 1, borderRadius: 16 },
+  ghostNavBtn: {
+    backgroundColor: aiCoach.ghostBg,
+    borderWidth: 1,
+    borderColor: aiCoach.ghostBorder,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: "center",
+  },
+  ghostNavBtnText: { color: aiCoach.ghostText, fontWeight: "700", fontSize: 15 },
+  heroCard: {
+    marginBottom: 10,
+    backgroundColor: aiCoach.heroSolid,
+    borderColor: aiCoach.heroBorder,
+    borderWidth: 1,
+    borderRadius: 16,
+    shadowColor: aiCoach.heroShadow,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 8,
+  },
   heroTitle: { color: "#fff", fontWeight: "800", fontSize: 17, marginBottom: 4 },
-  heroSub: { color: "#cbd5e1", fontSize: 12, marginBottom: 10 },
+  heroSub: { color: aiCoach.heroTextMuted, fontSize: 12, marginBottom: 10 },
   metricsRow: { flexDirection: "row", gap: 8 },
-  metricPill: { flex: 1, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.08)", paddingVertical: 8, paddingHorizontal: 10 },
-  metricLabel: { color: "#cbd5e1", fontSize: 11, fontWeight: "600" },
+  metricPill: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: aiCoach.heroPillBg,
+    borderWidth: 1,
+    borderColor: aiCoach.heroPillBorder,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  metricLabel: { color: aiCoach.heroTextMuted, fontSize: 11, fontWeight: "600" },
   metricValue: { color: "#fff", fontSize: 13, fontWeight: "800", marginTop: 1 },
-  h2: { color: colors.text, fontWeight: "800", marginBottom: 6 },
-  hint: { color: colors.muted, fontSize: 12, marginBottom: 8 },
+  h2: { color: aiCoach.text, fontWeight: "800", marginBottom: 6 },
+  hint: { color: aiCoach.muted, fontSize: 12, marginBottom: 8 },
   row: { flexDirection: "row", gap: 8, marginBottom: 8, alignItems: "center" },
   presetRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
-  presetChip: { backgroundColor: colors.primarySoft, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
-  presetChipText: { color: colors.primary, fontWeight: "700", fontSize: 12 },
+  presetChip: {
+    backgroundColor: aiCoach.chipBg,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: aiCoach.chipBorder,
+  },
+  presetChipText: { color: aiCoach.chipText, fontWeight: "700", fontSize: 12 },
   thread: { marginBottom: 10 },
   bubble: { maxWidth: "92%", padding: 12, borderRadius: 14, marginBottom: 8 },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: colors.primary },
-  bubbleAssistant: { alignSelf: "flex-start", backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border },
+  bubbleUser: { alignSelf: "flex-end", backgroundColor: aiCoach.bubbleUser },
+  bubbleAssistant: { alignSelf: "flex-start", backgroundColor: aiCoach.bubbleAsstBg, borderWidth: 1, borderColor: aiCoach.bubbleAsstBorder },
   bubbleUserText: { color: "#fff", fontSize: 14, lineHeight: 20 },
-  bubbleAssistantText: { color: colors.text, fontSize: 14, lineHeight: 20 },
-  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
+  bubbleAssistantText: { color: aiCoach.text, fontSize: 14, lineHeight: 20 },
+  input: {
+    backgroundColor: aiCoach.cardBg,
+    borderWidth: 1,
+    borderColor: aiCoach.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+    color: aiCoach.text,
+    fontSize: 16,
+  },
   quickWrap: { marginTop: 4 },
-  quickLabel: { fontSize: 11, fontWeight: "700", color: colors.muted, marginBottom: 6 },
-  quickChip: { backgroundColor: "#f1f5f9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: "#e2e8f0" },
-  quickChipText: { color: colors.text, fontSize: 11, fontWeight: "600" },
-  savedBlock: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 10, marginBottom: 10, backgroundColor: "#fafbff" },
+  quickLabel: { fontSize: 11, fontWeight: "700", color: aiCoach.muted, marginBottom: 6 },
+  quickChip: {
+    backgroundColor: aiCoach.quickChipBg,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: aiCoach.quickChipBorder,
+  },
+  quickChipText: { color: aiCoach.chipText, fontSize: 11, fontWeight: "600" },
+  savedBlock: {
+    borderWidth: 1,
+    borderColor: aiCoach.border,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: aiCoach.savedCardBg,
+  },
   savedHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  savedTitle: { fontWeight: "800", color: colors.text, flex: 1 },
-  savedDate: { color: colors.muted, fontSize: 11, marginBottom: 6 },
-  savedTask: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  deleteLink: { color: colors.danger, fontWeight: "700", fontSize: 13 },
+  savedTitle: { fontWeight: "800", color: aiCoach.text, flex: 1 },
+  savedDate: { color: aiCoach.muted, fontSize: 11, marginBottom: 6 },
+  savedTask: { color: aiCoach.muted, fontSize: 12, marginTop: 2 },
+  deleteLink: { color: aiCoach.danger, fontWeight: "700", fontSize: 13 },
   planHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8 },
-  item: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 10 },
+  item: { borderBottomWidth: 1, borderBottomColor: aiCoach.border, paddingVertical: 10 },
   itemTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  title: { color: colors.text, fontWeight: "700" },
-  riskBadge: { color: "#7c2d12", backgroundColor: "#ffedd5", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: "800" },
-  meta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  delta: { fontWeight: "800" },
-  deltaUp: { color: "#0f766e" },
-  deltaDown: { color: "#b91c1c" },
-  desc: { color: colors.text, fontSize: 13, marginTop: 4 },
-  muted: { color: colors.muted, fontSize: 13 },
+  title: { color: aiCoach.text, fontWeight: "700" },
+  riskBadge: {
+    color: aiCoach.riskText,
+    backgroundColor: aiCoach.riskBg,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  meta: { color: aiCoach.muted, fontSize: 12, marginTop: 2 },
+  desc: { color: aiCoach.textBody, fontSize: 13, marginTop: 4 },
+  muted: { color: aiCoach.muted, fontSize: 13 },
 });

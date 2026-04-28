@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { fetchProfile, updateProfile, uploadAvatar } from "../services/quiz";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
 import { colors } from "../theme";
@@ -97,7 +98,7 @@ export default function ProfileScreen({ navigation }) {
     const raw = String(url || "").trim();
     if (!raw) return "";
     if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-    const base = String(process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
+    const base = getApiBaseUrl();
     if (!base) return raw;
     return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
   }

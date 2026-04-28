@@ -177,8 +177,3 @@ export async function sendAiChat(message) {
   const { data } = await api.post("/api/ai/chat", { message });
   return data || {};
 }
-
-export async function fetchAiAbCompare({ days = 30, limit = 8 } = {}) {
-  const { data } = await api.get("/api/ai/ab-compare", { params: { days, limit } });
-  return data || {};
-}

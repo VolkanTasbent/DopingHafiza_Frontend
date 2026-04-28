@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:8085";
 
 // API kökü /api ile biterse onu static dosyalar için kırp
 export const API_ROOT = BASE.replace(/\/api\/?$/, "");
@@ -10,7 +10,7 @@ export const API_ROOT = BASE.replace(/\/api\/?$/, "");
 export function fileUrl(p) {
   if (!p) return null;
   if (/^https?:\/\//i.test(p)) return p;     // zaten tam URL ise dokunma
-  return `${API_ROOT}${p}`;                  // örn: http://localhost:8080 + /files/abc.jpg
+  return `${API_ROOT}${p}`;                  // örn: http://localhost:8085 + /files/abc.jpg
 }
 
 const api = axios.create({ baseURL: BASE });

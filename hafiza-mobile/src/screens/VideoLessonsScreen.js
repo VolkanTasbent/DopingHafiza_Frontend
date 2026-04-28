@@ -13,6 +13,7 @@ import {
 import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SecondaryButton, SectionTitle } from "../components/ui";
+import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { fetchKonular, fetchDersler, fetchVideoNotes, createVideoNote, updateVideoNote, deleteVideoNote } from "../services/quiz";
 import { getJSON, setJSON } from "../services/storage";
 import { addActivity } from "../services/activity";
@@ -68,7 +69,7 @@ function toAbsoluteUrl(url) {
   const raw = String(url || "").trim();
   if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  const base = String(process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
+  const base = getApiBaseUrl();
   if (!base) return raw;
   return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
