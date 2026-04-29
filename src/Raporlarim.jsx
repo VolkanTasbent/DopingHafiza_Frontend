@@ -22,7 +22,7 @@ export default function Raporlarim({ onBack, onDetayAc }) {
         setMsg("");
         setLoading(true);
         const { data } = await api.get("/api/raporlar", {
-          params: { limit: 100, _ts: Date.now() },
+          params: { limit: 500, _ts: Date.now() },
           headers: { "Cache-Control": "no-cache" }
         });
         
