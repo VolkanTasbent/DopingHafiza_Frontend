@@ -3,7 +3,7 @@ import api, { fileUrl } from "./services/api";
 import { submitQuiz } from "./services/quiz";
 import "./SoruCoz.css";
 
-export default function SoruCoz({ onBack, seciliDers, me }) {
+export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   // seçimler
   const [dersler, setDersler] = useState([]);
   const [seciliDersId, setSeciliDersId] = useState(seciliDers?.id?.toString() || "");
@@ -388,6 +388,7 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
         secenekId: secimler[q.id] ?? null,
       }));
       const payload = {
+        dersId: Number(seciliDersId) || undefined,
         items,
         startedAt: startedAtRef.current?.toISOString() ?? new Date().toISOString(),
         finishedAt: finishedAt.toISOString(),
@@ -442,7 +443,8 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
           soruSayisi: quizResult.total || sorular.length,
           dogru: quizResult.correct || 0,
           yanlis: quizResult.wrong || 0,
-          net: quizResult.score || 0
+          net: quizResult.score || 0,
+          durationMs: elapsedMs
         }
       };
       
@@ -936,6 +938,16 @@ export default function SoruCoz({ onBack, seciliDers, me }) {
               </div>
 
               <div className="result-actions">
+                {onFinish && (
+                  <button
+                    type="button"
+                    onClick={onFinish}
+                    className="new-test-btn"
+                    style={{ marginRight: 12 }}
+                  >
+                    Raporlara Git
+                  </button>
+                )}
                 <button 
                   type="button" 
                   onClick={() => { 

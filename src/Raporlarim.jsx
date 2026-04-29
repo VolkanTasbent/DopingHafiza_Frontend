@@ -82,10 +82,6 @@ export default function Raporlarim({ onBack, onDetayAc }) {
             Geri
           </button>
         )}
-        <button className="back-button" onClick={() => setSayfa("grafikler")}>
-  Grafikler
-</button>
-
       </div>
 
       {msg && (

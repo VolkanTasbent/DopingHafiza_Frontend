@@ -902,7 +902,11 @@ export default function DenemeSinavlari({ onBack }) {
 
           {step === "select" && (
             <div style={{ padding: '20px 0' }}>
-              {denemeListesi["TYT Denemeleri"].length === 0 && 
+              {loadingDenemeler ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                  <p>Yükleniyor...</p>
+                </div>
+              ) : denemeListesi["TYT Denemeleri"].length === 0 && 
                denemeListesi["AYT Denemeleri"].length === 0 && 
                denemeListesi["Diğer"].length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
