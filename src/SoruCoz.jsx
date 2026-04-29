@@ -3,6 +3,24 @@ import api, { fileUrl } from "./services/api";
 import { submitQuiz } from "./services/quiz";
 import "./SoruCoz.css";
 
+function RunningTimer({ startedAtMs }) {
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    if (!startedAtMs) return;
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [startedAtMs]);
+
+  if (!startedAtMs) return <span>00:00</span>;
+
+  const elapsedMs = Math.max(0, nowMs - startedAtMs);
+  const s = Math.floor(elapsedMs / 1000);
+  const mm = String(Math.floor(s / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return <span>{mm}:{ss}</span>;
+}
+
 export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   // seçimler
   const [dersler, setDersler] = useState([]);
@@ -17,9 +35,8 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   const [secimler, setSecimler] = useState({});  // { [soruId]: secenekId }
 
   // zaman
-  const [elapsedMs, setElapsedMs] = useState(0);
+  const [startedAtMs, setStartedAtMs] = useState(null);
   const startedAtRef = useRef(null);
-  const timerRef = useRef(null);
 
   const [msg, setMsg] = useState("");
   const [autoLoadTriggered, setAutoLoadTriggered] = useState(false);
@@ -34,13 +51,6 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   // --- helpers ---
   const errText = (e) =>
     e?.response?.data?.message || e?.response?.data?.error || e?.response?.data || e?.message || "Hata";
-
-  const sureStr = useMemo(() => {
-    const s = Math.floor(elapsedMs / 1000);
-    const mm = String(Math.floor(s / 60)).padStart(2, "0");
-    const ss = String(s % 60).padStart(2, "0");
-    return `${mm}:${ss}`;
-  }, [elapsedMs]);
 
   // --- effects ---
   useEffect(() => { 
@@ -74,8 +84,6 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
       setKonular([]); setSorular([]); setStep("select");
     }
   }, [seciliDersId]);
-
-  useEffect(() => () => { stopTimer(); }, []);
 
   // Otomatik soru getirme fonksiyonu
   async function autoGetirSorular(dersId) {
@@ -309,22 +317,11 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   }
 
   // --- test akışı ---
-  function startTimer() {
-    startedAtRef.current = new Date();
-    setElapsedMs(0);
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setElapsedMs(Date.now() - startedAtRef.current.getTime());
-    }, 250);
-  }
-  function stopTimer() {
-    clearInterval(timerRef.current);
-    timerRef.current = null;
-  }
-
   function startTest() {
+    const now = new Date();
+    startedAtRef.current = now;
+    setStartedAtMs(now.getTime());
     setStep("running");
-    startTimer();
   }
 
   function choose(soruId, secenekId) {
@@ -381,8 +378,10 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
 
   async function submitTest() {
     try {
-      stopTimer();
       const finishedAt = new Date();
+      const durationMs = startedAtRef.current
+        ? Math.max(0, finishedAt.getTime() - startedAtRef.current.getTime())
+        : 0;
       const items = sorular.map((q) => ({
         soruId: q.id,
         secenekId: secimler[q.id] ?? null,
@@ -444,7 +443,7 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
           dogru: quizResult.correct || 0,
           yanlis: quizResult.wrong || 0,
           net: quizResult.score || 0,
-          durationMs: elapsedMs
+          durationMs
         }
       };
       
@@ -502,7 +501,7 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
             {step === "running" && (
               <div className="timer-display">
                 <span className="timer-icon">⏱️</span>
-                <span>{sureStr}</span>
+                <RunningTimer startedAtMs={startedAtMs} />
               </div>
             )}
           </div>
@@ -956,6 +955,8 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
                     setSecimler({}); 
                     setFlaggedQuestions(new Set());
                     setCurrent(0);
+                    startedAtRef.current = null;
+                    setStartedAtMs(null);
                   }}
                   className="new-test-btn"
                 >

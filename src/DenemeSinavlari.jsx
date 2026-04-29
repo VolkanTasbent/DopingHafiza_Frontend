@@ -3,7 +3,25 @@ import api, { fileUrl } from "./services/api";
 import { submitQuiz } from "./services/quiz";
 import "./SoruCoz.css";
 
-export default function DenemeSinavlari({ onBack }) {
+function RunningTimer({ startedAtMs }) {
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  useEffect(() => {
+    if (!startedAtMs) return;
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [startedAtMs]);
+
+  if (!startedAtMs) return <span>00:00</span>;
+
+  const elapsedMs = Math.max(0, nowMs - startedAtMs);
+  const s = Math.floor(elapsedMs / 1000);
+  const mm = String(Math.floor(s / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return <span>{mm}:{ss}</span>;
+}
+
+export default function DenemeSinavlari({ onBack, onFinish }) {
   const [denemeListesi, setDenemeListesi] = useState({
     "TYT Denemeleri": [],
     "AYT Denemeleri": [],
@@ -44,27 +62,6 @@ export default function DenemeSinavlari({ onBack }) {
       // TimerDisplay component'i unmount olunca otomatik temizlenir
     }
   }, [step]);
-
-  // TimerDisplay component'i - ayrı component olarak timer'ı izole ediyoruz
-  function TimerDisplay({ startedAt }) {
-    const [elapsedMs, setElapsedMs] = useState(0);
-
-    useEffect(() => {
-      if (!startedAt) return;
-      
-      const timer = setInterval(() => {
-        setElapsedMs(Date.now() - startedAt.getTime());
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    }, [startedAt]);
-
-    const s = Math.floor(elapsedMs / 1000);
-    const mm = String(Math.floor(s / 60)).padStart(2, "0");
-    const ss = String(s % 60).padStart(2, "0");
-    
-    return <span>{mm}:{ss}</span>;
-  }
 
   // Deneme adından kategoriyi belirle (TYT veya AYT)
   function getKategori(denemeAdi) {
@@ -882,7 +879,7 @@ export default function DenemeSinavlari({ onBack }) {
             {step === "running" && (
               <div className="timer-display">
                 <span className="timer-icon">⏱️</span>
-                <TimerDisplay startedAt={startedAtRef.current} />
+                <RunningTimer startedAtMs={startedAtRef.current?.getTime()} />
               </div>
             )}
           </div>
@@ -1283,6 +1280,16 @@ export default function DenemeSinavlari({ onBack }) {
               </div>
 
               <div className="result-actions">
+                {onFinish && (
+                  <button
+                    type="button"
+                    onClick={onFinish}
+                    className="new-test-btn"
+                    style={{ marginRight: 12 }}
+                  >
+                    Raporlara Git
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
