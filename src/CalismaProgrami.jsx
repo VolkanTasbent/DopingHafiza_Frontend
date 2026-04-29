@@ -26,6 +26,35 @@ function addDays(d, n) {
   return x;
 }
 
+/** En son kaydedilen AI programi varsa onu, yoksa guncel AI onerisini sec. */
+function pickInitialActivePlan(savedList, ai) {
+  const sorted = [...(savedList || [])].sort(
+    (a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0)
+  );
+  const latest = sorted[0];
+  if (latest?.tasks?.length) {
+    return {
+      plan: {
+        summary: latest.summary,
+        analyzedDays: latest.days,
+        dailyMinutes: latest.dailyMinutes,
+        mode: latest.mode,
+        tasks: latest.tasks,
+      },
+      label: latest.title || "Kayitli program (AI Koc)",
+      cap: latest.dailyMinutes != null ? Number(latest.dailyMinutes) || 120 : null,
+    };
+  }
+  if (ai?.tasks?.length) {
+    return {
+      plan: ai,
+      label: "AI onerisi (guncel)",
+      cap: ai.dailyMinutes != null ? Number(ai.dailyMinutes) || 120 : null,
+    };
+  }
+  return { plan: null, label: "", cap: null };
+}
+
 export default function CalismaProgrami({ onBack }) {
   const [selectedWeek, setSelectedWeek] = useState(() => new Date());
   const [loading, setLoading] = useState(true);
@@ -63,10 +92,11 @@ export default function CalismaProgrami({ onBack }) {
         if (!alive) return;
         setSavedPlans(saved);
         setAiPlan(ai);
-        if (ai?.tasks?.length) {
-          setActivePlan(ai);
-          setActiveLabel("AI onerisi (guncel)");
-          if (ai.dailyMinutes != null) setScheduleDailyCap(Number(ai.dailyMinutes) || 120);
+        const picked = pickInitialActivePlan(saved, ai);
+        if (picked.plan) {
+          setActivePlan(picked.plan);
+          setActiveLabel(picked.label);
+          if (picked.cap != null) setScheduleDailyCap(picked.cap);
         }
       } finally {
         if (alive) setLoading(false);

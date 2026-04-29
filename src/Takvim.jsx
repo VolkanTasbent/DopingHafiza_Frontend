@@ -1,6 +1,8 @@
 // src/Takvim.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import api from "./services/api";
+import { loadSavedPlans } from "./services/aiCoachStorage";
+import { assignTasksToWeekCalendar, loadWeekdayAvailability } from "./utils/calismaProgramiSchedule";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -34,6 +36,37 @@ export default function Takvim({ onBack, me }) {
     total: { count: 0, minutes: 0 }
   });
   const [pomodoroDailyStats, setPomodoroDailyStats] = useState({}); // Günlük pomodoro istatistikleri
+  const [savedStudyPlans, setSavedStudyPlans] = useState([]);
+
+  useEffect(() => {
+    const refreshPlans = () => {
+      loadSavedPlans()
+        .then(setSavedStudyPlans)
+        .catch(() => setSavedStudyPlans([]));
+    };
+    refreshPlans();
+    const onVis = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") refreshPlans();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  const latestSavedStudyPlan = useMemo(() => {
+    if (!savedStudyPlans.length) return null;
+    return [...savedStudyPlans].sort(
+      (a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0)
+    )[0];
+  }, [savedStudyPlans]);
+
+  const studyPlanSchedule = useMemo(() => {
+    const tasks = latestSavedStudyPlan?.tasks || [];
+    const cap = Math.max(30, Math.min(360, Number(latestSavedStudyPlan?.dailyMinutes) || 120));
+    return assignTasksToWeekCalendar(tasks, {
+      dailyCapMinutes: cap,
+      availableWeekday: loadWeekdayAvailability(),
+    });
+  }, [latestSavedStudyPlan]);
 
   // Haftalık verileri hesapla
   const weeklyData = useMemo(() => {
@@ -330,7 +363,10 @@ export default function Takvim({ onBack, me }) {
       <div className="takvim-header">
         <div className="takvim-header-left">
           <h1 className="takvim-title">Çalışma Takvimi</h1>
-          <p className="takvim-subtitle">Haftalık çalışma performansınızı takip edin</p>
+          <p className="takvim-subtitle">
+            Haftalık çalışma performansınızı takip edin; AI Koç ile kaydettiğiniz plan bu haftalık görünümde
+            görev olarak gösterilir
+          </p>
         </div>
         {onBack && (
           <button className="back-button" onClick={onBack}>
@@ -375,16 +411,27 @@ export default function Takvim({ onBack, me }) {
         </div>
       </div>
 
+      {latestSavedStudyPlan?.title ? (
+        <div className="takvim-plan-banner" role="status">
+          <strong>AI Koç planı:</strong> {latestSavedStudyPlan.title}
+          <span className="takvim-plan-banner-meta">
+            {" "}
+            (Çalışma programındaki müsait günlere göre bu haftaya yerleştirildi)
+          </span>
+        </div>
+      ) : null}
+
       {/* Haftalık Takvim */}
       <div className="calendar-grid">
         {weeklyData.map((day, index) => {
           const isToday = new Date().toDateString() === day.date.toDateString();
           const hours = day.hours + (day.minutes / 60);
-          
+          const plannedTasks = studyPlanSchedule.dayBuckets[index] || [];
+
           return (
             <div
               key={index}
-              className={`calendar-day ${isToday ? "today" : ""} ${hours > 0 ? "has-activity" : ""}`}
+              className={`calendar-day ${isToday ? "today" : ""} ${hours > 0 || plannedTasks.length ? "has-activity" : ""}`}
             >
               <div className="day-header">
                 <span className="day-name">{day.dayName}</span>
@@ -411,6 +458,20 @@ export default function Takvim({ onBack, me }) {
                 ) : (
                   <div className="day-empty">Çalışma yok</div>
                 )}
+                {plannedTasks.length > 0 ? (
+                  <div className="takvim-planned-block">
+                    <div className="takvim-planned-label">Plan (AI Koç)</div>
+                    <ul className="takvim-planned-list">
+                      {plannedTasks.map((t, ti) => (
+                        <li key={`plan-${index}-${ti}-${t.title || ""}`} className="takvim-planned-item">
+                          <span className="takvim-planned-type">{t.taskType || "görev"}</span>
+                          <span className="takvim-planned-title">{t.title}</span>
+                          <span className="takvim-planned-min">{t.estimatedMinutes} dk</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             </div>
           );
