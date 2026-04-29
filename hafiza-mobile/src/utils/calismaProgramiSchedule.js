@@ -38,14 +38,23 @@ export function assignTasksToWeekCalendar(tasks, options) {
     const m = Math.max(0, Number(task.estimatedMinutes) || 0);
     let placed = false;
 
+    let bestIdx = -1;
+    let bestLoad = Infinity;
     for (let i = 0; i < 7; i++) {
       if (!avail[i]) continue;
       if (minutesUsed[i] + m <= cap) {
-        dayBuckets[i].push(task);
-        minutesUsed[i] += m;
-        placed = true;
-        break;
+        const load = minutesUsed[i];
+        if (load < bestLoad || (load === bestLoad && i < bestIdx)) {
+          bestLoad = load;
+          bestIdx = i;
+        }
       }
+    }
+
+    if (bestIdx >= 0) {
+      dayBuckets[bestIdx].push(task);
+      minutesUsed[bestIdx] += m;
+      placed = true;
     }
 
     if (!placed) {

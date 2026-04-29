@@ -331,11 +331,16 @@ export default function CalismaProgrami({ onBack }) {
           </div>
 
           <div className="cpp-week-summary">
-            Bu hafta toplam: <strong>{totalWeekMinutes} dk</strong>
-            <span className="cpp-muted"> — Takvim gunluk ust sinir: {scheduleDailyCap} dk</span>
+            Bu haftaya yerlesen gorevler (toplam): <strong>{totalWeekMinutes} dk</strong>
+            <span className="cpp-muted">
+              {" "}
+              — Her musait gun icin ust sinir: <strong>{scheduleDailyCap} dk</strong> (gunluk); AI listesi bu sinira
+              gore gunlere dengeli dagitilir
+            </span>
             <p className="cpp-week-hint">
-              Gorunen haftanin gercek tarihlerine yerlestirilir; haftayi degistirdiginizde ayni gorevler o
-              haftanin musait gunlerine yeniden dagitilir.
+              Rakam haftalik kota degildir: AI yaklasik 7 x gunluk hedef kadar gorev uretir; takvim her gunu en fazla
+              gosterilen dakika ile doldurur. Haftayi degistirdiginizde ayni havuz yeni haftanin musait gunlerine yeniden
+              yerlestirilir.
             </p>
           </div>
 

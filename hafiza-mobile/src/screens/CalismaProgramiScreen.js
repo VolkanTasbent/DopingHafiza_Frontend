@@ -327,11 +327,12 @@ export default function CalismaProgramiScreen({ navigation }) {
             </Pressable>
           </View>
           <Text style={styles.summary}>
-            Bu hafta toplam: <Text style={styles.bold}>{totalWeekMinutes} dk</Text>
-            <Text style={styles.muted}> — Gunluk ust sinir: {capNum} dk</Text>
+            Bu haftaya yerlesen (toplam): <Text style={styles.bold}>{totalWeekMinutes} dk</Text>
+            <Text style={styles.muted}> — Her musait gun icin ust sinir: {capNum} dk (gunluk)</Text>
           </Text>
           <Text style={styles.miniHint}>
-            Gorunen haftanin tarihlerine yerlestirilir; haftayi degistirince gorevler o haftaya yeniden dagitilir.
+            Haftalik kota degil: AI yaklasik 7 x gunluk hedef kadar gorev uretir; takvim gun basina bu sinira gore
+            dengeli dagitir. Haftayi degistirince havuz o haftaya yeniden yerlesir.
           </Text>
           {(scheduleWarnings.overflows.length > 0 || scheduleWarnings.unassigned > 0) && (
             <View style={styles.warnBox}>
