@@ -40,6 +40,7 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [loadingDenemeler, setLoadingDenemeler] = useState(false);
   const [result, setResult] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fetchDenemeListesiRef = useRef(false);
 
   const errText = (e) =>
@@ -609,17 +610,11 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
   }
 
   async function submitTest() {
+    if (isSubmitting) return;
     try {
+      setIsSubmitting(true);
       // Timer useEffect tarafından otomatik durdurulacak (step !== "running" olduğunda)
       const finishedAt = new Date();
-      
-      console.log("=== SUBMIT TEST DEBUG ===");
-      console.log("Toplam soru sayısı:", sorular.length);
-      console.log("İlk 3 soru ID'leri:", sorular.slice(0, 3).map(s => ({ id: s.id, idType: typeof s.id })));
-      console.log("Secili deneme ID:", seciliDenemeId);
-      console.log("Secimler:", secimler);
-      console.log("Secimler keys:", Object.keys(secimler));
-      console.log("Secimler values:", Object.values(secimler));
       
       // Seçenek ID'lerini temizle - sadece sayısal ID'leri gönder
       const items = sorular
@@ -633,9 +628,6 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
         })
         .map((q) => {
           const secenekId = secimler[q.id];
-          console.log(`Soru ${q.id} için secenekId:`, secenekId, "tip:", typeof secenekId);
-          console.log(`Soru ${q.id} seçenekleri:`, q.secenekler?.map((s, idx) => ({ index: idx, id: s.id, metin: s.metin })));
-          
           // Eğer secenekId string ise (opt_X_Y formatında), gerçek seçenek ID'sini bul
           let finalSecenekId = null;
           
@@ -643,7 +635,6 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
             // Eğer sayısal bir ID ise direkt kullan
             if (typeof secenekId === 'number' || (typeof secenekId === 'string' && /^\d+$/.test(secenekId))) {
               finalSecenekId = typeof secenekId === 'string' ? parseInt(secenekId, 10) : secenekId;
-              console.log(`  → Sayısal ID, direkt kullanılıyor: ${finalSecenekId}`);
             } else if (typeof secenekId === 'string' && secenekId.startsWith('opt_')) {
               // opt_X_Y formatında ise, sorunun seçeneklerinden gerçek ID'yi bul
               const match = secenekId.match(/opt_(\d+)_(\d+)/);
@@ -651,14 +642,11 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
                 const soruId = parseInt(match[1], 10);
                 const index = parseInt(match[2], 10);
                 const soru = sorular.find(s => s.id === soruId);
-                console.log(`  → opt_X_Y formatında, soru bulundu:`, soru ? "evet" : "hayır", "index:", index);
                 if (soru && soru.secenekler && soru.secenekler[index]) {
                   const secenek = soru.secenekler[index];
-                  console.log(`  → Seçenek bulundu:`, secenek, "secenek.id:", secenek.id);
                   // Gerçek seçenek ID'sini kullan (eğer varsa)
                   if (secenek.id && (typeof secenek.id === 'number' || /^\d+$/.test(String(secenek.id)))) {
                     finalSecenekId = typeof secenek.id === 'string' ? parseInt(secenek.id, 10) : secenek.id;
-                    console.log(`  → Gerçek seçenek ID'si kullanılıyor: ${finalSecenekId}`);
                   } else {
                     // Gerçek ID yoksa, backend'e seçenek sırasını gönder (index + 1, çünkü backend 1-based olabilir)
                     // VEYA backend'e sıralama (siralama) değerini gönder
@@ -667,22 +655,14 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
                     // Eğer backend siralama alanını bekliyorsa onu kullanabiliriz
                     if (secenek.siralama !== null && secenek.siralama !== undefined) {
                       finalSecenekId = secenek.siralama;
-                      console.log(`  → Seçenek sıralaması kullanılıyor: ${finalSecenekId}`);
                     } else {
                       // Sıralama da yoksa index + 1 gönder (A=1, B=2, C=3, D=4, E=5)
                       finalSecenekId = index + 1;
-                      console.log(`  → Seçenek index'i kullanılıyor (index + 1): ${finalSecenekId}`);
                     }
                   }
-                } else {
-                  console.warn(`  → Soru veya seçenek bulunamadı, null gönderiliyor`);
                 }
               }
-            } else {
-              console.warn(`  → Beklenmeyen secenekId formatı:`, secenekId);
             }
-          } else {
-            console.log(`  → SecenekId null/undefined, boş cevap gönderiliyor`);
           }
           
           // Soru ID'sini sayıya çevir ve doğrula
@@ -707,13 +687,6 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
         })
         .filter(item => item !== null); // Null item'ları filtrele
       
-      console.log("Oluşturulan items:", items);
-      console.log("Items sayısı:", items.length);
-      console.log("Cevap verilen soru sayısı:", items.filter(i => i.secenekId !== null).length);
-      console.log("Boş soru sayısı:", items.filter(i => i.secenekId === null).length);
-      console.log("İlk 5 item örneği:", items.slice(0, 5));
-      console.log("Cevap verilen soruların örnekleri:", items.filter(i => i.secenekId !== null).slice(0, 5));
-      
       if (items.length === 0) {
         throw new Error("Gönderilecek soru bulunamadı!");
       }
@@ -733,8 +706,6 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
         }
       }
       
-      console.log("Final payload:", JSON.stringify(payload, null, 2));
-      
       // Önce deneme sınavı için özel endpoint'leri dene
       let res;
       const denemeIdNum = seciliDenemeId ? (typeof seciliDenemeId === 'string' ? parseInt(seciliDenemeId, 10) : seciliDenemeId) : null;
@@ -742,12 +713,7 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
       if (denemeIdNum && !isNaN(denemeIdNum)) {
         // Deneme sınavı için birkaç alternatif endpoint dene
         const endpoints = [
-          { url: `/api/deneme-sinavi/${denemeIdNum}/cevaplar`, method: 'POST' },
-          { url: `/api/deneme-sinavi/${denemeIdNum}/cevap`, method: 'POST' },
-          { url: `/api/deneme-sinavlari/${denemeIdNum}/cevaplar`, method: 'POST' },
-          { url: `/api/deneme-sinavlari/${denemeIdNum}/cevap`, method: 'POST' },
           { url: `/api/deneme-sinavi/${denemeIdNum}/submit`, method: 'POST' },
-          { url: `/api/deneme-sinavlari/${denemeIdNum}/submit`, method: 'POST' },
           { url: `/api/deneme-sinavi/submit`, method: 'POST', addDenemeId: true },
           { url: `/api/cevap/bulk`, method: 'POST', addDenemeId: true },
         ];
@@ -755,11 +721,6 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
         let lastError = null;
         for (const endpoint of endpoints) {
           try {
-            // Sadece çalışan endpoint'i logla, diğerlerini sessizce geç
-            if (endpoint.url === `/api/cevap/bulk`) {
-              console.log(`Deneme sınavı submit endpoint'i deneniyor: ${endpoint.method} ${endpoint.url}`);
-            }
-            
             let requestPayload = { ...payload };
             // Eğer denemeId body'ye eklenmesi gerekiyorsa
             if (endpoint.addDenemeId) {
@@ -768,14 +729,8 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
             
             const { data } = await api.post(endpoint.url, requestPayload);
             res = data;
-            console.log(`✅ ${endpoint.url} başarılı:`, res);
             break; // Başarılı olursa döngüden çık
           } catch (e) {
-            // Sadece çalışan endpoint'e kadar olanları logla, sonrakileri sessizce geç
-            if (endpoint.url === `/api/cevap/bulk`) {
-              const errorMsg = e.response?.data?.error || e.response?.data?.message || e.message;
-              console.warn(`❌ ${endpoint.url} başarısız:`, errorMsg);
-            }
             lastError = e;
             // Sonraki endpoint'i dene
             continue;
@@ -822,6 +777,8 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
       console.error("Error response:", e.response?.data);
       setMsg("Gönderim başarısız: " + errText(e));
       setStep("ready");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -1159,8 +1116,9 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
                       type="button" 
                       onClick={submitTest}
                       className="nav-btn nav-btn-submit"
+                      disabled={isSubmitting}
                     >
-                      ✓ Testi Bitir
+                      {isSubmitting ? "Gönderiliyor..." : "✓ Testi Bitir"}
                     </button>
                   </div>
                 </div>

@@ -41,6 +41,7 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   const [msg, setMsg] = useState("");
   const [autoLoadTriggered, setAutoLoadTriggered] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Arama ve filtreleme
   const [dersArama, setDersArama] = useState("");
@@ -377,7 +378,9 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
   const seciliKonuObj = konular.find(k => k.id === Number(seciliKonuId));
 
   async function submitTest() {
+    if (isSubmitting) return;
     try {
+      setIsSubmitting(true);
       const finishedAt = new Date();
       const durationMs = startedAtRef.current
         ? Math.max(0, finishedAt.getTime() - startedAtRef.current.getTime())
@@ -400,11 +403,14 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
       setResult(res);
       
       // Soru çözme aktivitesi kaydet
-      await saveQuizActivity(res);
+      // Aktivite kaydının sonucu UI'ı bekletmesin
+      saveQuizActivity(res).catch(() => {});
     } catch (e) {
       setMsg("Gönderim başarısız: " + errText(e));
       // süre görünmeye devam etmesin
       setStep("ready");
+    } finally {
+      setIsSubmitting(false);
     }
   }
   
@@ -885,8 +891,9 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
                 type="button" 
                 onClick={submitTest}
                 className="nav-btn nav-btn-submit"
+                disabled={isSubmitting}
               >
-                ✓ Testi Bitir
+                {isSubmitting ? "Gönderiliyor..." : "✓ Testi Bitir"}
               </button>
             </div>
           </>

@@ -21,7 +21,10 @@ export default function Raporlarim({ onBack, onDetayAc }) {
       try {
         setMsg("");
         setLoading(true);
-        const { data } = await api.get("/api/raporlar", { params: { limit: 100 } });
+        const { data } = await api.get("/api/raporlar", {
+          params: { limit: 100, _ts: Date.now() },
+          headers: { "Cache-Control": "no-cache" }
+        });
         
         // Yeniden eskiye sıralama (finishedAt'e göre)
         const sortedData = Array.isArray(data) 
