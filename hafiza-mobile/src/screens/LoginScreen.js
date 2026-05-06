@@ -242,7 +242,10 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <Text style={styles.footer}>© Hafıza Akademi</Text>
+          <View style={styles.footerBlock}>
+            <Text style={styles.footer}>© Hafıza Akademi</Text>
+            <Text style={styles.footerCredit}>Created by Volkan Taşbent</Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -439,11 +442,21 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.primary,
   },
+  footerBlock: {
+    alignItems: "center",
+    marginTop: 28,
+    gap: 6,
+  },
   footer: {
     textAlign: "center",
-    marginTop: 28,
     fontSize: 12,
     color: "rgba(255,255,255,0.45)",
+    fontWeight: "600",
+  },
+  footerCredit: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.38)",
     fontWeight: "600",
   },
 });

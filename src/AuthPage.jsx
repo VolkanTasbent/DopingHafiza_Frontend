@@ -527,6 +527,8 @@ export default function AuthPage({ onSuccess }) {
                 </button>
               </p>
             </div>
+
+            <p className="auth-credit">Created by Volkan Taşbent</p>
           </div>
         </div>
         </div>

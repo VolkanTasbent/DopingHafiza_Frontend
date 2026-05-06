@@ -1,0 +1,5 @@
+# https://www.hafizaakademi.com
+User-agent: *
+Allow: /
+
+Sitemap: https://www.hafizaakademi.com/sitemap.xml
