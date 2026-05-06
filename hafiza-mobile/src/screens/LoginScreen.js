@@ -1,7 +1,10 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,34 +16,56 @@ import { PrimaryButton } from "../components/ui";
 import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { colors } from "../theme";
 
+const SINIF_OPTIONS = [
+  { value: "9", label: "9" },
+  { value: "10", label: "10" },
+  { value: "11", label: "11" },
+  { value: "12", label: "12" },
+];
+
 export default function LoginScreen() {
   const { login, register, loading } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [ad, setAd] = useState("");
   const [soyad, setSoyad] = useState("");
   const [sinif, setSinif] = useState("");
 
   async function onSubmit() {
-    if (!email || !password) {
-      Alert.alert("Eksik bilgi", "E-posta ve sifre zorunlu.");
+    if (!email?.trim() || !password) {
+      Alert.alert("Eksik bilgi", "E-posta ve şifre zorunludur.");
       return;
+    }
+    if (isRegister) {
+      if (!ad?.trim() || !soyad?.trim()) {
+        Alert.alert("Eksik bilgi", "Kayıt için ad ve soyad zorunludur.");
+        return;
+      }
+      if (!sinif) {
+        Alert.alert("Eksik bilgi", "Sınıf seçin.");
+        return;
+      }
     }
 
     try {
       if (isRegister) {
         await register({
-          email,
+          email: email.trim(),
           password,
-          ad,
-          soyad,
+          ad: ad.trim(),
+          soyad: soyad.trim(),
           sinif: sinif || null,
         });
-        Alert.alert("Basarili", "Kayit tamamlandi. Simdi giris yapabilirsiniz.");
+        Alert.alert("Başarılı", "Kayıt tamamlandı. Şimdi giriş yapabilirsiniz.");
         setIsRegister(false);
+        setPassword("");
+        setAd("");
+        setSoyad("");
+        setSinif("");
       } else {
-        await login(email, password);
+        await login(email.trim(), password);
       }
     } catch (e) {
       const isNetwork =
@@ -50,117 +75,375 @@ export default function LoginScreen() {
         (!e?.response && e?.request);
       const base = getApiBaseUrl();
       const errMsg = isNetwork
-        ? `Sunucuya ulasilamadi.\n\nUygulamanin denedigi adres:\n${base}\n\n1) Web (Vite) ile ayni port: varsayilan 8085; backend baska porttaysa EXPO_PUBLIC_API_PORT ile esitleyin.\n2) Mac ve telefon ayni Wi-Fi; Spring ayakta olsun.\n3) Gerekirse hafiza-mobile/.env:\nEXPO_PUBLIC_API_URL=http://<Mac_LAN_IP>:8085\n4) Veya app.json -> expo.extra.apiBaseUrl ile tam URL.\n5) Degisiklikten sonra Metro'yu yeniden baslat (npm start).`
-        : e?.response?.data?.message || e?.response?.data?.error || e?.message || "Islem basarisiz.";
+        ? `Sunucuya ulaşılamadı.\n\nDenenen adres:\n${base}\n\nAğ ve backend adresini kontrol edin.`
+        : e?.response?.data?.message ||
+          e?.response?.data?.error ||
+          e?.message ||
+          "İşlem başarısız.";
       Alert.alert("Hata", String(errMsg));
     }
   }
 
+  function switchMode(register) {
+    setIsRegister(register);
+    if (!register) {
+      setAd("");
+      setSoyad("");
+      setSinif("");
+    }
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.hero}>
-        <Text style={styles.badge}>Doping Tarzi Mobil Deneyim</Text>
-        <Text style={styles.logo}>Hafiza Akademi</Text>
-        <Text style={styles.heroSub}>YKS calismalarini hizli, modern ve tek yerden yonet.</Text>
-        <View style={styles.heroList}>
-          <Text style={styles.heroItem}>- Ders bazli test ve deneme cozumu</Text>
-          <Text style={styles.heroItem}>- Video notlari, hedefler, hatirlatmalar</Text>
-          <Text style={styles.heroItem}>- Rapor, seviye, rozet ve market sistemi</Text>
-        </View>
-      </View>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.hero}>
+            <View style={styles.heroOrb1} />
+            <View style={styles.heroOrb2} />
+            <Text style={styles.heroEmoji}>📚</Text>
+            <Text style={styles.heroTitle}>Hafıza Akademi</Text>
+            <Text style={styles.heroLead}>YKS hazırlığında sorular, videolar ve raporlar tek yerde.</Text>
+          </View>
 
-      <View style={styles.card}>
-        <View style={styles.tabRow}>
-          <Text style={[styles.tab, !isRegister && styles.tabActive]} onPress={() => setIsRegister(false)}>
-            Giris Yap
-          </Text>
-          <Text style={[styles.tab, isRegister && styles.tabActive]} onPress={() => setIsRegister(true)}>
-            Kayit Ol
-          </Text>
-        </View>
+          <View style={styles.cardWrap}>
+            <View style={[styles.card, { borderColor: colors.border }]}>
+              <View style={styles.segment}>
+                <Pressable
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: !isRegister }}
+                  onPress={() => switchMode(false)}
+                  style={[styles.segmentBtn, !isRegister && styles.segmentBtnActive]}
+                >
+                  <Text style={[styles.segmentText, !isRegister && styles.segmentTextActive]}>Giriş yap</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isRegister }}
+                  onPress={() => switchMode(true)}
+                  style={[styles.segmentBtn, isRegister && styles.segmentBtnActive]}
+                >
+                  <Text style={[styles.segmentText, isRegister && styles.segmentTextActive]}>Kayıt ol</Text>
+                </Pressable>
+              </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="E-posta"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
+              <Text style={styles.cardHint}>
+                {isRegister ? "Bilgilerini gir; hesabın birkaç saniyede hazır." : "Hesabına giriş yap ve devam et."}
+              </Text>
 
-        {isRegister && (
-          <>
-            <TextInput style={styles.input} placeholder="Ad" value={ad} onChangeText={setAd} />
-            <TextInput style={styles.input} placeholder="Soyad" value={soyad} onChangeText={setSoyad} />
-            <TextInput style={styles.input} placeholder="Sinif (9-12)" value={sinif} onChangeText={setSinif} />
-          </>
-        )}
+              <View style={styles.field}>
+                <Text style={styles.label}>E-posta</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ornek@email.com"
+                  placeholderTextColor={colors.muted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={!loading}
+                />
+              </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Sifre"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+              {isRegister ? (
+                <>
+                  <View style={styles.row2}>
+                    <View style={[styles.field, styles.flex1]}>
+                      <Text style={styles.label}>Ad</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Adın"
+                        placeholderTextColor={colors.muted}
+                        value={ad}
+                        onChangeText={setAd}
+                        autoComplete="given-name"
+                        textContentType="givenName"
+                        editable={!loading}
+                      />
+                    </View>
+                    <View style={[styles.field, styles.flex1]}>
+                      <Text style={styles.label}>Soyad</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Soyadın"
+                        placeholderTextColor={colors.muted}
+                        value={soyad}
+                        onChangeText={setSoyad}
+                        autoComplete="family-name"
+                        textContentType="familyName"
+                        editable={!loading}
+                      />
+                    </View>
+                  </View>
 
-        <PrimaryButton title={isRegister ? "Kayit Ol" : "Giris Yap"} onPress={onSubmit} loading={loading} />
-        {loading ? <ActivityIndicator style={{ marginTop: 8 }} /> : null}
-      </View>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Sınıf</Text>
+                    <View style={styles.sinifRow}>
+                      {SINIF_OPTIONS.map((o) => (
+                        <Pressable
+                          key={o.value}
+                          onPress={() => setSinif(o.value)}
+                          style={[styles.sinifChip, sinif === o.value && styles.sinifChipActive]}
+                          disabled={loading}
+                        >
+                          <Text style={[styles.sinifChipText, sinif === o.value && styles.sinifChipTextActive]}>{o.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </>
+              ) : null}
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Şifre</Text>
+                <View style={styles.passwordRow}>
+                  <TextInput
+                    style={[styles.input, styles.inputFlex]}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.muted}
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                    autoComplete={isRegister ? "password-new" : "password"}
+                    textContentType={isRegister ? "newPassword" : "password"}
+                    editable={!loading}
+                  />
+                  <Pressable
+                    style={styles.eyeBtn}
+                    onPress={() => setShowPassword((v) => !v)}
+                    accessibilityLabel={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                  >
+                    <Text style={styles.eyeText}>{showPassword ? "🙈" : "👁"}</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <PrimaryButton title={isRegister ? "Kayıt ol" : "Giriş yap"} onPress={onSubmit} loading={loading} disabled={loading} />
+
+              <Pressable
+                style={styles.switchRow}
+                onPress={() => switchMode(!isRegister)}
+                disabled={loading}
+              >
+                <Text style={styles.switchText}>
+                  {isRegister ? "Zaten hesabın var mı? " : "Hesabın yok mu? "}
+                  <Text style={styles.switchBold}>{isRegister ? "Giriş yap" : "Kayıt ol"}</Text>
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <Text style={styles.footer}>© Hafıza Akademi</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: colors.bg },
-  hero: { marginBottom: 16, alignItems: "center" },
-  badge: {
-    color: colors.primary,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+  safe: { flex: 1, backgroundColor: "#0f1117" },
+  flex: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 32,
+  },
+  hero: {
+    paddingTop: 12,
+    paddingBottom: 56,
+    paddingHorizontal: 24,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  heroOrb1: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    top: -90,
+    right: -70,
+  },
+  heroOrb2: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    bottom: -40,
+    left: -50,
+  },
+  heroEmoji: {
+    fontSize: 40,
+    marginBottom: 10,
+    zIndex: 1,
+  },
+  heroTitle: {
+    fontSize: 26,
     fontWeight: "800",
-    fontSize: 11,
-    marginBottom: 8,
+    color: "#fff",
+    letterSpacing: -0.5,
+    textAlign: "center",
+    zIndex: 1,
   },
-  logo: { fontSize: 30, fontWeight: "800", color: colors.text },
-  heroSub: { color: colors.muted, marginTop: 6, textAlign: "center" },
-  heroList: {
+  heroLead: {
     marginTop: 10,
-    alignSelf: "stretch",
-    backgroundColor: colors.surfaceStrong,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    fontSize: 15,
+    color: "rgba(255,255,255,0.9)",
+    textAlign: "center",
+    lineHeight: 22,
+    maxWidth: 320,
+    fontWeight: "600",
+    zIndex: 1,
   },
-  heroItem: { color: colors.primaryDark, fontWeight: "700", marginBottom: 5, fontSize: 12.5 },
+  cardWrap: {
+    marginTop: -36,
+    paddingHorizontal: 16,
+    zIndex: 2,
+  },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 18,
-    gap: 10,
+    borderRadius: 22,
+    padding: 22,
     borderWidth: 1,
-    borderColor: colors.border,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  segment: {
+    flexDirection: "row",
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 5,
+    gap: 6,
+    marginBottom: 14,
+  },
+  segmentBtn: {
+    flex: 1,
+    minHeight: 46,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+  },
+  segmentBtnActive: {
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  tabRow: { flexDirection: "row", gap: 10, marginBottom: 6 },
-  tab: {
-    flex: 1,
-    textAlign: "center",
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    color: colors.muted,
+  segmentText: {
+    fontSize: 15,
     fontWeight: "700",
+    color: colors.muted,
   },
-  tabActive: { backgroundColor: colors.primarySoft, color: colors.primary },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: colors.card },
+  segmentTextActive: {
+    color: colors.primary,
+  },
+  cardHint: {
+    fontSize: 14,
+    color: colors.muted,
+    marginBottom: 18,
+    lineHeight: 20,
+  },
+  field: { marginBottom: 16 },
+  flex1: { flex: 1, minWidth: 0 },
+  row2: { flexDirection: "row", gap: 12 },
+  label: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    minHeight: 50,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    paddingRight: 6,
+  },
+  inputFlex: {
+    flex: 1,
+    borderWidth: 0,
+    minHeight: 48,
+    backgroundColor: "transparent",
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  eyeText: {
+    fontSize: 20,
+  },
+  sinifRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  sinifChip: {
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  sinifChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  sinifChipText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: colors.muted,
+  },
+  sinifChipTextActive: {
+    color: colors.primary,
+  },
+  switchRow: {
+    marginTop: 20,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  switchText: {
+    fontSize: 15,
+    color: colors.muted,
+    textAlign: "center",
+  },
+  switchBold: {
+    fontWeight: "800",
+    color: colors.primary,
+  },
+  footer: {
+    textAlign: "center",
+    marginTop: 28,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.45)",
+    fontWeight: "600",
+  },
 });

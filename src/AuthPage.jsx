@@ -260,18 +260,50 @@ export default function AuthPage({ onSuccess }) {
 
   return (
     <div className="auth-page-wrapper">
-      <div className="auth-container">
-        {/* Form Panel */}
-        <div className="auth-form-panel">
-          <div className="auth-form-container">
+      <div className="auth-shell">
+        <aside className="auth-aside" aria-hidden="true">
+          <div className="auth-aside-pattern" />
+          <div className="auth-aside-inner">
+            <span className="auth-aside-logo" aria-hidden="true">
+              📚
+            </span>
+            <h1 className="auth-aside-title">Hafıza Akademi</h1>
+            <p className="auth-aside-lead">
+              YKS hazırlığında soru çözümü, videolar, raporlar ve kişisel takip tek platformda.
+            </p>
+            <ul className="auth-aside-list">
+              <li>
+                <span className="auth-aside-check">✓</span>
+                Akıllı çalışma planı ve günlük görevler
+              </li>
+              <li>
+                <span className="auth-aside-check">✓</span>
+                Deneme sınavları ve detaylı rapor analizi
+              </li>
+              <li>
+                <span className="auth-aside-check">✓</span>
+                Konu videoları ve AI çalışma koçu
+              </li>
+            </ul>
+          </div>
+        </aside>
+
+        <div className="auth-main">
+          <div className="auth-form-panel">
+            <div className="auth-form-container">
+            <div className="auth-mobile-brand">
+              <span className="auth-mobile-brand-icon">📚</span>
+              <span className="auth-mobile-brand-text">Hafıza Akademi</span>
+            </div>
+
             <div className="auth-header">
               <h2 className="auth-title">
-                {isRegister ? "Hesap Oluştur" : "Hoş Geldiniz"}
+                {isRegister ? "Hesap oluştur" : "Hoş geldin"}
               </h2>
               <p className="auth-subtitle">
-                {isRegister 
-                  ? "Doping Hafıza'ya katıl ve hedeflerine ulaş!" 
-                  : "Doping Hafıza'ya tekrar hoş geldin"}
+                {isRegister
+                  ? "Birkaç bilgiyle kaydol; hemen çalışmaya başla."
+                  : "Hesabına giriş yap ve kaldığın yerden devam et."}
               </p>
             </div>
 
@@ -316,6 +348,7 @@ export default function AuthPage({ onSuccess }) {
                 <label className="form-label">E-posta Adresi</label>
                 <input
                   type="email"
+                  autoComplete="email"
                   className={`form-input ${emailError ? "input-error" : ""}`}
                   placeholder="ornek@email.com"
                   value={email}
@@ -341,6 +374,7 @@ export default function AuthPage({ onSuccess }) {
                       <label className="form-label">Ad</label>
                       <input
                         type="text"
+                        autoComplete="given-name"
                         className="form-input"
                         placeholder="Adınız"
                         value={ad}
@@ -353,6 +387,7 @@ export default function AuthPage({ onSuccess }) {
                       <label className="form-label">Soyad</label>
                       <input
                         type="text"
+                        autoComplete="family-name"
                         className="form-input"
                         placeholder="Soyadınız"
                         value={soyad}
@@ -429,6 +464,7 @@ export default function AuthPage({ onSuccess }) {
                 <label className="form-label">Şifre</label>
                 <input
                   type="password"
+                  autoComplete={isRegister ? "new-password" : "current-password"}
                   className={`form-input ${passwordError ? "input-error" : ""}`}
                   placeholder="••••••••"
                   value={sifre}
@@ -492,6 +528,7 @@ export default function AuthPage({ onSuccess }) {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
