@@ -1976,10 +1976,6 @@ export default function AdminPanel({ onBack }) {
         <div className="admin-header-content">
           <h1 className="admin-main-title">Admin Panel</h1>
           <p className="admin-subtitle-text">Ders, konu ve soru yönetim paneli</p>
-          <p className="admin-subtitle-text" style={{ marginTop: 6 }}>
-            AI motoru: <strong>{aiEngineInfo.source}</strong>
-            {aiEngineInfo.modelVersion ? ` (${aiEngineInfo.modelVersion})` : ""}
-          </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {/* Tab Navigation */}
