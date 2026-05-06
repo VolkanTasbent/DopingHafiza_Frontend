@@ -22,10 +22,13 @@ export function PrimaryButton({ title, onPress, disabled, loading, style }) {
   );
 }
 
-export function SecondaryButton({ title, onPress, disabled, style }) {
+export function SecondaryButton({ title, onPress, disabled, style, variant = "filled", dark }) {
+  const outline = variant === "outline";
+  const outlineStyle = outline ? (dark ? styles.secondaryOutlineDark : styles.secondaryOutlineLight) : styles.secondaryBtn;
+  const textStyle = outline ? (dark ? styles.secondaryOutlineTextDark : styles.secondaryOutlineTextLight) : styles.secondaryText;
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={[styles.secondaryBtn, disabled && styles.disabled, style]}>
-      <Text style={styles.secondaryText}>{title}</Text>
+    <Pressable onPress={onPress} disabled={disabled} style={[outlineStyle, disabled && styles.disabled, style]}>
+      <Text style={textStyle}>{title}</Text>
     </Pressable>
   );
 }
@@ -52,16 +55,16 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.muted, marginTop: 4, fontWeight: "500" },
   primaryBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.sm,
-    paddingVertical: 12.5,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOpacity: 0.24,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 2,
+    shadowColor: "#667eea",
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   primaryText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   secondaryBtn: {
@@ -72,6 +75,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  secondaryOutlineLight: {
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  secondaryOutlineDark: {
+    backgroundColor: "#1e293b",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  secondaryOutlineTextLight: { color: "#374151", fontWeight: "600", fontSize: 15 },
+  secondaryOutlineTextDark: { color: "#e2e8f0", fontWeight: "600", fontSize: 15 },
   secondaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   disabled: { opacity: 0.5 },
   progressBg: { width: "100%", backgroundColor: "#e2e8f0", borderRadius: 999, overflow: "hidden" },
