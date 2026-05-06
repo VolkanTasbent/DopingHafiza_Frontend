@@ -398,7 +398,10 @@ export default function App() {
           )}
 
           {page === "deneme" && (
-            <DenemeSinavlari onBack={() => setPage("dersler")} />
+            <DenemeSinavlari
+              onBack={() => setPage("dersler")}
+              onFinish={() => setPage("raporlar")}
+            />
           )}
 
           {page === "raporlar" && (
@@ -463,7 +466,7 @@ export default function App() {
 )}
 
           {page === "ai" && (
-            <AIAssistant onBack={() => setPage("dersler")} />
+            <AIAssistant onBack={() => setPage("dersler")} me={me} />
           )}
 
           {page === "calisma-programi" && (

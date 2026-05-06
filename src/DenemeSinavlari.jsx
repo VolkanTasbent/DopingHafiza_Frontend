@@ -1243,7 +1243,6 @@ export default function DenemeSinavlari({ onBack, onFinish }) {
                     type="button"
                     onClick={onFinish}
                     className="new-test-btn"
-                    style={{ marginRight: 12 }}
                   >
                     Raporlara Git
                   </button>

@@ -910,6 +910,7 @@
   display: flex;
   gap: 12px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .new-test-btn {
@@ -971,6 +972,16 @@
 
   .soru-card-modern {
     padding: 20px;
+  }
+
+  .result-actions {
+    width: 100%;
+  }
+
+  .new-test-btn {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
   }
 
   .soru-navigation {

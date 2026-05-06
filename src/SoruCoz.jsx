@@ -949,7 +949,6 @@ export default function SoruCoz({ onBack, seciliDers, me, onFinish }) {
                     type="button"
                     onClick={onFinish}
                     className="new-test-btn"
-                    style={{ marginRight: 12 }}
                   >
                     Raporlara Git
                   </button>

@@ -761,7 +761,7 @@ export default function Grafiklerim({ onBack }) {
         {/* 2 - Doğru/Yanlış/Boş Dağılımı - DERS SEÇİMLİ */}
         <div className="grafik-box" id="dybChartBox">
           <div className="grafik-head">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div className="grafik-inline-filter">
               <h3>Doğru - Yanlış - Boş Dağılımı</h3>
               {hasItems && dersler.length > 0 && (
                 <div className="filter-group" style={{ margin: 0 }}>
@@ -920,7 +920,7 @@ export default function Grafiklerim({ onBack }) {
         {hasItems && filteredDersData.length > 0 && (
           <div className="grafik-box" id="dersChartBox">
             <div className="grafik-head">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="grafik-inline-filter">
                 <h3>Ders Bazlı Performans Dağılımı</h3>
                 <div className="filter-group" style={{ margin: 0 }}>
                   <select
@@ -1077,7 +1077,7 @@ export default function Grafiklerim({ onBack }) {
         {hasItems && konuData.length > 0 && (
           <div className="grafik-box" id="konuChartBox">
             <div className="grafik-head">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="grafik-inline-filter">
                 <h3>En Çok Soru Çözülen Konular (İlk 15)</h3>
                 <div className="filter-group" style={{ margin: 0 }}>
                   <select
@@ -1151,7 +1151,7 @@ export default function Grafiklerim({ onBack }) {
         {hasItems && wrongKonular.length > 0 && (
           <div className="grafik-box" id="wrongChartBox">
             <div className="grafik-head">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="grafik-inline-filter">
                 <h3>En Çok Yanlış Yapılan Konular</h3>
                 <div className="filter-group" style={{ margin: 0 }}>
                   <select
@@ -1205,7 +1205,7 @@ export default function Grafiklerim({ onBack }) {
         {hasItems && bosKonular.length > 0 && (
           <div className="grafik-box" id="bosChartBox">
             <div className="grafik-head">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="grafik-inline-filter">
                 <h3>En Çok Boş Bırakılan Konular</h3>
                 <div className="filter-group" style={{ margin: 0 }}>
                   <select

@@ -1748,9 +1748,15 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .activities-list-modern {
+    max-height: 460px;
+    padding-right: 2px;
+  }
+
   .activity-item-modern {
     padding: 12px;
     gap: 10px;
+    align-items: flex-start;
   }
   
   .activity-icon-modern {
@@ -1761,16 +1767,45 @@
   
   .activity-title-modern {
     font-size: 13px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
   
   .activity-subtitle-modern {
     font-size: 11px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.35;
   }
   
   .activity-play-btn {
     width: 28px;
     height: 28px;
     font-size: 10px;
+  }
+
+  .activity-action-modern {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .activity-item-modern {
+    flex-wrap: wrap;
+  }
+
+  .activity-content-modern {
+    width: calc(100% - 46px);
+  }
+
+  .activity-action-modern {
+    margin-left: auto;
   }
 }
 /* Pomodoro Widget Stilleri */

@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { aiCoachTheme as t } from "./aiCoachTheme";
 import api from "./services/api";
 import { loadSavedPlans, removeSavedPlan, saveStudyPlanEntry } from "./services/aiCoachStorage";
 
-const PRESET = [
-  { label: "Eksiklerim neler?", text: "Eksiklerim neler?" },
-  { label: "30 dk hizli plan", text: "30 dakikada hizli plan hazirla" },
-  { label: "Deneme analizi", text: "Deneme analizi yap" },
-  { label: "Bugun program", text: "Bugun calisma programi olustur" },
-];
-
-export default function AIAssistant({ onBack }) {
+export default function AIAssistant({ onBack, me }) {
   const bottomRef = useRef(null);
   const [days, setDays] = useState(30);
   const [dailyMinutes, setDailyMinutes] = useState(120);
@@ -89,6 +82,32 @@ export default function AIAssistant({ onBack }) {
     }
   };
 
+  const displayName = useMemo(() => {
+    const full = `${me?.ad || ""} ${me?.soyad || ""}`.trim();
+    return full || me?.ad || "Ogrenci";
+  }, [me?.ad, me?.soyad]);
+
+  const hedefText = useMemo(() => {
+    const universite = me?.hedefUniversite || me?.hedef?.universite;
+    const bolum = me?.hedefBolum || me?.hedef?.bolum;
+    if (!universite && !bolum) return "Hedef tanimlanmamis";
+    return [universite, bolum].filter(Boolean).join(" / ");
+  }, [me]);
+
+  const personalizedPreset = useMemo(() => {
+    const weak = analysis?.weakTopics?.[0];
+    const weakText = weak?.konuAd
+      ? `${weak.dersAd || "Bu ders"} ${weak.konuAd} konusunda bugunluk plan yap`
+      : "Bugun program";
+
+    return [
+      { label: "Eksiklerim neler?", text: "Eksiklerim neler?" },
+      { label: "Bugun program", text: "Bugun calisma programi olustur" },
+      { label: "Zayif konu plani", text: weakText },
+      { label: "Deneme analizi", text: "Deneme analizi yap" },
+    ];
+  }, [analysis?.weakTopics]);
+
   const ui = {
     shell: { display: "grid", gap: 14 },
     hero: {
@@ -135,8 +154,8 @@ export default function AIAssistant({ onBack }) {
   return (
     <div style={ui.shell}>
       <div style={ui.hero}>
-        <h2 style={ui.heroTitle}>AI Ders Kocu</h2>
-        <p style={ui.heroSub}>Sohbet, eksik analizi ve kayitli programlar — verilerinizle kisisel oneriler</p>
+        <h2 style={ui.heroTitle}>{displayName} icin AI Ders Kocu</h2>
+        <p style={ui.heroSub}>Sohbet, eksik analizi ve kayitli programlar — hesabina gore kisisel oneriler</p>
         <div style={ui.metrics}>
           <div style={ui.metricPill}>
             <div style={ui.metricLabel}>Analiz gunu</div>
@@ -149,6 +168,10 @@ export default function AIAssistant({ onBack }) {
           <div style={ui.metricPill}>
             <div style={ui.metricLabel}>Ortalama basari</div>
             <div style={ui.metricValue}>%{analysis?.overallSuccessRate ?? "-"}</div>
+          </div>
+          <div style={ui.metricPill}>
+            <div style={ui.metricLabel}>Hedef</div>
+            <div style={{ ...ui.metricValue, fontSize: 13 }}>{hedefText}</div>
           </div>
         </div>
         <div style={ui.controls}>
@@ -169,7 +192,7 @@ export default function AIAssistant({ onBack }) {
         <h3 style={ui.sectionTitle}>AI asistan sohbeti</h3>
         <p style={{ color: t.muted, marginTop: 0 }}>Hazir aksiyonlar mesaji otomatik gonderir. Cevaplar cok satirli olabilir.</p>
         <div style={ui.presetRow}>
-          {PRESET.map((p) => (
+          {personalizedPreset.map((p) => (
             <button key={p.label} type="button" style={ui.chip} onClick={() => sendChat(p.text)} disabled={sending}>
               {p.label}
             </button>

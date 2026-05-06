@@ -37,6 +37,37 @@ export default function RaporDetay({ oturumId, onBack }) {
     e?.message ||
     "Hata";
 
+  const getSolutionVideoUrl = (soru) => {
+    if (!soru) return "";
+    return (
+      soru?.videoUrl ||
+      soru?.video_url ||
+      soru?.cozumUrl ||
+      soru?.cozum_url ||
+      soru?.cozumVideosuUrl ||
+      soru?.cozum_videosu_url ||
+      ""
+    );
+  };
+
+  const openQuestionSolution = (soru) => {
+    const videoUrlRaw = getSolutionVideoUrl(soru);
+    const cozumText = soru?.cozum || soru?.aciklama || soru?.explanation || "";
+    const videoUrl = videoUrlRaw ? fileUrl(videoUrlRaw) : "";
+
+    if (videoUrl) {
+      window.open(videoUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (cozumText) {
+      window.alert(cozumText);
+      return;
+    }
+
+    window.alert("Bu sorunun çözümü yüklenmedi.");
+  };
+
   // ---------------------------------------------------
   // SORU ANALİZİ
   // ---------------------------------------------------
@@ -333,6 +364,16 @@ export default function RaporDetay({ oturumId, onBack }) {
                         </div>
                       </div>
                     )}
+                  </div>
+                  <div className="soru-cozum-butonu-container">
+                    <button
+                      type="button"
+                      className="soru-cozum-butonu"
+                      onClick={() => openQuestionSolution(s)}
+                    >
+                      <span className="cozum-icon">▶</span>
+                      Soru Çözümüne Git
+                    </button>
                   </div>
                 </div>
               );

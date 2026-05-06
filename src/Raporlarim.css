@@ -1147,9 +1147,12 @@
 }
 .grafik-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
   padding: 20px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .grafik-box {
@@ -1186,6 +1189,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* Grafik başlığı */
@@ -1203,6 +1208,27 @@
   width: 100% !important;
 }
 
+.grafik-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.grafik-head h3 {
+  min-width: 0;
+  margin: 0;
+}
+
+.grafik-inline-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 /* Daha düzenli görünüm için */
 .grafik-box p.grafik-note {
   margin-top: 14px;
@@ -1213,12 +1239,42 @@
 
 /* Mobil uyum */
 @media (max-width: 600px) {
+  .grafik-panel,
+  .rapor-grafik-panel {
+    padding: 12px;
+  }
+
+  .rapor-grafik-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
   .grafik-box {
-    min-height: 340px;
-    padding: 16px;
+    min-height: 300px;
+    padding: 14px;
   }
 
   .grafik-box canvas {
-    max-height: 220px !important;
+    max-height: 200px !important;
+  }
+
+  .grafik-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grafik-head button,
+  .grafik-inline-filter select,
+  .grafik-inline-filter button {
+    width: 100%;
+  }
+
+  .soru-cozum-butonu-container {
+    justify-content: stretch;
+  }
+
+  .soru-cozum-butonu {
+    width: 100%;
+    justify-content: center;
   }
 }
