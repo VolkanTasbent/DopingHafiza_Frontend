@@ -241,6 +241,7 @@
   border-radius: 20px;
   padding: 20px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  overflow: hidden;
 }
 
 .calendar-header-modern {
@@ -283,6 +284,8 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 8px;
   margin-bottom: 12px;
+  width: 100%;
+  min-width: 0;
 }
 
 .calendar-day-modern {
@@ -294,6 +297,9 @@
   transition: all 0.2s;
   cursor: pointer;
   user-select: none;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .calendar-day-modern:active {
