@@ -2089,6 +2089,87 @@
   }
 }
 
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 12px;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .dashboard-top-cards,
+  .dashboard-bottom-section {
+    gap: 12px;
+  }
+
+  .user-card-content {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .calendar-header-modern {
+    gap: 8px;
+  }
+
+  .calendar-week-label {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-nav-btn {
+    flex-shrink: 0;
+  }
+
+  .calendar-day-name {
+    font-size: 10px;
+  }
+
+  .calendar-day-number {
+    font-size: 14px;
+  }
+
+  .calendar-day-hours {
+    font-size: 9px;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .performance-actions {
+    width: 100%;
+  }
+
+  .performance-filter {
+    width: 100%;
+  }
+
+  .dashboard-chart-container,
+  .dashboard-graph-large .dashboard-chart-container,
+  .dashboard-graph-medium .dashboard-chart-container,
+  .dashboard-graph-small .dashboard-chart-container {
+    height: 220px;
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-widget-modern {
+    padding: 14px;
+  }
+
+  .calendar-day-modern {
+    padding: 7px 2px;
+    border-radius: 8px;
+  }
+
+  .daily-performance-section {
+    padding: 14px;
+  }
+}
+
 /* Animasyonlar */
 @keyframes pomodoroPulse {
   0% { transform: scale(1); }

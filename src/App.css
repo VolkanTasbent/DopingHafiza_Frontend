@@ -923,6 +923,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 /* ===========================================
@@ -938,8 +940,15 @@ body {
   justify-content: space-between;
 }
 
+.search {
+  flex: 1;
+  max-width: 420px;
+  min-width: 0;
+}
+
 .search input {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   height: 42px;
   padding: 10px 14px;
   border-radius: 12px;
@@ -956,7 +965,6 @@ body {
   background: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
-}
 
 .search input:focus {
   border-color: #3e5bff;
@@ -966,6 +974,7 @@ body {
   display: flex;
   align-items: center;
   gap: 18px;
+  flex-shrink: 0;
 }
 
 .dark-mode-toggle {
@@ -1112,6 +1121,7 @@ body {
   flex: 1;
   padding: 25px;
   overflow-y: auto;
+  min-width: 0;
 }
 
 /* Scrollbar */
@@ -1145,4 +1155,113 @@ body {
   background: #4a54ff;  /* soft mor */
   color: #fff;          /* yazı beyaz */
   font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+    padding: 14px 10px;
+  }
+
+  .menu-item {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e6e6e6;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .logo-box {
+    padding: 8px 10px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .menu {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu-item {
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 9px 12px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .topbar {
+    height: auto;
+    padding: 10px 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .search {
+    order: 2;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .search input {
+    max-width: 100%;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .user-info {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .content {
+    padding: 12px;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .dark-mode-toggle {
+    width: 36px;
+    height: 36px;
+    font-size: 17px;
+  }
+
+  .logout-btn {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
 }
