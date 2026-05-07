@@ -271,7 +271,7 @@ export default function AuthPage({ onSuccess }) {
             <div className="auth-hero-copy">
               <p className="auth-hero-badge">YKS · soru çözümü · deneme · rapor tek yerde</p>
               <h1 id="auth-landing-title" className="auth-hero-title">
-                Tek yerde sınav hazırlığınız—takibin burada başlar.
+                TYT ve AYT'ye hazırlanın; takip, grafik ve günlük görevler yanınızda.
               </h1>
               <p className="auth-hero-lead">
                 Soru oturumu, deneme sınavları, günlük görevler, puanlar ve grafikleri bir çatı altında kullanın.
