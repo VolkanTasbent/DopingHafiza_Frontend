@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchRaporlar } from "../services/quiz";
+import { fetchMarketItemsFromApi, purchaseMarketItem, syncGamification } from "../services/gamification";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
 import { colors } from "../theme";
-import { getJSON, setJSON } from "../services/storage";
+import { getJSON } from "../services/storage";
 import { BADGE_CATEGORIES, MARKET_ITEMS, calculateStreakFromReports, computeGamificationStats } from "../services/gamificationData";
 
 export default function GamificationScreen({ navigation }) {
@@ -12,6 +13,10 @@ export default function GamificationScreen({ navigation }) {
   const [raporlar, setRaporlar] = useState([]);
   const [marketOpen, setMarketOpen] = useState(false);
   const [ownedItems, setOwnedItems] = useState([]);
+  const [serverGold, setServerGold] = useState(0);
+  const [serverPoints, setServerPoints] = useState(0);
+  const [gamificationFromApi, setGamificationFromApi] = useState(false);
+  const [marketCatalog, setMarketCatalog] = useState(MARKET_ITEMS);
   const [message, setMessage] = useState("");
   const [streak, setStreak] = useState(0);
   const [lastMilestone, setLastMilestone] = useState(null);
@@ -20,13 +25,24 @@ export default function GamificationScreen({ navigation }) {
   useEffect(() => {
     (async () => {
       try {
-        const [data, owned, focusReward] = await Promise.all([
+        const [data, focusReward, items, syncRes] = await Promise.all([
           fetchRaporlar(200),
-          getJSON("market_owned", []),
           getJSON("focus_rewards", { xp: 0, gold: 0 }),
+          fetchMarketItemsFromApi(),
+          syncGamification(),
         ]);
         setRaporlar(Array.isArray(data) ? data : []);
-        setOwnedItems(Array.isArray(owned) ? owned : []);
+        if (items?.length) setMarketCatalog(items);
+        if (syncRes?.state) {
+          setGamificationFromApi(true);
+          setOwnedItems(syncRes.state.ownedItems || []);
+          setServerGold(syncRes.state.gold ?? 0);
+          setServerPoints(syncRes.state.points ?? 0);
+        } else {
+          setGamificationFromApi(false);
+          const owned = await getJSON("market_owned", []);
+          setOwnedItems(Array.isArray(owned) ? owned : []);
+        }
         setFocusBonus({
           xp: Number(focusReward?.xp || 0),
           gold: Number(focusReward?.gold || 0),
@@ -71,7 +87,7 @@ export default function GamificationScreen({ navigation }) {
     return out;
   }, [stats, streak]);
 
-  const availableGold = useMemo(() => {
+  const offlineGold = useMemo(() => {
     const spent = ownedItems.reduce((sum, ownedId) => {
       const item = MARKET_ITEMS.find((i) => i.id === ownedId);
       return sum + (item?.price || 0);
@@ -79,18 +95,30 @@ export default function GamificationScreen({ navigation }) {
     return Math.max(0, stats.gold - spent);
   }, [ownedItems, stats.gold]);
 
+  const displayGold = gamificationFromApi ? serverGold : offlineGold;
+
+  const repeatable = (id) => id.startsWith("instant_");
+
   async function buyItem(item) {
-    if (ownedItems.includes(item.id)) {
+    if (!repeatable(item.id) && ownedItems.includes(item.id)) {
       setMessage("Bu urun zaten satin alinmis.");
       return;
     }
-    if (availableGold < item.price) {
+    if (displayGold < item.price) {
       setMessage("Yeterli altin yok.");
       return;
     }
-    const updated = [...ownedItems, item.id];
-    setOwnedItems(updated);
-    await setJSON("market_owned", updated);
+    const { state, error } = await purchaseMarketItem(item.id);
+    if (error) {
+      setMessage(error);
+      return;
+    }
+    if (state) {
+      setGamificationFromApi(true);
+      setOwnedItems(state.ownedItems || []);
+      setServerGold(state.gold ?? 0);
+      setServerPoints(state.points ?? 0);
+    }
     setMessage(`${item.label} satin alindi.`);
   }
 
@@ -115,7 +143,8 @@ export default function GamificationScreen({ navigation }) {
           <Text style={styles.h2}>Seviye {stats.level}</Text>
           <Text>XP: {stats.currentXP}/{stats.nextLevelXP}</Text>
           <Text>Toplam XP: {stats.xp}</Text>
-          <Text>Altin: {availableGold}</Text>
+          {gamificationFromApi ? <Text>Sunucu puani: {serverPoints}</Text> : null}
+          <Text>Altin: {displayGold}</Text>
           <View style={styles.barBg}>
             <View style={[styles.barFill, { width: `${Math.max(0, Math.min(100, stats.progress))}%` }]} />
           </View>
@@ -193,10 +222,10 @@ export default function GamificationScreen({ navigation }) {
               <Text style={styles.toggleText}>{marketOpen ? "Kapat" : "Ac"}</Text>
             </Pressable>
           </View>
-          <Text style={styles.marketBalance}>Bakiyen: {availableGold} altin</Text>
+          <Text style={styles.marketBalance}>Bakiyen: {displayGold} altin</Text>
           {marketOpen &&
-            MARKET_ITEMS.map((item) => {
-              const owned = ownedItems.includes(item.id);
+            marketCatalog.map((item) => {
+              const owned = !repeatable(item.id) && ownedItems.includes(item.id);
               return (
                 <View key={item.id} style={styles.marketItem}>
                   <View style={{ flex: 1 }}>
@@ -205,9 +234,9 @@ export default function GamificationScreen({ navigation }) {
                     <Text style={styles.marketPrice}>{owned ? "Satin alindi" : `${item.price} altin`}</Text>
                   </View>
                   <Pressable
-                    disabled={owned || availableGold < item.price}
+                    disabled={owned || displayGold < item.price}
                     onPress={() => buyItem(item)}
-                    style={[styles.buyBtn, (owned || availableGold < item.price) && styles.buyBtnDisabled]}
+                    style={[styles.buyBtn, (owned || displayGold < item.price) && styles.buyBtnDisabled]}
                   >
                     <Text style={styles.buyText}>{owned ? "Var" : "Al"}</Text>
                   </Pressable>

@@ -14,7 +14,11 @@ import {
   Legend,
 } from "chart.js";
 
-import { calculateUserScoreFromReports } from "./services/scoring";
+import {
+  loadGamificationState,
+  postGamificationSync,
+  syncProgressWithReports,
+} from "./services/gamificationStorage";
 import "./Dashboard.css";
 
 ChartJS.register(
@@ -33,7 +37,8 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState("7"); // Varsayılan: Son 7 gün
-  const [calculatedScore, setCalculatedScore] = useState(null); // Hesaplanan puan
+  const [calculatedScore, setCalculatedScore] = useState(null); // Kalici puan
+  const [goldBalance, setGoldBalance] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0); // Günlük streak
   
   // Günlük görevler state
@@ -47,6 +52,7 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
     task2: false,
     task3: false
   });
+  const [dailyTaskList, setDailyTaskList] = useState([]);
   
   // Hedefler state - Backend'den yüklenecek
   const [hedef, setHedef] = useState({
@@ -449,6 +455,10 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
       });
 
       setRaporlar(processedData);
+      const loaded = await loadGamificationState();
+      const synced = await syncProgressWithReports(processedData, loaded);
+      setCalculatedScore({ totalScore: synced.points || 0 });
+      setGoldBalance(synced.gold || 0);
     } catch (e) {
       console.error("❌ Grafik endpoint başarısız, eski endpoint deneniyor:", e);
       try {
@@ -473,6 +483,10 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
         });
 
         setRaporlar(processedData);
+        const loaded = await loadGamificationState();
+        const synced = await syncProgressWithReports(processedData, loaded);
+        setCalculatedScore({ totalScore: synced.points || 0 });
+        setGoldBalance(synced.gold || 0);
       } catch (fallbackError) {
         console.error("❌ Tüm endpoint'ler başarısız:", fallbackError);
       }
@@ -506,44 +520,21 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
   
   const loadDailyTasks = async () => {
     try {
-      const { data } = await api.get("/api/raporlar", { params: { limit: 200 } });
-      const today = new Date().toLocaleDateString("tr-TR");
-      const todayData = data.filter(
-        (x) => x.finishedAt && new Date(x.finishedAt).toLocaleDateString("tr-TR") === today
-      );
-
-      const solved = todayData.reduce((a, r) => a + ((r.correctCount || 0) + (r.wrongCount || 0) + (r.emptyCount || 0)), 0);
-      const correct = todayData.reduce((a, r) => a + (r.correctCount || 0), 0);
-      // Pomodoro oturumlarını ekle
-      const pomodoroSessions = pomodoroStats.today.count || 0;
-      const sessions = todayData.length + pomodoroSessions;
-
-      setDailyStats({ solved, correct, sessions });
-      
-      // Görev kontrolü
-      const saved = localStorage.getItem("dailyTasks");
-      let completed = { task1: false, task2: false, task3: false };
-      
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const savedDate = parsed.date;
-        if (savedDate === today) {
-          completed = parsed.completed;
-        }
-      }
-      
-      // Otomatik tamamlama kontrolü
-      const updated = { ...completed };
-      if (solved >= 20 && !updated.task1) updated.task1 = true;
-      if (correct >= 10 && !updated.task2) updated.task2 = true;
-      const totalSessions = sessions; // Pomodoro oturumları zaten eklendi
-      if (totalSessions >= 1 && !updated.task3) updated.task3 = true;
-      
-      setDailyTasks(updated);
-      
-      if (JSON.stringify(updated) !== JSON.stringify(completed)) {
-        localStorage.setItem("dailyTasks", JSON.stringify({ date: today, completed: updated }));
-      }
+      const { state } = await postGamificationSync();
+      const taskList = Array.isArray(state.dailyTasks?.tasks) ? state.dailyTasks.tasks : [];
+      setDailyTaskList(taskList);
+      setDailyTasks({
+        task1: Boolean(taskList[0]?.completed),
+        task2: Boolean(taskList[1]?.completed),
+        task3: Boolean(taskList[2]?.completed),
+      });
+      setCalculatedScore({ totalScore: state.points || 0 });
+      setGoldBalance(state.gold || 0);
+      setDailyStats({
+        solved: state.lastReportTotals?.solved ?? 0,
+        correct: state.lastReportTotals?.correct ?? 0,
+        sessions: state.lastReportTotals?.sessions ?? 0,
+      });
     } catch (e) {
       console.error("Günlük görevler yüklenemedi:", e);
     }
@@ -1189,6 +1180,9 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
             <button className="points-button" onClick={handlePuanlariKullan}>
               Puanları Kullan
             </button>
+            <div className="points-label-modern" style={{ marginTop: 8 }}>
+              Altin: {goldBalance}
+            </div>
           </div>
           {calculatedScore && calculatedScore.totalScore > 0 && (
             <div style={{ 
@@ -1735,22 +1729,22 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
                 <div className={`task-item-modern ${dailyTasks.task1 ? "completed" : ""}`}>
                   <div className="task-icon-modern">{dailyTasks.task1 ? "✅" : "⏳"}</div>
                   <div className="task-info-modern">
-                    <div className="task-name-modern">20 soru çöz</div>
-                    <div className="task-progress-modern">{dailyStats.solved}/20</div>
+                    <div className="task-name-modern">{dailyTaskList[0]?.title || "AI gorevi yukleniyor..."}</div>
+                    <div className="task-progress-modern">{dailyStats[dailyTaskList[0]?.metric || "solved"] || 0}/{dailyTaskList[0]?.target || 0}</div>
                   </div>
                 </div>
                 <div className={`task-item-modern ${dailyTasks.task2 ? "completed" : ""}`}>
                   <div className="task-icon-modern">{dailyTasks.task2 ? "✅" : "⏳"}</div>
                   <div className="task-info-modern">
-                    <div className="task-name-modern">10 doğru cevap</div>
-                    <div className="task-progress-modern">{dailyStats.correct}/10</div>
+                    <div className="task-name-modern">{dailyTaskList[1]?.title || "AI gorevi yukleniyor..."}</div>
+                    <div className="task-progress-modern">{dailyStats[dailyTaskList[1]?.metric || "correct"] || 0}/{dailyTaskList[1]?.target || 0}</div>
                   </div>
                 </div>
                 <div className={`task-item-modern ${dailyTasks.task3 ? "completed" : ""}`}>
                   <div className="task-icon-modern">{dailyTasks.task3 ? "✅" : "⏳"}</div>
                   <div className="task-info-modern">
-                    <div className="task-name-modern">1 test başlat</div>
-                    <div className="task-progress-modern">{dailyStats.sessions}/1</div>
+                    <div className="task-name-modern">{dailyTaskList[2]?.title || "AI gorevi yukleniyor..."}</div>
+                    <div className="task-progress-modern">{dailyStats[dailyTaskList[2]?.metric || "sessions"] || 0}/{dailyTaskList[2]?.target || 0}</div>
                   </div>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "./services/api";
 import "./DailyTasks.css";
 import confetti from "canvas-confetti";
+import { postGamificationSync } from "./services/gamificationStorage";
 
 export default function DailyTasks({ onBack }) {
   const [stats, setStats] = useState({
@@ -19,89 +20,51 @@ export default function DailyTasks({ onBack }) {
 
   const [showReward, setShowReward] = useState(false);
   const [rewardText, setRewardText] = useState("");
+  const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
     loadStats();
-    loadSavedTasks();
   }, []);
 
   const loadStats = async () => {
-    const { data } = await api.get("/api/raporlar", { params: { limit: 200 } });
-
-    const today = new Date().toLocaleDateString("tr-TR");
-
-    const todayData = data.filter(
-      (x) => new Date(x.finishedAt).toLocaleDateString("tr-TR") === today
-    );
-
-    const solved = todayData.reduce((a, r) => a + (r.totalCount || 0), 0);
-    const correct = todayData.reduce((a, r) => a + (r.correctCount || 0), 0);
-    const sessions = todayData.length;
-
-    setStats({ solved, correct, sessions });
-
-    checkTasks(solved, correct, sessions);
-  };
-
-  const loadSavedTasks = () => {
-    const saved = localStorage.getItem("dailyTasks");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-
-      const today = new Date().toLocaleDateString("tr-TR");
-      if (parsed.date !== today) {
-        // yeni gün → reset
-        resetTasks();
-      } else {
-        setCompleted(parsed.completed);
-      }
+    let prevTasks = [];
+    let hadPrevSnapshot = false;
+    try {
+      const { data } = await api.get("/api/gamification/daily-tasks");
+      prevTasks = Array.isArray(data?.dailyTasks) ? data.dailyTasks : [];
+      hadPrevSnapshot = true;
+    } catch {
+      prevTasks = [];
     }
-  };
 
-  const saveTasks = (updated) => {
-    const today = new Date().toLocaleDateString("tr-TR");
-    localStorage.setItem(
-      "dailyTasks",
-      JSON.stringify({ date: today, completed: updated })
-    );
-  };
+    const { state, earnedPoints, earnedGold } = await postGamificationSync();
 
-  const resetTasks = () => {
-    const today = new Date().toLocaleDateString("tr-TR");
-    const base = {
-      date: today,
-      completed: { task1: false, task2: false, task3: false }
+    const mappedTasks = state.dailyTasks?.tasks || [];
+    setTasks(mappedTasks);
+    setStats({
+      solved: state.lastReportTotals?.solved ?? 0,
+      correct: state.lastReportTotals?.correct ?? 0,
+      sessions: state.lastReportTotals?.sessions ?? 0,
+    });
+    const updated = {
+      task1: Boolean(mappedTasks[0]?.completed),
+      task2: Boolean(mappedTasks[1]?.completed),
+      task3: Boolean(mappedTasks[2]?.completed),
     };
-    localStorage.setItem("dailyTasks", JSON.stringify(base));
-    setCompleted(base.completed);
-  };
 
-  const checkTasks = (solved, correct, sessions) => {
-    const updated = { ...completed };
-    let changed = false;
-
-    if (!updated.task1 && solved >= 20) {
-      updated.task1 = true;
-      giveReward("+20 XP", "Bugün 20 soru çözdün!");
-      changed = true;
+    const prevDone = prevTasks.filter((t) => t.completed).length;
+    const newDone = mappedTasks.filter((t) => t.completed).length;
+    if (hadPrevSnapshot && newDone > prevDone) {
+      const latest = mappedTasks.find(
+        (t) => t.completed && !prevTasks.some((s) => s.id === t.id && s.completed)
+      );
+      if (latest) {
+        giveReward(`+${latest.rewardPoints} Puan, +${latest.rewardGold} Altin`, latest.title);
+      }
+    } else if (hadPrevSnapshot && (earnedPoints > 0 || earnedGold > 0) && newDone === prevDone) {
+      giveReward(`+${earnedPoints} Puan, +${earnedGold} Altin`, "Calisma ilerlemen kaydedildi!");
     }
-
-    if (!updated.task2 && correct >= 10) {
-      updated.task2 = true;
-      giveReward("+15 XP", "10 doğru cevap yaptın!");
-      changed = true;
-    }
-
-    if (!updated.task3 && sessions >= 1) {
-      updated.task3 = true;
-      giveReward("+10 XP", "Bir ders testi başlattın!");
-      changed = true;
-    }
-
-    if (changed) {
-      setCompleted(updated);
-      saveTasks(updated);
-    }
+    setCompleted(updated);
   };
 
   const giveReward = (xp, text) => {
@@ -122,21 +85,21 @@ export default function DailyTasks({ onBack }) {
       <h1 className="tasks-title">📅 Günlük Görevler</h1>
 
       <TaskItem
-        title="Bugün 20 soru çöz"
+        title={tasks[0]?.title || "AI gorevi yukleniyor..."}
         done={completed.task1}
-        value={`${stats.solved}/20`}
+        value={`${stats[tasks[0]?.metric || "solved"] || 0}/${tasks[0]?.target || 0}`}
       />
 
       <TaskItem
-        title="10 doğru cevap yap"
+        title={tasks[1]?.title || "AI gorevi yukleniyor..."}
         done={completed.task2}
-        value={`${stats.correct}/10`}
+        value={`${stats[tasks[1]?.metric || "correct"] || 0}/${tasks[1]?.target || 0}`}
       />
 
       <TaskItem
-        title="1 test başlat"
+        title={tasks[2]?.title || "AI gorevi yukleniyor..."}
         done={completed.task3}
-        value={`${stats.sessions}/1`}
+        value={`${stats[tasks[2]?.metric || "sessions"] || 0}/${tasks[2]?.target || 0}`}
       />
 
       {showReward && (

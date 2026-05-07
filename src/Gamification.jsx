@@ -2,6 +2,14 @@ import { useEffect, useState, useMemo } from "react";
 import api from "./services/api";
 import confetti from "canvas-confetti";
 import { calculateLevelFromXP, calculateDailyReward, checkMilestones } from "./services/scoring";
+import {
+  addPointsAndGold,
+  buyMarketItem,
+  DEFAULT_MARKET_ITEMS,
+  fetchMarketItems,
+  loadGamificationState,
+  syncProgressWithReports,
+} from "./services/gamificationStorage";
 import "./Gamification.css";
 
 // Rozet kategorileri - component dışında tanımlandı (her render'da yeniden oluşturulmasın)
@@ -41,27 +49,6 @@ const rozetKategorileri = {
   }
 };
 
-// Market ürünleri - component dışında tanımlandı
-const marketUrunleri = [
-  { id: 1, ad: "XP Boost (1 Gün)", fiyat: 50, tip: "boost", icon: "⚡", aciklama: "1 gün boyunca %20 daha fazla XP kazan" },
-  { id: 2, ad: "Altın Boost (1 Gün)", fiyat: 30, tip: "boost", icon: "💰", aciklama: "1 gün boyunca %30 daha fazla altın kazan" },
-  { id: 3, ad: "Özel Avatar Çerçevesi", fiyat: 100, tip: "cosmetic", icon: "🖼️", aciklama: "Profilinde özel çerçeve görünsün" },
-  { id: 4, ad: "Özel Tema", fiyat: 150, tip: "cosmetic", icon: "🎨", aciklama: "Uygulamada özel tema kullan" },
-  { id: 5, ad: "Seri Koruma", fiyat: 200, tip: "utility", icon: "🛡️", aciklama: "1 kez serini koru (seri bozulmasın)" },
-  { id: 6, ad: "Ekstra Soru Paketi", fiyat: 75, tip: "utility", icon: "📚", aciklama: "Özel soru paketine erişim" },
-];
-
-function readArrayFromStorage(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 export default function Gamification({ onBack }) {
   // ---------------------------
   // 🟦 STATE'LER
@@ -92,9 +79,8 @@ export default function Gamification({ onBack }) {
 
   // 🛒 MARKET STATES
   const [marketAcik, setMarketAcik] = useState(false);
-  const [satinAlinanlar, setSatinAlinanlar] = useState(() =>
-    readArrayFromStorage("satinAlinanlar")
-  );
+  const [satinAlinanlar, setSatinAlinanlar] = useState([]);
+  const [marketItems, setMarketItems] = useState([]);
 
   // Raporlar state'i - rozet hesaplamaları için
   const [raporlar, setRaporlar] = useState([]);
@@ -161,34 +147,20 @@ export default function Gamification({ onBack }) {
   }, [raporlar, badges, xp, dailySolved, streak]);
 
   // Satın alma fonksiyonu
-  const satinAl = (urun) => {
-    if (satinAlinanlar.includes(urun.id)) {
-      setMsg("Bu ürün zaten satın alınmış!");
+  const satinAl = async (urun) => {
+    const current = await loadGamificationState();
+    const { state, error } = await buyMarketItem(urun.id, current);
+    if (error) {
+      setMsg(error);
       setTimeout(() => setMsg(""), 3000);
       return;
     }
-
-    if (gold < urun.fiyat) {
-      setMsg("Yeterli altın yok! Daha fazla soru çözerek altın kazanabilirsin.");
-      setTimeout(() => setMsg(""), 3000);
-      return;
-    }
-
-    setGold(prev => prev - urun.fiyat);
-    setSatinAlinanlar(prev => {
-      const yeni = [...prev, urun.id];
-      localStorage.setItem("satinAlinanlar", JSON.stringify(yeni));
-      return yeni;
-    });
-
-    setMsg(`${urun.ad} satın alındı! 🎉`);
-    setTimeout(() => setMsg(""), 3000);
-
-    confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.7 }
-    });
+    setSatinAlinanlar(state.ownedItems || []);
+    setGold(state.gold || 0);
+    setXp(state.points || 0);
+    setMsg(`${urun.label} satın alındı ve hemen uygulandı!`);
+    setTimeout(() => setMsg(""), 3500);
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
   };
 
   // ---------------------------
@@ -209,6 +181,10 @@ export default function Gamification({ onBack }) {
   // ---------------------------
   useEffect(() => {
     loadGamificationData();
+  }, []);
+
+  useEffect(() => {
+    fetchMarketItems().then(setMarketItems);
   }, []);
 
   // ---------------------------
@@ -288,9 +264,6 @@ export default function Gamification({ onBack }) {
     const dailyReward = calculateDailyReward(daily, dailyCorrectCount);
     const totalXP = xpTotal + (dailyReward.xp || 0);
     
-    // Altın hesaplama
-    const totalGold = Math.floor(totalXP / 10) + (dailyReward.gold || 0);
-    
     // Level hesaplama (yeni sistem)
     const levelData = calculateLevelFromXP(totalXP);
     const currentLevel = levelData.level;
@@ -303,9 +276,12 @@ export default function Gamification({ onBack }) {
       setTimeout(() => setShowLevelUp(false), 2000);
     }
 
+    const loaded = await loadGamificationState();
+    const synced = await syncProgressWithReports(raporlarData, loaded);
     setPreviousLevel(currentLevel);
-    setXp(totalXP);
-    setGold(totalGold);
+    setXp(synced.points || totalXP);
+    setGold(synced.gold || 0);
+    setSatinAlinanlar(synced.ownedItems || []);
     setLevel(currentLevel === 0 ? 1 : currentLevel);
     setProgress(progressPercent);
     setNextLevelXP(nextXP);
@@ -320,8 +296,13 @@ export default function Gamification({ onBack }) {
       setTimeout(() => setShowMilestone(false), 3000);
       
       // Milestone ödüllerini uygula
-      setXp(prev => prev + (lastMilestone.reward.xp || 0));
-      setGold(prev => prev + (lastMilestone.reward.gold || 0));
+      const updated = await addPointsAndGold(
+        lastMilestone.reward.xp || 0,
+        lastMilestone.reward.gold || 0,
+        synced
+      );
+      setXp(updated.points);
+      setGold(updated.gold);
       
       confetti({
         particleCount: 200,
@@ -335,9 +316,9 @@ export default function Gamification({ onBack }) {
     // 🏅 ROZETLER
     // ---------------------------
     const newBadges = [];
-    if (xpTotal >= 100) newBadges.push("🔥 Başlangıç Ustası");
-    if (xpTotal >= 500) newBadges.push("💎 Deneyimli Öğrenci");
-    if (xpTotal >= 1500) newBadges.push("🏆 Efsane Öğrenci");
+    if ((synced.points || xpTotal) >= 100) newBadges.push("🔥 Başlangıç Ustası");
+    if ((synced.points || xpTotal) >= 500) newBadges.push("💎 Deneyimli Öğrenci");
+    if ((synced.points || xpTotal) >= 1500) newBadges.push("🏆 Efsane Öğrenci");
     if (daily >= 30) newBadges.push("⚡ Günlük Hedef Ustası");
     if (totalCorrect >= 200) newBadges.push("🎯 Keskin Nişancı");
     if (streak >= 3) newBadges.push("🔥 3 Günlük Seri Rozeti");
@@ -470,7 +451,7 @@ export default function Gamification({ onBack }) {
             </div>
             
             <div className="market-grid">
-              {marketUrunleri.map((urun) => {
+              {(marketItems.length ? marketItems : DEFAULT_MARKET_ITEMS).map((urun) => {
                 const satinAlindi = satinAlinanlar.includes(urun.id);
                 
                 return (
@@ -479,15 +460,15 @@ export default function Gamification({ onBack }) {
                     className={`market-item ${satinAlindi ? 'market-item-owned' : ''}`}
                   >
                     <div className="market-item-icon">{urun.icon}</div>
-                    <div className="market-item-name">{urun.ad}</div>
-                    <div className="market-item-description">{urun.aciklama}</div>
+                    <div className="market-item-name">{urun.label}</div>
+                    <div className="market-item-description">{urun.desc}</div>
                     <div className="market-item-price">
                       {satinAlindi ? (
                         <span className="market-item-owned-text">✓ Satın Alındı</span>
                       ) : (
                         <>
                           <span className="gold-icon">🪙</span>
-                          <span>{urun.fiyat} Altın</span>
+                          <span>{urun.price} Altın</span>
                         </>
                       )}
                     </div>
@@ -495,9 +476,9 @@ export default function Gamification({ onBack }) {
                       <button
                         className="market-buy-btn"
                         onClick={() => satinAl(urun)}
-                        disabled={gold < urun.fiyat}
+                        disabled={gold < urun.price}
                       >
-                        {gold < urun.fiyat ? 'Yetersiz Altın' : 'Satın Al'}
+                        {gold < urun.price ? 'Yetersiz Altın' : 'Satın Al'}
                       </button>
                     )}
                   </div>

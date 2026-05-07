@@ -1,57 +1,52 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
-import { fetchRaporlar } from "../services/quiz";
-import { getJSON, setJSON } from "../services/storage";
-import { MARKET_ITEMS, calculateStreakFromReports, computeGamificationStats } from "../services/gamificationData";
+import { fetchMarketItemsFromApi, purchaseMarketItem, syncGamification } from "../services/gamification";
+import { MARKET_ITEMS } from "../services/gamificationData";
 import { colors } from "../theme";
 
 export default function MarketScreen() {
   const [loading, setLoading] = useState(true);
-  const [raporlar, setRaporlar] = useState([]);
+  const [catalog, setCatalog] = useState(MARKET_ITEMS);
+  const [gold, setGold] = useState(0);
   const [ownedItems, setOwnedItems] = useState([]);
-  const [focusBonus, setFocusBonus] = useState({ xp: 0, gold: 0 });
 
   useEffect(() => {
     (async () => {
       try {
-        const [data, owned, focusReward] = await Promise.all([
-          fetchRaporlar(200),
-          getJSON("market_owned", []),
-          getJSON("focus_rewards", { xp: 0, gold: 0 }),
-        ]);
-        setRaporlar(Array.isArray(data) ? data : []);
-        setOwnedItems(Array.isArray(owned) ? owned : []);
-        setFocusBonus({ xp: Number(focusReward?.xp || 0), gold: Number(focusReward?.gold || 0) });
+        const [items, sync] = await Promise.all([fetchMarketItemsFromApi(), syncGamification()]);
+        if (items?.length) setCatalog(items);
+        if (sync?.state) {
+          setGold(sync.state.gold || 0);
+          setOwnedItems(sync.state.ownedItems || []);
+        }
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const streak = useMemo(() => calculateStreakFromReports(raporlar), [raporlar]);
-  const stats = useMemo(() => computeGamificationStats(raporlar, streak, focusBonus), [raporlar, streak, focusBonus]);
-  const availableGold = useMemo(() => {
-    const spent = ownedItems.reduce((sum, ownedId) => {
-      const item = MARKET_ITEMS.find((i) => i.id === ownedId);
-      return sum + (item?.price || 0);
-    }, 0);
-    return Math.max(0, stats.gold - spent);
-  }, [ownedItems, stats.gold]);
+  const repeatable = (id) => id.startsWith("instant_");
 
   async function buyItem(item) {
-    if (ownedItems.includes(item.id)) {
+    if (!repeatable(item.id) && ownedItems.includes(item.id)) {
       Alert.alert("Bilgi", "Bu urun zaten satin alinmis.");
       return;
     }
-    if (availableGold < item.price) {
+    if (gold < item.price) {
       Alert.alert("Yetersiz Bakiye", "Bu urun icin yeterli altinin yok.");
       return;
     }
-    const updated = [...ownedItems, item.id];
-    setOwnedItems(updated);
-    await setJSON("market_owned", updated);
+    const { state, error } = await purchaseMarketItem(item.id);
+    if (error) {
+      Alert.alert("Hata", error);
+      return;
+    }
+    if (state) {
+      setGold(state.gold || 0);
+      setOwnedItems(state.ownedItems || []);
+    }
     Alert.alert("Basarili", `${item.label} satin alindi.`);
   }
 
@@ -65,15 +60,15 @@ export default function MarketScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <SectionTitle title="Market" subtitle="Puanlarinla urun satin al ve hesabini guclendir" />
+      <SectionTitle title="Market" subtitle="Sunucudaki altin bakiyenle urun satin al" />
       <Card style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Mevcut Bakiye</Text>
-        <Text style={styles.balanceValue}>{availableGold} altin</Text>
+        <Text style={styles.balanceValue}>{gold} altin</Text>
       </Card>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        {MARKET_ITEMS.map((item) => {
-          const owned = ownedItems.includes(item.id);
+        {catalog.map((item) => {
+          const owned = !repeatable(item.id) && ownedItems.includes(item.id);
           return (
             <Card key={item.id} style={styles.itemCard}>
               <View style={{ flex: 1 }}>
@@ -83,7 +78,7 @@ export default function MarketScreen() {
               </View>
               <PrimaryButton
                 title={owned ? "Var" : "Satin Al"}
-                disabled={owned || availableGold < item.price}
+                disabled={owned || gold < item.price}
                 onPress={() => buyItem(item)}
                 style={styles.buyBtn}
               />

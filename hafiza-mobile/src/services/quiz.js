@@ -1,4 +1,5 @@
 import api from "./api";
+import { syncGamification } from "./gamification";
 
 export async function fetchDersler() {
   const { data } = await api.get("/api/ders");
@@ -57,6 +58,7 @@ export async function removeSecenek(secenekId) {
 
 export async function submitQuiz(payload) {
   const { data } = await api.post("/api/quiz/submit", payload);
+  syncGamification().catch(() => {});
   return data;
 }
 
