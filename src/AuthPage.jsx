@@ -307,7 +307,7 @@ export default function AuthPage({ onSuccess }) {
               </div>
             </div>
 
-            <div className="auth-hero-mock-wrap" aria-hidden="true">
+            <div className="auth-hero-mock-wrap">
               <div className="auth-browser">
                 <div className="auth-browser-toolbar">
                   <span className="auth-browser-dot auth-browser-dot-red" />
@@ -348,7 +348,17 @@ export default function AuthPage({ onSuccess }) {
                         <span className="auth-mock-pill muted">Öneri hazır</span>
                       </li>
                     </ul>
-                    <button type="button" className="auth-mock-cta-block" tabIndex={-1}>
+                    <button
+                      type="button"
+                      className="auth-mock-cta-block"
+                      onClick={() => {
+                        setIsRegister(false);
+                        setMsg("");
+                        setEmailError("");
+                        setPasswordError("");
+                        scrollToAuth();
+                      }}
+                    >
                       Bugüne başla
                     </button>
                   </div>

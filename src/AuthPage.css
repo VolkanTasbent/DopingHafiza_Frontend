@@ -348,9 +348,18 @@
   font-size: 13px;
   font-weight: 800;
   color: #fff;
-  cursor: default;
+  cursor: pointer;
   background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+.auth-mock-cta-block:hover {
+  filter: brightness(1.06);
+}
+
+.auth-mock-cta-block:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
 }
 
 .auth-light {
