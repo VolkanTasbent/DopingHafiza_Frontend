@@ -38,7 +38,6 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState("7"); // Varsayılan: Son 7 gün
   const [calculatedScore, setCalculatedScore] = useState(null); // Kalici puan
-  const [goldBalance, setGoldBalance] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0); // Günlük streak
   
   // Günlük görevler state
@@ -458,7 +457,6 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
       const loaded = await loadGamificationState();
       const synced = await syncProgressWithReports(processedData, loaded);
       setCalculatedScore({ totalScore: synced.points || 0 });
-      setGoldBalance(synced.gold || 0);
     } catch (e) {
       console.error("❌ Grafik endpoint başarısız, eski endpoint deneniyor:", e);
       try {
@@ -486,7 +484,6 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
         const loaded = await loadGamificationState();
         const synced = await syncProgressWithReports(processedData, loaded);
         setCalculatedScore({ totalScore: synced.points || 0 });
-        setGoldBalance(synced.gold || 0);
       } catch (fallbackError) {
         console.error("❌ Tüm endpoint'ler başarısız:", fallbackError);
       }
@@ -529,7 +526,6 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
         task3: Boolean(taskList[2]?.completed),
       });
       setCalculatedScore({ totalScore: state.points || 0 });
-      setGoldBalance(state.gold || 0);
       setDailyStats({
         solved: state.lastReportTotals?.solved ?? 0,
         correct: state.lastReportTotals?.correct ?? 0,
@@ -1180,20 +1176,7 @@ export default function Dashboard({ me, onNavigate, onSelectDers, onSelectDersDe
             <button className="points-button" onClick={handlePuanlariKullan}>
               Puanları Kullan
             </button>
-            <div className="points-label-modern" style={{ marginTop: 8 }}>
-              Altin: {goldBalance}
-            </div>
           </div>
-          {calculatedScore && calculatedScore.totalScore > 0 && (
-            <div style={{ 
-              fontSize: '11px', 
-              color: '#6b7280', 
-              marginTop: '4px',
-              textAlign: 'center'
-            }}>
-              {calculatedScore.stats?.totalCorrect || 0} doğru, {calculatedScore.stats?.totalWrong || 0} yanlış
-            </div>
-          )}
         </div>
 
         {/* Streak Kutusu */}
