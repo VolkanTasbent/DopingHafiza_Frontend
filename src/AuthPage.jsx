@@ -313,14 +313,14 @@ export default function AuthPage({ onSuccess }) {
                   <span className="auth-browser-dot auth-browser-dot-red" />
                   <span className="auth-browser-dot auth-browser-dot-amber" />
                   <span className="auth-browser-dot auth-browser-dot-green" />
-                  <span className="auth-browser-url">dopinghafiza.app / panel</span>
+                  <span className="auth-browser-url">hafizaakademi.app / panel</span>
                 </div>
                 <div className="auth-browser-viewport">
                   <div className="auth-mock-dash">
                     <div className="auth-mock-dash-top">
                       <span className="auth-mock-logo">📚</span>
                       <div>
-                        <p className="auth-mock-name">Doping Hafıza</p>
+                        <p className="auth-mock-name">Hafıza Akademi</p>
                         <p className="auth-mock-sub">Öğrenci paneli · Bugünün özeti</p>
                       </div>
                     </div>
@@ -336,11 +336,11 @@ export default function AuthPage({ onSuccess }) {
                     </div>
                     <ul className="auth-mock-services">
                       <li>
-                        <span>Soru oturumu</span>
-                        <span className="auth-mock-pill done">Tamamlandı</span>
+                        <span>Konu anlatım videosu</span>
+                        <span className="auth-mock-pill done">İzlendi</span>
                       </li>
                       <li>
-                        <span>TYT denemesi · 40 soru</span>
+                        <span>TYT denemesi 120 soru</span>
                         <span className="auth-mock-pill muted">Devam</span>
                       </li>
                       <li>
@@ -498,9 +498,9 @@ export default function AuthPage({ onSuccess }) {
             <span className="auth-aside-logo" aria-hidden="true">
               📚
             </span>
-            <h1 className="auth-aside-title">Doping Hafıza</h1>
+            <h1 className="auth-aside-title">Hafıza Akademi</h1>
             <p className="auth-aside-lead">
-              Hafıza Akademi çatısı altında soru, deneme, videolar, raporlar ve kişisel takip tek platformda.
+              Soru, deneme, videolar, raporlar ve kişisel takip tek platformda.
             </p>
             <ul className="auth-aside-list">
               <li>
@@ -524,7 +524,7 @@ export default function AuthPage({ onSuccess }) {
             <div className="auth-form-container">
             <div className="auth-mobile-brand">
               <span className="auth-mobile-brand-icon">📚</span>
-              <span className="auth-mobile-brand-text">Doping Hafıza</span>
+              <span className="auth-mobile-brand-text">Hafıza Akademi</span>
             </div>
 
             <div className="auth-header">
