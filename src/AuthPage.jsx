@@ -258,127 +258,240 @@ export default function AuthPage({ onSuccess }) {
     }
   };
 
+  const scrollToAuth = () => {
+    document.getElementById("giris-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="auth-page-wrapper">
-      <section className="auth-landing" aria-labelledby="auth-landing-title">
-        <div className="auth-landing-inner">
-          <p className="auth-landing-badge">YKS · Soru · Deneme · Takip</p>
-          <h1 id="auth-landing-title" className="auth-landing-title">
-            Doping Hafıza
-          </h1>
-          <p className="auth-landing-lead">
-            Tek hesapta soru çözümü, denemeler, videolar, raporlar ve yapay zekâ destekli planlama bir arada.
-            İlerlemen otomatik kaydedilir; günlük görevler ve ödüller seni düzenli çalışmaya teşvik eder.
-          </p>
+      <div className="auth-marketing">
+        <section className="auth-hero" aria-labelledby="auth-landing-title">
+          <div className="auth-hero-glow" aria-hidden="true" />
+          <div className="auth-hero-inner">
+            <div className="auth-hero-copy">
+              <p className="auth-hero-badge">YKS · soru çözümü · deneme · rapor tek yerde</p>
+              <h1 id="auth-landing-title" className="auth-hero-title">
+                Tek yerde sınav hazırlığınız—takibin burada başlar.
+              </h1>
+              <p className="auth-hero-lead">
+                Soru oturumu, deneme sınavları, günlük görevler, puanlar ve grafikleri bir çatı altında kullanın.
+                İlerlemeniz kaydedilir; AI koç ve program önerileriyle eksik konularınızı netleştirin.
+              </p>
+              <div className="auth-hero-actions">
+                <button
+                  type="button"
+                  className="auth-btn auth-btn-gradient"
+                  onClick={() => {
+                    setIsRegister(true);
+                    setMsg("");
+                    setEmailError("");
+                    setPasswordError("");
+                    scrollToAuth();
+                  }}
+                >
+                  Ücretsiz kayıt ol
+                </button>
+                <button
+                  type="button"
+                  className="auth-btn auth-btn-outline-dark"
+                  onClick={() => {
+                    setIsRegister(false);
+                    setMsg("");
+                    setEmailError("");
+                    setPasswordError("");
+                    scrollToAuth();
+                  }}
+                >
+                  Zaten hesabım var
+                </button>
+              </div>
+            </div>
 
-          <div className="auth-how">
-            <h2 className="auth-landing-h2">Nasıl çalışır?</h2>
-            <ol className="auth-how-steps">
-              <li className="auth-how-step">
-                <span className="auth-how-num">1</span>
-                <div>
-                  <strong className="auth-how-strong">Kayıt ol veya giriş yap</strong>
-                  <p className="auth-how-text">
-                    Profilinde sınıf ve hedef üniversite/bölüm bilgilerini tutabilirsin; verilerin hesabına bağlı kalır.
-                  </p>
+            <div className="auth-hero-mock-wrap" aria-hidden="true">
+              <div className="auth-browser">
+                <div className="auth-browser-toolbar">
+                  <span className="auth-browser-dot auth-browser-dot-red" />
+                  <span className="auth-browser-dot auth-browser-dot-amber" />
+                  <span className="auth-browser-dot auth-browser-dot-green" />
+                  <span className="auth-browser-url">dopinghafiza.app / panel</span>
                 </div>
+                <div className="auth-browser-viewport">
+                  <div className="auth-mock-dash">
+                    <div className="auth-mock-dash-top">
+                      <span className="auth-mock-logo">📚</span>
+                      <div>
+                        <p className="auth-mock-name">Doping Hafıza</p>
+                        <p className="auth-mock-sub">Öğrenci paneli · Bugünün özeti</p>
+                      </div>
+                    </div>
+                    <div className="auth-mock-metrics">
+                      <div className="auth-mock-metric">
+                        <span className="auth-mock-metric-label">Günlük görev</span>
+                        <strong>2 / 3</strong>
+                      </div>
+                      <div className="auth-mock-metric">
+                        <span className="auth-mock-metric-label">Streak</span>
+                        <strong>🔥 5 gün</strong>
+                      </div>
+                    </div>
+                    <ul className="auth-mock-services">
+                      <li>
+                        <span>Soru oturumu</span>
+                        <span className="auth-mock-pill done">Tamamlandı</span>
+                      </li>
+                      <li>
+                        <span>TYT denemesi · 40 soru</span>
+                        <span className="auth-mock-pill muted">Devam</span>
+                      </li>
+                      <li>
+                        <span>AI koç özeti · eksik konular</span>
+                        <span className="auth-mock-pill muted">Öneri hazır</span>
+                      </li>
+                    </ul>
+                    <button type="button" className="auth-mock-cta-block" tabIndex={-1}>
+                      Bugüne başla
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="auth-light" aria-labelledby="auth-how-heading">
+          <div className="auth-light-inner">
+            <header className="auth-light-header">
+              <h2 id="auth-how-heading" className="auth-light-title">
+                Nasıl çalışır?
+              </h2>
+              <p className="auth-light-subtitle">
+                Kayıttan ilk oturuma ve günlük hedeflerinize dakikalar içinde ulaşın.
+              </p>
+            </header>
+
+            <ol className="auth-steps-cards">
+              <li className="auth-step-card">
+                <span className="auth-step-num">1</span>
+                <h3 className="auth-step-title">Hesabını oluştur</h3>
+                <p className="auth-step-desc">
+                  E-postanız ile kaydolun veya giriş yapın. Sınıf ve hedef üniversite bilgilerinizi profilde tutabilirsiniz.
+                </p>
               </li>
-              <li className="auth-how-step">
-                <span className="auth-how-num">2</span>
-                <div>
-                  <strong className="auth-how-strong">Çalış: soru, deneme, pomodoro</strong>
-                  <p className="auth-how-text">
-                    Ders ve konu seçerek soru çöz, deneme sınavlarına gir, pomodoro ile odaklan. Çözümler ve oturumlar
-                    raporlarına işlenir.
-                  </p>
-                </div>
+              <li className="auth-step-card">
+                <span className="auth-step-num">2</span>
+                <h3 className="auth-step-title">Çöz, dinle, odaklan</h3>
+                <p className="auth-step-desc">
+                  Konu bazlı soru çözümü ve deneme sınavları yapın; pomodoro ile odak sürenizi kaydedin.
+                </p>
               </li>
-              <li className="auth-how-step">
-                <span className="auth-how-num">3</span>
-                <div>
-                  <strong className="auth-how-strong">İzle, analiz et, geliş</strong>
-                  <p className="auth-how-text">
-                    Grafikler ve raporlarla eksiklerini gör; günlük görevler, puan ve altın ile motivasyonunu artır.
-                    İstersen AI koç ve çalışma programı önerilerinden yararlan.
-                  </p>
-                </div>
+              <li className="auth-step-card">
+                <span className="auth-step-num">3</span>
+                <h3 className="auth-step-title">Analiz ve ödüller</h3>
+                <p className="auth-step-desc">
+                  Rapor ve grafiklerle gelişiminizi görün; günlük görevleri tamamlayarak puan ve altın biriktirin.
+                </p>
               </li>
             </ol>
-          </div>
 
-          <div className="auth-features-block">
-            <h2 className="auth-landing-h2">Özellikler</h2>
-            <ul className="auth-feature-grid">
+            <h2 className="auth-features-heading">Özellikler</h2>
+            <ul className="auth-feature-grid auth-feature-grid-light">
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">📘</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  📘
+                </span>
                 <span className="auth-feature-name">Ders ve konu bazlı soru çözümü</span>
-                <span className="auth-feature-desc">Konuya göre pratik; cevaplar ve sonuçlar rapora düşer.</span>
+                <span className="auth-feature-desc">Sonuçlar otomatik rapora düşer.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">📝</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  📝
+                </span>
                 <span className="auth-feature-name">Deneme sınavları</span>
                 <span className="auth-feature-desc">Tam deneme akışı ve performans takibi.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">📊</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  📊
+                </span>
                 <span className="auth-feature-name">Raporlar ve grafikler</span>
-                <span className="auth-feature-desc">Oturum özeti, doğru/yanlış ve gelişim görselleri.</span>
+                <span className="auth-feature-desc">Doğru/yanlış ve gelişim görselleri.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">🎯</span>
-                <span className="auth-feature-name">Günlük görevler ve gamification</span>
-                <span className="auth-feature-desc">Günlük hedefler, puan, altın ve market ödülleri.</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  🎯
+                </span>
+                <span className="auth-feature-name">Günlük görevler ve ödüller</span>
+                <span className="auth-feature-desc">Puan, altın ve market.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">⏱️</span>
-                <span className="auth-feature-name">Pomodoro ve odak süresi</span>
-                <span className="auth-feature-desc">Zamanlı çalışma; istersen raporlarla ilişkilendirilir.</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  ⏱️
+                </span>
+                <span className="auth-feature-name">Pomodoro</span>
+                <span className="auth-feature-desc">Zamanlı odaklı çalışma.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">📅</span>
-                <span className="auth-feature-name">Takvim ve çalışma programı</span>
-                <span className="auth-feature-desc">Planını gör; AI ile haftalık program önerileri.</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  📅
+                </span>
+                <span className="auth-feature-name">Takvim ve program</span>
+                <span className="auth-feature-desc">AI ile haftalık plan önerileri.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">🤖</span>
-                <span className="auth-feature-name">AI çalışma koçu ve asistan</span>
-                <span className="auth-feature-desc">Sohbet, eksik analizi ve kişiselleştirilmiş öneriler.</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  🤖
+                </span>
+                <span className="auth-feature-name">AI çalışma koçu</span>
+                <span className="auth-feature-desc">Eksik analizi ve öneriler.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">🎴</span>
-                <span className="auth-feature-name">Bilgi kartları (flashcard)</span>
-                <span className="auth-feature-desc">Tekrar için hızlı kart çalışması.</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  🎴
+                </span>
+                <span className="auth-feature-name">Bilgi kartları</span>
+                <span className="auth-feature-desc">Flashcard ile tekrar.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">🏅</span>
-                <span className="auth-feature-name">Rozetler ve koleksiyon</span>
-                <span className="auth-feature-desc">Başarı rozetleri ile uzun vadeli motivasyon.</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  🏅
+                </span>
+                <span className="auth-feature-name">Rozetler</span>
+                <span className="auth-feature-desc">Uzun vadeli motivasyon.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">🎬</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  🎬
+                </span>
                 <span className="auth-feature-name">Konu videoları</span>
-                <span className="auth-feature-desc">Ders içeriklerini izleyip pekiştir.</span>
+                <span className="auth-feature-desc">Videolarla pekiştirme.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">👤</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  👤
+                </span>
                 <span className="auth-feature-name">Profil ve hedefler</span>
-                <span className="auth-feature-desc">Hedef sıralama ve kişisel ayarlar.</span>
+                <span className="auth-feature-desc">Hedef sıralama ve ayarlar.</span>
               </li>
               <li className="auth-feature-card">
-                <span className="auth-feature-icon" aria-hidden="true">🔔</span>
+                <span className="auth-feature-icon" aria-hidden="true">
+                  🔔
+                </span>
                 <span className="auth-feature-name">Bildirim ve arama</span>
-                <span className="auth-feature-desc">Hızlı erişim ve hatırlatmalar (özellikler hesap ve cihaza göre).</span>
+                <span className="auth-feature-desc">Hızlı erişim ve hatırlatmalar.</span>
               </li>
             </ul>
+
+            <div className="auth-light-cta">
+              <button type="button" className="auth-btn auth-btn-gradient auth-btn-inline" onClick={scrollToAuth}>
+                Giriş veya kayıt formuna geç <span aria-hidden="true">↓</span>
+              </button>
+            </div>
           </div>
+        </section>
+      </div>
 
-          <a href="#giris-panel" className="auth-landing-skip">
-            Giriş veya kayıt formuna geç <span aria-hidden="true">↓</span>
-          </a>
-        </div>
-      </section>
-
-      <div className="auth-shell" id="giris-panel">
+      <div className="auth-shell-wrap">
+        <div className="auth-shell" id="giris-panel">
         <aside className="auth-aside" aria-hidden="true">
           <div className="auth-aside-pattern" />
           <div className="auth-aside-inner">
@@ -657,6 +770,7 @@ export default function AuthPage({ onSuccess }) {
               </a>
             </p>
           </div>
+        </div>
         </div>
         </div>
       </div>
