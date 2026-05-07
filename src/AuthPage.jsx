@@ -528,7 +528,16 @@ export default function AuthPage({ onSuccess }) {
               </p>
             </div>
 
-            <p className="auth-credit">Created by Volkan Taşbent</p>
+            <p className="auth-credit">
+              <a
+                href="https://www.linkedin.com/in/volkan-tasbent"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="auth-credit-link"
+              >
+                Created by Volkan Taşbent
+              </a>
+            </p>
           </div>
         </div>
         </div>

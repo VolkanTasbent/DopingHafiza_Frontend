@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -244,7 +245,13 @@ export default function LoginScreen() {
 
           <View style={styles.footerBlock}>
             <Text style={styles.footer}>© Hafıza Akademi</Text>
-            <Text style={styles.footerCredit}>Created by Volkan Taşbent</Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Volkan Taşbent LinkedIn profili"
+              onPress={() => Linking.openURL("https://www.linkedin.com/in/volkan-tasbent")}
+            >
+              <Text style={styles.footerCredit}>Created by Volkan Taşbent</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -456,7 +463,9 @@ const styles = StyleSheet.create({
   footerCredit: {
     textAlign: "center",
     fontSize: 12,
-    color: "rgba(255,255,255,0.38)",
+    color: "rgba(255,255,255,0.55)",
     fontWeight: "600",
+    textDecorationLine: "underline",
+    textDecorationColor: "rgba(255,255,255,0.35)",
   },
 });
