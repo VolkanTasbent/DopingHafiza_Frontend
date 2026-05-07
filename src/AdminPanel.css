@@ -265,6 +265,45 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  align-items: start;
+}
+
+/* Satır bazlı form (Ders seçimi + Yeni ders): etiket alanı ve kontroller üstten hizada */
+.admin-grid-2 > .admin-form-group,
+.admin-grid-2 > form.admin-form-group {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-grid-2 > form.admin-form-group {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.admin-grid-2 .admin-label {
+  /* Etiket çift satır olsa bile iki sütunun input hizası drift etmesin */
+  min-height: 2.75em;
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.admin-grid-2 .admin-flex {
+  align-items: flex-start;
+}
+
+.admin-grid-2 .admin-flex .admin-btn {
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.admin-grid-2 .admin-select,
+.admin-grid-2 .admin-flex .admin-input {
+  min-height: 50px;
+  line-height: 1.35;
 }
 
 .admin-grid-3 {
