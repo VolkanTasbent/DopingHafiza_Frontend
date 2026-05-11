@@ -104,6 +104,28 @@ function getYoutubeVideoId(url) {
   }
 }
 
+/** Son aktiviteden gelen URL ile API'deki videoyu eşleştir (mutlak/göreli + YouTube varyantları). */
+function urlsLooselyEqual(a, b) {
+  const ya = getYoutubeVideoId(a);
+  const yb = getYoutubeVideoId(b);
+  if (ya && yb && ya === yb) return true;
+  const norm = (u) => {
+    const s = String(u || "").trim();
+    if (!s) return "";
+    try {
+      const abs = toAbsoluteUrl(s);
+      const url = new URL(abs.includes("://") ? abs : `https://${abs}`);
+      const path = url.pathname.replace(/\/$/, "");
+      return `${url.hostname}${path}`.toLowerCase();
+    } catch {
+      return s.split("?")[0].toLowerCase();
+    }
+  };
+  const x = norm(a);
+  const y = norm(b);
+  return Boolean(x && y && x === y);
+}
+
 function makeYoutubeHtml(videoId) {
   return `<!doctype html>
 <html>
@@ -234,56 +256,87 @@ export default function VideoLessonsScreen({ route }) {
   const [editingText, setEditingText] = useState("");
   const [playerReady, setPlayerReady] = useState(false);
   const [playerError, setPlayerError] = useState("");
-  const [pendingSelection, setPendingSelection] = useState(null);
   const timerRef = useRef(null);
   const webViewRef = useRef(null);
+  const lastAutoVideoId = useRef(null);
+
+  /** route.params ilk renderda okunur; pending state ile yarışmayı önler (yanlış ders/konu). */
+  const deepLink = useMemo(() => {
+    const p = route?.params || {};
+    const dersId = p.dersId ?? null;
+    const konuId = p.konuId ?? null;
+    const videoId = p.videoId ?? null;
+    const videoUrl = p.videoUrl ?? null;
+    const rawNs = p.noteSeconds;
+    const noteSeconds =
+      rawNs != null && rawNs !== "" && !Number.isNaN(Number(rawNs)) ? Number(rawNs) : null;
+    if (dersId == null && konuId == null && videoId == null && !videoUrl && noteSeconds == null) return null;
+    return { dersId, konuId, videoId, videoUrl, noteSeconds };
+  }, [
+    route?.params?.dersId,
+    route?.params?.konuId,
+    route?.params?.videoId,
+    route?.params?.videoUrl,
+    route?.params?.noteSeconds,
+  ]);
+
+  /** Yeni bir derin link (ör. baska son aktivite) gelince zaman / secim refini sifirla */
+  useEffect(() => {
+    lastAutoVideoId.current = null;
+  }, [
+    route?.params?.dersId,
+    route?.params?.konuId,
+    route?.params?.videoId,
+    route?.params?.videoUrl,
+  ]);
 
   useEffect(() => {
-    const dersId = route?.params?.dersId ?? null;
-    const konuId = route?.params?.konuId ?? null;
-    const videoId = route?.params?.videoId ?? null;
-    const videoUrl = route?.params?.videoUrl ?? null;
-    const noteSeconds = route?.params?.noteSeconds ?? null;
-    if (dersId || konuId || videoId || videoUrl || noteSeconds != null) {
-      setPendingSelection({ dersId, konuId, videoId, videoUrl, noteSeconds });
-    }
-  }, [route?.params?.dersId, route?.params?.konuId, route?.params?.videoId, route?.params?.videoUrl, route?.params?.noteSeconds]);
-
-  useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const d = await fetchDersler();
+        if (cancelled) return;
         setDersler(Array.isArray(d) ? d : []);
-        const desiredDersId = pendingSelection?.dersId;
-        const matchedDers = (Array.isArray(d) ? d : []).find((x) => String(x.id) === String(desiredDersId));
+        const desiredDersId = deepLink?.dersId;
+        const matchedDers =
+          desiredDersId != null && desiredDersId !== ""
+            ? (Array.isArray(d) ? d : []).find((x) => String(x.id) === String(desiredDersId))
+            : null;
         if (matchedDers?.id) {
           setSelectedDersId(matchedDers.id);
         } else if (d?.[0]?.id) {
           setSelectedDersId(d[0].id);
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [pendingSelection?.dersId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [deepLink?.dersId]);
 
   useEffect(() => {
     if (!selectedDersId) return;
+    let cancelled = false;
+    const sid = selectedDersId;
     (async () => {
-      const konuList = await fetchKonular(selectedDersId);
+      const konuList = await fetchKonular(sid);
+      if (cancelled) return;
       setKonular(Array.isArray(konuList) ? konuList : []);
-      const desiredKonuId = pendingSelection?.konuId;
+      const desiredKonuId = deepLink?.konuId;
       const hasDesired = (Array.isArray(konuList) ? konuList : []).find((k) => String(k.id) === String(desiredKonuId));
-      const firstKonu = (Array.isArray(konuList) ? konuList : []).find((k) => makeVideoItems(k).length > 0) || konuList?.[0] || null;
+      const firstKonu =
+        (Array.isArray(konuList) ? konuList : []).find((k) => makeVideoItems(k).length > 0) || konuList?.[0] || null;
       setSelectedKonuId(hasDesired?.id || firstKonu?.id || null);
       setVideos([]);
       setSelectedVideo(null);
-      const startSec = Math.max(0, Number(pendingSelection?.noteSeconds || 0));
-      setCurrentSeconds(startSec);
-      setNoteTimestamp(startSec);
       setRunning(false);
     })();
-  }, [selectedDersId, pendingSelection?.konuId, pendingSelection?.noteSeconds]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDersId, deepLink?.konuId]);
 
   useEffect(() => {
     const list = Array.isArray(konular) ? konular : [];
@@ -293,20 +346,36 @@ export default function VideoLessonsScreen({ route }) {
         : list;
     const items = source.flatMap((k) => makeVideoItems(k));
     setVideos(items);
-    const desiredVideoId = pendingSelection?.videoId;
-    const desiredVideoUrl = pendingSelection?.videoUrl;
-    const matchedVideo = items.find((v) => String(v.id) === String(desiredVideoId)) || items.find((v) => String(v.url) === String(desiredVideoUrl));
-    setSelectedVideo(matchedVideo || items[0] || null);
-    const startSec = Math.max(0, Number(pendingSelection?.noteSeconds || 0));
-    setCurrentSeconds(startSec);
-    setNoteTimestamp(startSec);
+
+    const desiredVideoId = deepLink?.videoId;
+    const desiredVideoUrl = deepLink?.videoUrl;
+    const matchedById =
+      desiredVideoId != null && desiredVideoId !== ""
+        ? items.find((v) => String(v.id) === String(desiredVideoId))
+        : null;
+    const matchedByUrl = desiredVideoUrl
+      ? items.find((v) => urlsLooselyEqual(v.url, desiredVideoUrl))
+      : null;
+    const matchedVideo = matchedById || matchedByUrl;
+    const pick = matchedVideo || items[0] || null;
+    const fromDeep = !!(matchedById || matchedByUrl);
+
+    setSelectedVideo(pick);
+    if (fromDeep) {
+      const startSec = Math.max(0, Number(deepLink?.noteSeconds ?? 0));
+      setCurrentSeconds(startSec);
+      setNoteTimestamp(startSec);
+      lastAutoVideoId.current = pick?.id ?? null;
+    } else if (String(pick?.id) !== String(lastAutoVideoId.current)) {
+      setCurrentSeconds(0);
+      setNoteTimestamp(0);
+      lastAutoVideoId.current = pick?.id ?? null;
+    }
+
     setRunning(false);
     setPlayerReady(false);
     setPlayerError("");
-    if (pendingSelection) {
-      setPendingSelection(null);
-    }
-  }, [konular, selectedKonuId, pendingSelection]);
+  }, [konular, selectedKonuId, deepLink?.videoId, deepLink?.videoUrl, deepLink?.noteSeconds]);
 
   useEffect(() => {
     if (!selectedVideo) {
