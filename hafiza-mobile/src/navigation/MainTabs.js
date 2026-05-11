@@ -7,14 +7,13 @@ import GamificationScreen from "../screens/GamificationScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import AdminScreen from "../screens/AdminScreen";
 import { useAuth } from "../context/AuthContext";
-import { useUiPrefs } from "../context/UiPrefsContext";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
   const { user } = useAuth();
-  const { darkMode } = useUiPrefs();
+  const { colors, darkMode } = useTheme();
   const isAdmin = String(user?.role || "").toUpperCase() === "ADMIN";
   const iconMap = {
     HomeTab: "🏠",

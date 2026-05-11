@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
 import { fetchDailyTasksSnapshot, syncGamification } from "../services/gamification";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const DEFAULT_TASKS = [
   { id: "t1", title: "30 soru cozum", done: false, category: "Soru", priority: "Orta", dueDate: "", dueTime: "" },
@@ -25,7 +25,63 @@ const DEFAULT_TASKS = [
 const PRIORITIES = ["Dusuk", "Orta", "Yuksek"];
 const FILTERS = ["Tum", "Soru", "Deneme", "Analiz", "Tekrar", "Plan"];
 
+function createTasksStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    topBar: { marginBottom: 8, paddingVertical: 10 },
+    backText: { color: c.primary, fontWeight: "800" },
+    card: { marginBottom: 10 },
+    h2: { fontSize: 16, fontWeight: "700", color: c.text, marginBottom: 6 },
+    meta: { color: c.muted },
+    input: {
+      backgroundColor: "#fff",
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      padding: 10,
+      marginBottom: 8,
+    },
+    createRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+    priorityBtn: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: "#c7d2fe",
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      justifyContent: "center",
+    },
+    priorityBtnText: { color: c.primary, fontWeight: "700", fontSize: 12 },
+    filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    filterChip: { borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
+    filterChipActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
+    filterChipText: { color: c.muted, fontWeight: "600", fontSize: 12 },
+    filterChipTextActive: { color: c.primary, fontWeight: "700" },
+    taskCard: { marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 10 },
+    taskTitle: { color: c.text, fontWeight: "600" },
+    taskMeta: { color: c.muted, fontSize: 12, marginTop: 2 },
+    taskDone: { textDecorationLine: "line-through", color: c.muted },
+    dailyRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    dailyCheck: { fontSize: 22, fontWeight: "800", color: c.primary, minWidth: 28, textAlign: "center" },
+    rewardBanner: {
+      marginBottom: 10,
+      backgroundColor: "#ecfdf5",
+      borderColor: "#6ee7b7",
+      borderWidth: 1,
+    },
+    rewardBannerText: { color: "#047857", fontWeight: "700", fontSize: 14 },
+  });
+}
+
 export default function TasksScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createTasksStyles(colors), [colors]);
   const [tasks, setTasks] = useState(DEFAULT_TASKS);
   const [newTask, setNewTask] = useState("");
   const [newCategory, setNewCategory] = useState("Soru");
@@ -295,55 +351,3 @@ export default function TasksScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  topBar: { marginBottom: 8, paddingVertical: 10 },
-  backText: { color: colors.primary, fontWeight: "800" },
-  card: { marginBottom: 10 },
-  h2: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 6 },
-  meta: { color: colors.muted },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-  },
-  createRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  priorityBtn: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: "#c7d2fe",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    justifyContent: "center",
-  },
-  priorityBtnText: { color: colors.primary, fontWeight: "700", fontSize: 12 },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  filterChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
-  filterChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  filterChipText: { color: colors.muted, fontWeight: "600", fontSize: 12 },
-  filterChipTextActive: { color: colors.primary, fontWeight: "700" },
-  taskCard: { marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 10 },
-  taskTitle: { color: colors.text, fontWeight: "600" },
-  taskMeta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  taskDone: { textDecorationLine: "line-through", color: colors.muted },
-  dailyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  dailyCheck: { fontSize: 22, fontWeight: "800", color: colors.primary, minWidth: 28, textAlign: "center" },
-  rewardBanner: {
-    marginBottom: 10,
-    backgroundColor: "#ecfdf5",
-    borderColor: "#6ee7b7",
-    borderWidth: 1,
-  },
-  rewardBannerText: { color: "#047857", fontWeight: "700", fontSize: 14 },
-});

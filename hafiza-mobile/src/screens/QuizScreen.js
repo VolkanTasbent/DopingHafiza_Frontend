@@ -12,9 +12,80 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchKonular, fetchSorular, submitQuiz } from "../services/quiz";
 import { Card, PrimaryButton, ProgressBar, SecondaryButton, SectionTitle } from "../components/ui";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createQuizStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    topBar: {
+      backgroundColor: "#ff4f5a",
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      marginBottom: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    backBtn: { minWidth: 72, backgroundColor: "rgba(255,255,255,0.22)" },
+    topTitle: { color: "#fff", fontWeight: "800", fontSize: 16, flex: 1 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    meta: { color: c.muted, marginBottom: 10, fontWeight: "700" },
+    progressMetaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, marginBottom: 10 },
+    progressMeta: { color: c.muted, fontSize: 12, fontWeight: "600" },
+    timerMeta: { color: c.primary, fontSize: 12, fontWeight: "800", marginBottom: 8 },
+    statsMiniRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+    statsMini: { color: c.muted, fontWeight: "700", fontSize: 12 },
+    konuBtn: { marginBottom: 8 },
+    konuBtnActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
+    konuText: { color: "#111827" },
+    konuTextActive: { color: c.primary, fontWeight: "800" },
+    questionCard: { marginBottom: 12 },
+    restoreCard: { marginBottom: 10 },
+    restoreTitle: { color: c.text, fontWeight: "800", marginBottom: 4 },
+    restoreMeta: { color: c.muted, fontSize: 12, marginBottom: 8 },
+    restoreRow: { flexDirection: "row", gap: 8 },
+    questionTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+    questionActionRow: { flexDirection: "row", gap: 10 },
+    inlineAction: { color: c.primary, fontWeight: "800", fontSize: 12 },
+    inlineActionDisabled: { color: c.muted },
+    questionText: { fontSize: 16, lineHeight: 22, fontWeight: "600" },
+    paletteWrap: { marginBottom: 8 },
+    paletteRow: { gap: 6, paddingRight: 10 },
+    paletteItem: {
+      width: 30,
+      height: 30,
+      borderRadius: 999,
+      backgroundColor: "#f1f5f9",
+      borderWidth: 1,
+      borderColor: "#cbd5e1",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    paletteCurrent: { borderColor: c.primary, borderWidth: 2 },
+    paletteAnswered: { backgroundColor: "#dcfce7", borderColor: "#86efac" },
+    paletteFlagged: { backgroundColor: "#fef3c7", borderColor: "#fcd34d" },
+    paletteText: { color: c.text, fontSize: 12, fontWeight: "700" },
+    paletteTextCurrent: { color: c.primary, fontWeight: "800" },
+    optionBtn: { marginBottom: 8, padding: 12 },
+    optionBtnSelected: { backgroundColor: c.primarySoft, borderColor: c.primary },
+    optionText: { color: "#111827" },
+    optionTextSelected: { color: c.primary, fontWeight: "700" },
+    bottomActions: { flexDirection: "row", justifyContent: "space-between", gap: 10, marginTop: 10 },
+    finishWrap: { marginTop: 10, marginBottom: 2 },
+    finishBtn: { backgroundColor: c.danger },
+    resultCard: { gap: 8, marginBottom: 12 },
+    resultItem: { fontSize: 16, fontWeight: "600" },
+    metricsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+    metricPill: { flex: 1, backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: c.border, paddingVertical: 8, alignItems: "center" },
+    metricValue: { color: c.text, fontWeight: "800", fontSize: 14 },
+    metricLabel: { color: c.muted, fontSize: 11, marginTop: 2 },
+  });
+}
 
 export default function QuizScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createQuizStyles(colors), [colors]);
   const ders = route?.params?.ders;
   const progressKey = `quiz_progress_${ders?.id || "genel"}`;
   const [konular, setKonular] = useState([]);
@@ -184,7 +255,7 @@ export default function QuizScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -361,70 +432,3 @@ export default function QuizScreen({ route, navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  topBar: {
-    backgroundColor: "#ff4f5a",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  backBtn: { minWidth: 72, backgroundColor: "rgba(255,255,255,0.22)" },
-  topTitle: { color: "#fff", fontWeight: "800", fontSize: 16, flex: 1 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  meta: { color: colors.muted, marginBottom: 10, fontWeight: "700" },
-  progressMetaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, marginBottom: 10 },
-  progressMeta: { color: colors.muted, fontSize: 12, fontWeight: "600" },
-  timerMeta: { color: colors.primary, fontSize: 12, fontWeight: "800", marginBottom: 8 },
-  statsMiniRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  statsMini: { color: colors.muted, fontWeight: "700", fontSize: 12 },
-  konuBtn: { marginBottom: 8 },
-  konuBtnActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  konuText: { color: "#111827" },
-  konuTextActive: { color: colors.primary, fontWeight: "800" },
-  questionCard: { marginBottom: 12 },
-  restoreCard: { marginBottom: 10 },
-  restoreTitle: { color: colors.text, fontWeight: "800", marginBottom: 4 },
-  restoreMeta: { color: colors.muted, fontSize: 12, marginBottom: 8 },
-  restoreRow: { flexDirection: "row", gap: 8 },
-  questionTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  questionActionRow: { flexDirection: "row", gap: 10 },
-  inlineAction: { color: colors.primary, fontWeight: "800", fontSize: 12 },
-  inlineActionDisabled: { color: colors.muted },
-  questionText: { fontSize: 16, lineHeight: 22, fontWeight: "600" },
-  paletteWrap: { marginBottom: 8 },
-  paletteRow: { gap: 6, paddingRight: 10 },
-  paletteItem: {
-    width: 30,
-    height: 30,
-    borderRadius: 999,
-    backgroundColor: "#f1f5f9",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  paletteCurrent: { borderColor: colors.primary, borderWidth: 2 },
-  paletteAnswered: { backgroundColor: "#dcfce7", borderColor: "#86efac" },
-  paletteFlagged: { backgroundColor: "#fef3c7", borderColor: "#fcd34d" },
-  paletteText: { color: colors.text, fontSize: 12, fontWeight: "700" },
-  paletteTextCurrent: { color: colors.primary, fontWeight: "800" },
-  optionBtn: { marginBottom: 8, padding: 12 },
-  optionBtnSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  optionText: { color: "#111827" },
-  optionTextSelected: { color: colors.primary, fontWeight: "700" },
-  bottomActions: { flexDirection: "row", justifyContent: "space-between", gap: 10, marginTop: 10 },
-  finishWrap: { marginTop: 10, marginBottom: 2 },
-  finishBtn: { backgroundColor: colors.danger },
-  resultCard: { gap: 8, marginBottom: 12 },
-  resultItem: { fontSize: 16, fontWeight: "600" },
-  metricsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  metricPill: { flex: 1, backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, alignItems: "center" },
-  metricValue: { color: colors.text, fontWeight: "800", fontSize: 14 },
-  metricLabel: { color: colors.muted, fontSize: 11, marginTop: 2 },
-});

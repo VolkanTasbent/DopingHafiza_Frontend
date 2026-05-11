@@ -14,9 +14,78 @@ import { useFocusEffect } from "@react-navigation/native";
 import { fetchDenemeSinavlari, fetchDenemeSorular, submitQuiz } from "../services/quiz";
 import { Card, PrimaryButton, ProgressBar, SecondaryButton, SectionTitle } from "../components/ui";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createDenemeStyles(c) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+  topBar: {
+    backgroundColor: "#ff4f5a",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  topTitle: { color: "#fff", fontWeight: "800", fontSize: 16, flex: 1 },
+  backBtnTop: { minWidth: 72, backgroundColor: "rgba(255,255,255,0.22)" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  empty: { color: "#6b7280" },
+  groupTitle: { color: c.primary, fontWeight: "800", fontSize: 13, marginBottom: 6, marginTop: 4 },
+  meta: { fontWeight: "700", marginBottom: 8, color: c.muted },
+  progressMetaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, marginBottom: 10 },
+  progressMeta: { color: c.muted, fontSize: 12, fontWeight: "600" },
+  timerMeta: { color: c.primary, fontWeight: "800", fontSize: 12, marginBottom: 8 },
+  statsMiniRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  statsMini: { color: c.muted, fontWeight: "700", fontSize: 12 },
+  card: { marginBottom: 10 },
+  restoreCard: { marginBottom: 10 },
+  restoreTitle: { color: c.text, fontWeight: "800", marginBottom: 4 },
+  restoreMeta: { color: c.muted, fontSize: 12, marginBottom: 8 },
+  restoreRow: { flexDirection: "row", gap: 8 },
+  cardTitle: { fontWeight: "700", marginBottom: 8 },
+  question: { fontSize: 16, fontWeight: "600" },
+  questionTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  questionActionRow: { flexDirection: "row", gap: 10 },
+  inlineAction: { color: c.primary, fontWeight: "800", fontSize: 12 },
+  inlineActionDisabled: { color: c.muted },
+  paletteWrap: { marginBottom: 8 },
+  paletteRow: { gap: 6, paddingRight: 10 },
+  paletteItem: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paletteCurrent: { borderColor: c.primary, borderWidth: 2 },
+  paletteAnswered: { backgroundColor: "#dcfce7", borderColor: "#86efac" },
+  paletteFlagged: { backgroundColor: "#fef3c7", borderColor: "#fcd34d" },
+  paletteText: { color: c.text, fontSize: 12, fontWeight: "700" },
+  paletteTextCurrent: { color: c.primary, fontWeight: "800" },
+  option: { marginBottom: 8, padding: 12 },
+  optionSelected: { borderColor: c.primary, backgroundColor: c.primarySoft },
+  optionText: { color: "#111827" },
+  optionTextSelected: { color: c.primary, fontWeight: "700" },
+  row: { flexDirection: "row", gap: 10, marginTop: 10 },
+  finishWrap: { marginTop: 10, marginBottom: 2 },
+  finishBtn: { backgroundColor: c.danger },
+  metricsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  metricPill: { flex: 1, backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: c.border, paddingVertical: 8, alignItems: "center" },
+  metricValue: { color: c.text, fontWeight: "800", fontSize: 14 },
+  metricLabel: { color: c.muted, fontSize: 11, marginTop: 2 },
+  resultNet: { color: c.text, fontWeight: "800", marginBottom: 8 },
+});
+}
 
 export default function DenemeScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createDenemeStyles(colors), [colors]);
   const progressKey = "deneme_progress_active";
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState("list"); // list | running | result
@@ -193,7 +262,7 @@ export default function DenemeScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -380,67 +449,4 @@ export default function DenemeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  topBar: {
-    backgroundColor: "#ff4f5a",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  topTitle: { color: "#fff", fontWeight: "800", fontSize: 16, flex: 1 },
-  backBtnTop: { minWidth: 72, backgroundColor: "rgba(255,255,255,0.22)" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  empty: { color: "#6b7280" },
-  groupTitle: { color: colors.primary, fontWeight: "800", fontSize: 13, marginBottom: 6, marginTop: 4 },
-  meta: { fontWeight: "700", marginBottom: 8, color: colors.muted },
-  progressMetaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6, marginBottom: 10 },
-  progressMeta: { color: colors.muted, fontSize: 12, fontWeight: "600" },
-  timerMeta: { color: colors.primary, fontWeight: "800", fontSize: 12, marginBottom: 8 },
-  statsMiniRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  statsMini: { color: colors.muted, fontWeight: "700", fontSize: 12 },
-  card: { marginBottom: 10 },
-  restoreCard: { marginBottom: 10 },
-  restoreTitle: { color: colors.text, fontWeight: "800", marginBottom: 4 },
-  restoreMeta: { color: colors.muted, fontSize: 12, marginBottom: 8 },
-  restoreRow: { flexDirection: "row", gap: 8 },
-  cardTitle: { fontWeight: "700", marginBottom: 8 },
-  question: { fontSize: 16, fontWeight: "600" },
-  questionTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  questionActionRow: { flexDirection: "row", gap: 10 },
-  inlineAction: { color: colors.primary, fontWeight: "800", fontSize: 12 },
-  inlineActionDisabled: { color: colors.muted },
-  paletteWrap: { marginBottom: 8 },
-  paletteRow: { gap: 6, paddingRight: 10 },
-  paletteItem: {
-    width: 30,
-    height: 30,
-    borderRadius: 999,
-    backgroundColor: "#f1f5f9",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  paletteCurrent: { borderColor: colors.primary, borderWidth: 2 },
-  paletteAnswered: { backgroundColor: "#dcfce7", borderColor: "#86efac" },
-  paletteFlagged: { backgroundColor: "#fef3c7", borderColor: "#fcd34d" },
-  paletteText: { color: colors.text, fontSize: 12, fontWeight: "700" },
-  paletteTextCurrent: { color: colors.primary, fontWeight: "800" },
-  option: { marginBottom: 8, padding: 12 },
-  optionSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  optionText: { color: "#111827" },
-  optionTextSelected: { color: colors.primary, fontWeight: "700" },
-  row: { flexDirection: "row", gap: 10, marginTop: 10 },
-  finishWrap: { marginTop: 10, marginBottom: 2 },
-  finishBtn: { backgroundColor: colors.danger },
-  metricsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  metricPill: { flex: 1, backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, alignItems: "center" },
-  metricValue: { color: colors.text, fontWeight: "800", fontSize: 14 },
-  metricLabel: { color: colors.muted, fontSize: 11, marginTop: 2 },
-  resultNet: { color: colors.text, fontWeight: "800", marginBottom: 8 },
-});
+

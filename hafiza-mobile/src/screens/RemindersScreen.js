@@ -1,11 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SectionTitle, SecondaryButton } from "../components/ui";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createRemindersStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    card: { marginBottom: 10 },
+    input: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      padding: 10,
+      marginBottom: 8,
+      color: c.text,
+    },
+    empty: { color: c.muted, textAlign: "center" },
+    item: { marginBottom: 8, flexDirection: "row", gap: 10, alignItems: "center" },
+    itemTitle: { color: c.text, fontWeight: "700" },
+    itemTime: { color: c.muted, marginTop: 2, fontSize: 12 },
+  });
+}
 
 export default function RemindersScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createRemindersStyles(colors), [colors]);
   const [list, setList] = useState([]);
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
@@ -65,20 +87,3 @@ export default function RemindersScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  card: { marginBottom: 10 },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-  },
-  empty: { color: colors.muted, textAlign: "center" },
-  item: { marginBottom: 8, flexDirection: "row", gap: 10, alignItems: "center" },
-  itemTitle: { color: colors.text, fontWeight: "700" },
-  itemTime: { color: colors.muted, marginTop: 2, fontSize: 12 },
-});

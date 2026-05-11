@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,7 +16,7 @@ import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../context/AuthContext";
 import { PrimaryButton, SecondaryButton } from "../components/ui";
 import { getApiBaseUrl } from "../services/apiBaseUrl";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const SINIF_OPTIONS = [
   { value: "9", label: "9" },
@@ -56,7 +56,259 @@ function formatAuthError(e) {
   return e?.message || "İşlem başarısız.";
 }
 
+const HERO_BG = "#0a0b12";
+
+function createLoginStyles(c) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: HERO_BG },
+    flex: { flex: 1 },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 28,
+    },
+    hero: {
+      paddingTop: 8,
+      paddingBottom: 52,
+      paddingHorizontal: 22,
+      backgroundColor: HERO_BG,
+      alignItems: "center",
+      overflow: "hidden",
+      position: "relative",
+    },
+    heroGlow: {
+      position: "absolute",
+      width: 320,
+      height: 280,
+      borderRadius: 160,
+      backgroundColor: "rgba(99, 102, 241, 0.22)",
+      top: -120,
+      alignSelf: "center",
+    },
+    heroGlow2: {
+      position: "absolute",
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: "rgba(168, 85, 247, 0.12)",
+      bottom: -40,
+      right: -60,
+    },
+    heroBadge: {
+      zIndex: 1,
+      marginBottom: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      overflow: "hidden",
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      color: "rgba(248,250,252,0.95)",
+      backgroundColor: "rgba(255,255,255,0.1)",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.14)",
+      textAlign: "center",
+    },
+    heroEmoji: {
+      fontSize: 36,
+      marginBottom: 8,
+      zIndex: 1,
+    },
+    heroTitle: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: "#fafafa",
+      letterSpacing: -0.4,
+      textAlign: "center",
+      lineHeight: 30,
+      zIndex: 1,
+      maxWidth: 400,
+    },
+    heroLead: {
+      marginTop: 12,
+      fontSize: 14,
+      color: "rgba(203,213,225,0.95)",
+      textAlign: "center",
+      lineHeight: 21,
+      maxWidth: 340,
+      fontWeight: "500",
+      zIndex: 1,
+    },
+    heroCtas: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 10,
+      marginTop: 18,
+      zIndex: 1,
+      paddingHorizontal: 4,
+    },
+    heroOutlineBtn: {
+      minWidth: 148,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+      backgroundColor: "transparent",
+      borderColor: "rgba(255,255,255,0.42)",
+    },
+    cardWrap: {
+      marginTop: -32,
+      paddingHorizontal: 16,
+      zIndex: 2,
+    },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: 22,
+      padding: 22,
+      borderWidth: 1,
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 8,
+    },
+    segment: {
+      flexDirection: "row",
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 5,
+      gap: 6,
+      marginBottom: 14,
+    },
+    segmentBtn: {
+      flex: 1,
+      minHeight: 46,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 11,
+    },
+    segmentBtnActive: {
+      backgroundColor: "#fff",
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    segmentText: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: c.muted,
+    },
+    segmentTextActive: {
+      color: c.primary,
+    },
+    cardHint: {
+      fontSize: 14,
+      color: c.muted,
+      marginBottom: 18,
+      lineHeight: 20,
+    },
+    field: { marginBottom: 16 },
+    flex1: { flex: 1, minWidth: 0 },
+    row2: { flexDirection: "row", gap: 12 },
+    label: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: c.text,
+      marginBottom: 8,
+    },
+    input: {
+      minHeight: 50,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      fontSize: 16,
+      color: c.text,
+      backgroundColor: c.surface,
+    },
+    passwordRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      paddingRight: 6,
+    },
+    inputFlex: {
+      flex: 1,
+      borderWidth: 0,
+      minHeight: 48,
+      backgroundColor: "transparent",
+    },
+    eyeBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    eyeText: {
+      fontSize: 20,
+    },
+    sinifRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    sinifChip: {
+      paddingVertical: 12,
+      paddingHorizontal: 22,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    sinifChipActive: {
+      borderColor: c.primary,
+      backgroundColor: c.primarySoft,
+    },
+    sinifChipText: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: c.muted,
+    },
+    sinifChipTextActive: {
+      color: c.primary,
+    },
+    switchRow: {
+      marginTop: 20,
+      alignItems: "center",
+      paddingVertical: 8,
+    },
+    switchText: {
+      fontSize: 15,
+      color: c.muted,
+      textAlign: "center",
+    },
+    switchBold: {
+      fontWeight: "800",
+      color: c.primary,
+    },
+    footerBlock: {
+      alignItems: "center",
+      marginTop: 24,
+      gap: 6,
+      paddingBottom: 8,
+    },
+    footer: {
+      textAlign: "center",
+      fontSize: 12,
+      color: "rgba(255,255,255,0.45)",
+      fontWeight: "600",
+    },
+    footerCredit: {
+      textAlign: "center",
+      fontSize: 12,
+      color: "rgba(255,255,255,0.55)",
+      fontWeight: "600",
+      textDecorationLine: "underline",
+      textDecorationColor: "rgba(255,255,255,0.35)",
+    },
+  });
+}
+
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createLoginStyles(colors), [colors]);
   const { login, register, loading } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
@@ -301,251 +553,3 @@ export default function LoginScreen() {
     </SafeAreaView>
   );
 }
-
-const HERO_BG = "#0a0b12";
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: HERO_BG },
-  flex: { flex: 1 },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 28,
-  },
-  hero: {
-    paddingTop: 8,
-    paddingBottom: 52,
-    paddingHorizontal: 22,
-    backgroundColor: HERO_BG,
-    alignItems: "center",
-    overflow: "hidden",
-    position: "relative",
-  },
-  heroGlow: {
-    position: "absolute",
-    width: 320,
-    height: 280,
-    borderRadius: 160,
-    backgroundColor: "rgba(99, 102, 241, 0.22)",
-    top: -120,
-    alignSelf: "center",
-  },
-  heroGlow2: {
-    position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "rgba(168, 85, 247, 0.12)",
-    bottom: -40,
-    right: -60,
-  },
-  heroBadge: {
-    zIndex: 1,
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    overflow: "hidden",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: "rgba(248,250,252,0.95)",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    textAlign: "center",
-  },
-  heroEmoji: {
-    fontSize: 36,
-    marginBottom: 8,
-    zIndex: 1,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#fafafa",
-    letterSpacing: -0.4,
-    textAlign: "center",
-    lineHeight: 30,
-    zIndex: 1,
-    maxWidth: 400,
-  },
-  heroLead: {
-    marginTop: 12,
-    fontSize: 14,
-    color: "rgba(203,213,225,0.95)",
-    textAlign: "center",
-    lineHeight: 21,
-    maxWidth: 340,
-    fontWeight: "500",
-    zIndex: 1,
-  },
-  heroCtas: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 10,
-    marginTop: 18,
-    zIndex: 1,
-    paddingHorizontal: 4,
-  },
-  heroOutlineBtn: {
-    minWidth: 148,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.42)",
-  },
-  cardWrap: {
-    marginTop: -32,
-    paddingHorizontal: 16,
-    zIndex: 2,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 22,
-    padding: 22,
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
-  },
-  segment: {
-    flexDirection: "row",
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 5,
-    gap: 6,
-    marginBottom: 14,
-  },
-  segmentBtn: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 11,
-  },
-  segmentBtnActive: {
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  segmentText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.muted,
-  },
-  segmentTextActive: {
-    color: colors.primary,
-  },
-  cardHint: {
-    fontSize: 14,
-    color: colors.muted,
-    marginBottom: 18,
-    lineHeight: 20,
-  },
-  field: { marginBottom: 16 },
-  flex1: { flex: 1, minWidth: 0 },
-  row2: { flexDirection: "row", gap: 12 },
-  label: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: colors.text,
-    marginBottom: 8,
-  },
-  input: {
-    minHeight: 50,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: colors.text,
-    backgroundColor: colors.surface,
-  },
-  passwordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    paddingRight: 6,
-  },
-  inputFlex: {
-    flex: 1,
-    borderWidth: 0,
-    minHeight: 48,
-    backgroundColor: "transparent",
-  },
-  eyeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  eyeText: {
-    fontSize: 20,
-  },
-  sinifRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  sinifChip: {
-    paddingVertical: 12,
-    paddingHorizontal: 22,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  sinifChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  sinifChipText: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: colors.muted,
-  },
-  sinifChipTextActive: {
-    color: colors.primary,
-  },
-  switchRow: {
-    marginTop: 20,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  switchText: {
-    fontSize: 15,
-    color: colors.muted,
-    textAlign: "center",
-  },
-  switchBold: {
-    fontWeight: "800",
-    color: colors.primary,
-  },
-  footerBlock: {
-    alignItems: "center",
-    marginTop: 24,
-    gap: 6,
-    paddingBottom: 8,
-  },
-  footer: {
-    textAlign: "center",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.45)",
-    fontWeight: "600",
-  },
-  footerCredit: {
-    textAlign: "center",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.55)",
-    fontWeight: "600",
-    textDecorationLine: "underline",
-    textDecorationColor: "rgba(255,255,255,0.35)",
-  },
-});

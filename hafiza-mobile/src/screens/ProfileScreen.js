@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,9 +16,61 @@ import * as ImagePicker from "expo-image-picker";
 import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { fetchProfile, updateProfile, uploadAvatar } from "../services/quiz";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createProfileStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
+    topBar: { marginBottom: 8, paddingVertical: 10 },
+    backText: { color: c.primary, fontWeight: "800" },
+    avatarCard: { alignItems: "center", marginBottom: 10 },
+    avatar: {
+      width: 78,
+      height: 78,
+      borderRadius: 39,
+      backgroundColor: c.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 10,
+      overflow: "hidden",
+      position: "relative",
+    },
+    avatarImage: { width: "100%", height: "100%" },
+    avatarText: { fontSize: 28, fontWeight: "800", color: c.primary },
+    cameraBadge: {
+      position: "absolute",
+      right: 0,
+      bottom: 0,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: c.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cameraBadgeText: { color: "#fff", fontSize: 12 },
+    avatarHint: { color: c.muted, fontSize: 11, marginTop: 4 },
+    userName: { fontSize: 18, fontWeight: "800", color: c.text },
+    userMail: { color: c.muted, marginTop: 2 },
+    blockTitle: { fontWeight: "700", marginBottom: 8, color: c.text },
+    input: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 10,
+      color: c.text,
+    },
+    metaBox: { marginBottom: 12 },
+    meta: { color: c.muted, marginBottom: 2 },
+  });
+}
 
 export default function ProfileScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createProfileStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -161,7 +213,7 @@ export default function ProfileScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -241,43 +293,3 @@ export default function ProfileScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  topBar: { marginBottom: 8, paddingVertical: 10 },
-  backText: { color: colors.primary, fontWeight: "800" },
-  avatarCard: { alignItems: "center", marginBottom: 10 },
-  avatar: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-    overflow: "hidden",
-    position: "relative",
-  },
-  avatarImage: { width: "100%", height: "100%" },
-  avatarText: { fontSize: 28, fontWeight: "800", color: colors.primary },
-  cameraBadge: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cameraBadgeText: { color: "#fff", fontSize: 12 },
-  avatarHint: { color: colors.muted, fontSize: 11, marginTop: 4 },
-  userName: { fontSize: 18, fontWeight: "800", color: colors.text },
-  userMail: { color: colors.muted, marginTop: 2 },
-  blockTitle: { fontWeight: "700", marginBottom: 8, color: colors.text },
-  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, marginBottom: 10 },
-  metaBox: { marginBottom: 12 },
-  meta: { color: "#4b5563", marginBottom: 2 },
-});

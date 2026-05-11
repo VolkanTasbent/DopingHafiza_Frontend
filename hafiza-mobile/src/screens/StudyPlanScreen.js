@@ -4,12 +4,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SecondaryButton, SectionTitle } from "../components/ui";
 import { fetchDersler } from "../services/quiz";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const DAYS = ["Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi", "Pazar"];
 const DAY_BY_INDEX = ["Pazar", "Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi"];
 
+function createStudyPlanStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, justifyContent: "center", alignItems: "center" },
+    card: { marginBottom: 10 },
+    day: { color: c.text, fontWeight: "800", marginBottom: 8, fontSize: 15 },
+    label: { color: c.text, fontWeight: "600", marginBottom: 6 },
+    input: { backgroundColor: "#fff", borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 10, marginBottom: 8 },
+    note: { color: c.muted, fontSize: 12 },
+  });
+}
+
 export default function StudyPlanScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStudyPlanStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dersler, setDersler] = useState([]);
@@ -77,7 +91,7 @@ export default function StudyPlanScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -124,13 +138,3 @@ export default function StudyPlanScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: { marginBottom: 10 },
-  day: { color: colors.text, fontWeight: "800", marginBottom: 8, fontSize: 15 },
-  label: { color: colors.text, fontWeight: "600", marginBottom: 6 },
-  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, marginBottom: 8 },
-  note: { color: colors.muted, fontSize: 12 },
-});

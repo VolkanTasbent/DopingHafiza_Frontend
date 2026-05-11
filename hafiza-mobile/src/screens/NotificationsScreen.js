@@ -4,9 +4,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, SectionTitle } from "../components/ui";
 import { fetchRaporlar } from "../services/quiz";
 import { getJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createNotificationsStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, justifyContent: "center", alignItems: "center" },
+    topBar: { marginBottom: 8, paddingVertical: 10 },
+    backText: { color: c.primary, fontWeight: "800" },
+    item: { marginBottom: 8 },
+    title: { color: c.text, fontWeight: "700" },
+    body: { color: c.muted, marginTop: 3, fontSize: 12 },
+  });
+}
 
 export default function NotificationsScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createNotificationsStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [raporlar, setRaporlar] = useState([]);
   const [focusReward, setFocusReward] = useState({ xp: 0, gold: 0 });
@@ -82,7 +96,7 @@ export default function NotificationsScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -108,13 +122,3 @@ export default function NotificationsScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  topBar: { marginBottom: 8, paddingVertical: 10 },
-  backText: { color: colors.primary, fontWeight: "800" },
-  item: { marginBottom: 8 },
-  title: { color: colors.text, fontWeight: "700" },
-  body: { color: colors.muted, marginTop: 3, fontSize: 12 },
-});

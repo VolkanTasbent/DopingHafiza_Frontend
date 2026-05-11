@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, ProgressBar, SectionTitle, SecondaryButton } from "../components/ui";
 import { fetchRaporlar } from "../services/quiz";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 function groupByDay(raporlar) {
   const out = {};
@@ -18,7 +18,54 @@ function groupByDay(raporlar) {
   return out;
 }
 
+function createInsightsStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    topRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+    backBtn: { minWidth: 76, marginTop: 2 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    card: { marginBottom: 10 },
+    h2: { fontSize: 16, fontWeight: "700", marginBottom: 8, color: c.text },
+    meta: { color: c.muted, fontSize: 12 },
+    kpiRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+    kpiItem: { alignItems: "center", flex: 1 },
+    kpiValue: { color: c.primary, fontWeight: "800", fontSize: 18 },
+    kpiLabel: { color: c.muted, fontSize: 12, marginTop: 2 },
+    barRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
+    barLabel: { width: 46, color: c.text, fontWeight: "700", fontSize: 12 },
+    barTrack: { flex: 1, height: 10, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" },
+    barFill: { height: "100%" },
+    barVal: { width: 84, textAlign: "right", color: c.muted, fontSize: 11, fontWeight: "700" },
+    oturumLabel: { width: 70, color: c.text, fontWeight: "700", fontSize: 11 },
+    weekChart: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 4, paddingTop: 8 },
+    weekCol: { width: "13.5%", alignItems: "center" },
+    weekBar: {
+      width: "100%",
+      maxWidth: 26,
+      borderRadius: 8,
+      backgroundColor: "#dbe2ff",
+      justifyContent: "flex-end",
+      overflow: "hidden",
+    },
+    weekBarFill: { width: "100%", backgroundColor: c.primary, minHeight: 5 },
+    weekRate: { color: c.primary, fontSize: 11, fontWeight: "800", marginTop: 4 },
+    weekDay: { color: c.muted, fontSize: 10, marginTop: 2 },
+    netRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
+    netTrack: { flex: 1, height: 10, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" },
+    netFill: { height: "100%" },
+    netVal: { width: 56, textAlign: "right", fontSize: 11, fontWeight: "800" },
+    actions: { flexDirection: "row", gap: 8 },
+    filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 6 },
+    filterChip: { borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
+    filterChipActive: { borderColor: c.primary, backgroundColor: c.primarySoft },
+    filterText: { color: c.muted, fontSize: 12, fontWeight: "700" },
+    filterTextActive: { color: c.primary },
+  });
+}
+
 export default function InsightsScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createInsightsStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [raporlar, setRaporlar] = useState([]);
   const [rangeFilter, setRangeFilter] = useState("30"); // 7 | 30 | 90 | all
@@ -161,7 +208,7 @@ export default function InsightsScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -360,46 +407,3 @@ export default function InsightsScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  topRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  backBtn: { minWidth: 76, marginTop: 2 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { marginBottom: 10 },
-  h2: { fontSize: 16, fontWeight: "700", marginBottom: 8, color: colors.text },
-  meta: { color: colors.muted, fontSize: 12 },
-  kpiRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  kpiItem: { alignItems: "center", flex: 1 },
-  kpiValue: { color: colors.primary, fontWeight: "800", fontSize: 18 },
-  kpiLabel: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  barRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
-  barLabel: { width: 46, color: colors.text, fontWeight: "700", fontSize: 12 },
-  barTrack: { flex: 1, height: 10, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" },
-  barFill: { height: "100%" },
-  barVal: { width: 84, textAlign: "right", color: colors.muted, fontSize: 11, fontWeight: "700" },
-  oturumLabel: { width: 70, color: colors.text, fontWeight: "700", fontSize: 11 },
-  weekChart: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 4, paddingTop: 8 },
-  weekCol: { width: "13.5%", alignItems: "center" },
-  weekBar: {
-    width: "100%",
-    maxWidth: 26,
-    borderRadius: 8,
-    backgroundColor: "#dbe2ff",
-    justifyContent: "flex-end",
-    overflow: "hidden",
-  },
-  weekBarFill: { width: "100%", backgroundColor: colors.primary, minHeight: 5 },
-  weekRate: { color: colors.primary, fontSize: 11, fontWeight: "800", marginTop: 4 },
-  weekDay: { color: colors.muted, fontSize: 10, marginTop: 2 },
-  netRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
-  netTrack: { flex: 1, height: 10, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" },
-  netFill: { height: "100%" },
-  netVal: { width: 56, textAlign: "right", fontSize: 11, fontWeight: "800" },
-  actions: { flexDirection: "row", gap: 8 },
-  filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 6 },
-  filterChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
-  filterChipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  filterText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  filterTextActive: { color: colors.primary },
-});

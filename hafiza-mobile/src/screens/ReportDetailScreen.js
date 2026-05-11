@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 import { fetchRaporDetay } from "../services/quiz";
 
 function analyzeItem(item) {
@@ -22,7 +22,33 @@ function analyzeItem(item) {
   return { soru: s, chosen, correct, isBlank, isCorrect };
 }
 
+function createReportDetailStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    tabRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+    row: { flexDirection: "row", gap: 8, marginBottom: 10 },
+    card: { marginBottom: 10 },
+    soruNo: { color: c.primary, fontWeight: "800", marginBottom: 4 },
+    meta: { color: c.muted, marginBottom: 6 },
+    question: { color: c.text, fontWeight: "700", marginBottom: 8 },
+    answerLabel: { color: c.muted, fontSize: 12, marginTop: 3 },
+    answerValue: { color: c.text, fontWeight: "700" },
+    summaryRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+    summaryPill: { flex: 1, backgroundColor: "#f8fafc", borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
+    summaryVal: { color: c.text, fontSize: 14, fontWeight: "800" },
+    summaryLabel: { color: c.muted, fontSize: 11, marginTop: 2 },
+    chartRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+    chartLabel: { width: 90, color: c.text, fontWeight: "700", fontSize: 12 },
+    chartTrack: { flex: 1, height: 10, borderRadius: 999, backgroundColor: "#e5e7eb", overflow: "hidden" },
+    chartFill: { height: "100%" },
+    chartVal: { width: 64, textAlign: "right", color: c.muted, fontWeight: "700", fontSize: 11 },
+  });
+}
+
 export default function ReportDetailScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createReportDetailStyles(colors), [colors]);
   const oturumId = route?.params?.oturumId;
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("detay");
@@ -109,12 +135,12 @@ export default function ReportDetailScreen({ route, navigation }) {
     const net = Number((correct - wrong / 4).toFixed(2));
     const success = Math.round((correct / total) * 100);
     return { parts, ders, topWrongKonular, totalCount, correct, wrong, blank, success, net };
-  }, [items]);
+  }, [items, colors]);
 
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -252,25 +278,3 @@ export default function ReportDetailScreen({ route, navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  tabRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  row: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  card: { marginBottom: 10 },
-  soruNo: { color: colors.primary, fontWeight: "800", marginBottom: 4 },
-  meta: { color: colors.muted, marginBottom: 6 },
-  question: { color: colors.text, fontWeight: "700", marginBottom: 8 },
-  answerLabel: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  answerValue: { color: colors.text, fontWeight: "700" },
-  summaryRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  summaryPill: { flex: 1, backgroundColor: "#f8fafc", borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
-  summaryVal: { color: colors.text, fontSize: 14, fontWeight: "800" },
-  summaryLabel: { color: colors.muted, fontSize: 11, marginTop: 2 },
-  chartRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  chartLabel: { width: 90, color: colors.text, fontWeight: "700", fontSize: 12 },
-  chartTrack: { flex: 1, height: 10, borderRadius: 999, backgroundColor: "#e5e7eb", overflow: "hidden" },
-  chartFill: { height: "100%" },
-  chartVal: { width: 64, textAlign: "right", color: colors.muted, fontWeight: "700", fontSize: 11 },
-});

@@ -71,3 +71,59 @@ export const aiCoach = {
   quickChipBg: "#e9ecff",
   quickChipBorder: "#e5e7eb",
 };
+
+/** Gece modu — ekran ve ui bileşenleri */
+export function getAppColors(dark) {
+  if (!dark) return colors;
+  return {
+    bg: "#0f172a",
+    card: "#1e293b",
+    text: "#f1f5f9",
+    muted: "#94a3b8",
+    primary: "#818cf8",
+    primaryDark: "#6366f1",
+    primarySoft: "rgba(129, 140, 248, 0.22)",
+    border: "#334155",
+    success: "#34d399",
+    danger: "#f87171",
+    dark: "#cbd5e1",
+    surface: "#111827",
+    surfaceStrong: "#1e293b",
+    accentBlue: "#60a5fa",
+    accentCyan: "#22d3ee",
+    logout: "#f87171",
+  };
+}
+
+export function getAiCoachTheme(dark) {
+  if (!dark) return aiCoach;
+  return {
+    ...aiCoach,
+    primary: "#818cf8",
+    primaryDark: "#6366f1",
+    primarySoft: "rgba(129, 140, 248, 0.2)",
+    primarySoftStrong: "rgba(99, 102, 241, 0.35)",
+    pageBg: "#0f172a",
+    cardBg: "#1e293b",
+    cardMuted: "#111827",
+    savedCardBg: "#0f172a",
+    text: "#f1f5f9",
+    textBody: "#cbd5e1",
+    muted: "#94a3b8",
+    border: "#334155",
+    borderSubtle: "#1e293b",
+    bubbleAsstBg: "#111827",
+    bubbleAsstBorder: "#334155",
+    chipBg: "rgba(99, 102, 241, 0.25)",
+    chipBorder: "#475569",
+    chipText: "#e0e7ff",
+    rowBg: "#111827",
+    riskBg: "#422006",
+    riskText: "#fdba74",
+    ghostBg: "#1e293b",
+    ghostBorder: "#818cf8",
+    ghostText: "#c7d2fe",
+    quickChipBg: "#1e293b",
+    quickChipBorder: "#334155",
+  };
+}

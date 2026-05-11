@@ -5,9 +5,23 @@ import { Card, ProgressBar, SectionTitle } from "../components/ui";
 import { fetchRaporlar } from "../services/quiz";
 import { BADGE_CATEGORIES, calculateStreakFromReports, computeGamificationStats } from "../services/gamificationData";
 import { getJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createBadgesStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    card: { marginBottom: 10 },
+    h2: { fontWeight: "700", marginBottom: 8, fontSize: 16 },
+    badgeRow: { marginBottom: 10 },
+    badgeName: { color: c.text, fontWeight: "600" },
+    badgeMeta: { color: c.muted, fontSize: 12, marginTop: 4 },
+  });
+}
 
 export default function BadgesScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createBadgesStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [raporlar, setRaporlar] = useState([]);
   const [focusBonus, setFocusBonus] = useState({ xp: 0, gold: 0 });
@@ -52,7 +66,7 @@ export default function BadgesScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -79,13 +93,3 @@ export default function BadgesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { marginBottom: 10 },
-  h2: { fontWeight: "700", marginBottom: 8, fontSize: 16 },
-  badgeRow: { marginBottom: 10 },
-  badgeName: { color: colors.text, fontWeight: "600" },
-  badgeMeta: { color: colors.muted, fontSize: 12, marginTop: 4 },
-});

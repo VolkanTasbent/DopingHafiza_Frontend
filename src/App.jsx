@@ -21,6 +21,7 @@ import Takvim from "./Takvim";
 import SearchModal from "./SearchModal";
 import PomodoroTimer from "./PomodoroTimer";
 import NotificationCenter from "./NotificationCenter";
+import { buildHeaderNotifications, fetchReportsForHeader } from "./utils/headerNotifications";
 import AIAssistant from "./AIAssistant";
 import CalismaProgrami from "./CalismaProgrami";
 
@@ -39,6 +40,7 @@ export default function App() {
   const [seciliRaporOturumId, setSeciliRaporOturumId] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [headerNotifications, setHeaderNotifications] = useState([]);
 
   // Dark mode'u kullanıcıya özel yükle
   useEffect(() => {
@@ -102,6 +104,38 @@ export default function App() {
       document.documentElement.classList.remove("dark-mode");
     }
   }, [darkMode]);
+
+  // Üst çubuk bildirimleri (raporlara göre; mobilde panel + backdrop ile görünür)
+  useEffect(() => {
+    if (!me?.id || page === "auth") return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const raporlar = await fetchReportsForHeader();
+        if (cancelled) return;
+        setHeaderNotifications((prev) => {
+          const next = buildHeaderNotifications(raporlar, setPage);
+          const readIds = new Set(
+            prev.filter((n) => n.read && n.id != null).map((n) => n.id)
+          );
+          return next.map((n) => ({
+            ...n,
+            read: readIds.has(n.id) ? true : n.read,
+          }));
+        });
+      } catch {
+        if (cancelled) return;
+        setHeaderNotifications((prev) =>
+          prev.length ? prev : buildHeaderNotifications([], setPage)
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [me?.id, page]);
 
   // -----------------------------------
   // ME BİLGİ ÇEKME
@@ -309,27 +343,9 @@ export default function App() {
             >
               {darkMode ? "☀️" : "🌙"}
             </button>
-            <NotificationCenter 
-              notifications={[
-                {
-                  id: 1,
-                  icon: '🎯',
-                  title: 'Günlük Hedef Tamamlandı!',
-                  message: 'Bugün 30 soru çözdün. Harika iş!',
-                  time: '2 saat önce',
-                  read: false,
-                  onClick: () => setPage("tasks")
-                },
-                {
-                  id: 2,
-                  icon: '🏆',
-                  title: 'Yeni Rozet Kazandın!',
-                  message: 'Başlangıç Ustası rozetini kazandın.',
-                  time: '5 saat önce',
-                  read: false,
-                  onClick: () => setPage("badges")
-                }
-              ]}
+            <NotificationCenter
+              notifications={headerNotifications}
+              onNotificationsChange={setHeaderNotifications}
             />
             <div 
               className="user-info" 

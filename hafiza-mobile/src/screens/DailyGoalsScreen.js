@@ -4,11 +4,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, ProgressBar, SectionTitle } from "../components/ui";
 import { fetchRaporlar } from "../services/quiz";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const DEFAULT_GOALS = { solved: 30, correct: 20 };
 
+function createDailyGoalsStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, justifyContent: "center", alignItems: "center" },
+    card: { marginBottom: 10 },
+    h2: { fontWeight: "700", fontSize: 16, marginBottom: 8, color: c.text },
+    meta: { color: c.muted, fontSize: 13, marginBottom: 4 },
+    label: { color: c.text, fontWeight: "600", marginBottom: 6, marginTop: 8 },
+    input: { backgroundColor: "#fff", borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 10 },
+  });
+}
+
 export default function DailyGoalsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createDailyGoalsStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [raporlar, setRaporlar] = useState([]);
@@ -50,7 +64,7 @@ export default function DailyGoalsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -92,13 +106,3 @@ export default function DailyGoalsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: { marginBottom: 10 },
-  h2: { fontWeight: "700", fontSize: 16, marginBottom: 8, color: colors.text },
-  meta: { color: colors.muted, fontSize: 13, marginBottom: 4 },
-  label: { color: colors.text, fontWeight: "600", marginBottom: 6, marginTop: 8 },
-  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10 },
-});

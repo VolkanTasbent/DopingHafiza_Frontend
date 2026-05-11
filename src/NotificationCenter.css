@@ -1,9 +1,20 @@
 .notification-wrapper {
   position: relative;
+  z-index: 10050;
+  flex-shrink: 0;
+}
+
+.notification-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  background: rgba(15, 23, 42, 0.45);
+  animation: notifFadeIn 0.2s ease-out;
 }
 
 .notification-icon-btn {
   position: relative;
+  z-index: 10060;
   background: none;
   border: none;
   font-size: 1.5rem;
@@ -11,10 +22,15 @@
   padding: 0.5rem;
   border-radius: 8px;
   transition: background 0.2s;
+  line-height: 1;
 }
 
 .notification-icon-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dark-mode .notification-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .notification-badge {
@@ -36,14 +52,23 @@
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 380px;
-  max-height: 500px;
-  background: white;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(500px, calc(100vh - 120px));
+  background: #fff;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 10060;
   overflow: hidden;
   animation: slideDown 0.3s ease-out;
+}
+
+@keyframes notifFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideDown {
@@ -57,10 +82,36 @@
   }
 }
 
+@media (max-width: 768px) {
+  .notification-dropdown {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    width: auto;
+    max-height: min(520px, calc(100vh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    border-radius: 16px;
+    animation: slideUpSheet 0.28s ease-out;
+  }
+}
+
+@keyframes slideUpSheet {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .notification-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
@@ -77,11 +128,12 @@
   background: none;
   border: none;
   color: #3b82f6;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 6px;
   transition: background 0.2s;
+  flex-shrink: 0;
 }
 
 .mark-all-read:hover {
@@ -89,8 +141,14 @@
 }
 
 .notification-list {
-  max-height: 400px;
+  max-height: min(400px, 55vh);
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .notification-list {
+    max-height: min(400px, 48vh);
+  }
 }
 
 .notification-item {
@@ -165,7 +223,54 @@
   font-size: 0.9rem;
 }
 
-/* Scrollbar */
+/* Dark mode */
+.dark-mode .notification-dropdown {
+  background: #1e293b;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark-mode .notification-header {
+  background: #0f172a;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .notification-header h3 {
+  color: #e2e8f0;
+}
+
+.dark-mode .notification-item {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark-mode .notification-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .notification-item.unread {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.dark-mode .notification-item.unread:hover {
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.dark-mode .notification-title {
+  color: #f1f5f9;
+}
+
+.dark-mode .notification-message {
+  color: #94a3b8;
+}
+
+.dark-mode .notification-time {
+  color: #64748b;
+}
+
+.dark-mode .notification-empty {
+  color: #64748b;
+}
+
 .notification-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -174,22 +279,19 @@
   background: #f3f4f6;
 }
 
+.dark-mode .notification-list::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
 .notification-list::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 3px;
 }
 
+.dark-mode .notification-list::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
 .notification-list::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
-
-
-
-
-
-
-
-
-
-
-

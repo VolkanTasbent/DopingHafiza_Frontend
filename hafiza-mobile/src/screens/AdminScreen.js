@@ -18,9 +18,40 @@ import {
   updateSecenek,
   updateSoru,
 } from "../services/quiz";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createAdminStyles(c) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  card: { marginBottom: 10 },
+  h2: { color: c.text, fontWeight: "800", marginBottom: 8 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pill: { width: "31%", minWidth: 90, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingVertical: 10, alignItems: "center", backgroundColor: "#fff" },
+  v: { color: c.primary, fontWeight: "800", fontSize: 18 },
+  l: { color: c.muted, fontSize: 11, marginTop: 2 },
+  row: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  wrap: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  chip: { borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
+  chipActive: { borderColor: c.primary, backgroundColor: c.primarySoft },
+  chipText: { color: c.muted, fontSize: 12, fontWeight: "700" },
+  chipTextActive: { color: c.primary },
+  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
+  meta: { color: c.muted, fontSize: 12, marginBottom: 8 },
+  optionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  correctChip: { borderWidth: 1, borderColor: c.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#fff", minWidth: 62, alignItems: "center" },
+  correctChipActive: { borderColor: c.primary, backgroundColor: c.primarySoft },
+  correctText: { color: c.muted, fontSize: 12, fontWeight: "700" },
+  correctTextActive: { color: c.primary },
+  qRow: { borderBottomWidth: 1, borderBottomColor: c.border, paddingVertical: 8 },
+  qTitle: { color: c.text, fontWeight: "700" },
+  qMeta: { color: c.muted, fontSize: 12, marginTop: 2 },
+});
+}
 
 export default function AdminScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createAdminStyles(colors), [colors]);
   const scrollRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ ders: 0, konu: 0, soru: 0, deneme: 0, rapor: 0 });
@@ -296,7 +327,7 @@ export default function AdminScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -414,29 +445,4 @@ export default function AdminScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { marginBottom: 10 },
-  h2: { color: colors.text, fontWeight: "800", marginBottom: 8 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: { width: "31%", minWidth: 90, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 10, alignItems: "center", backgroundColor: "#fff" },
-  v: { color: colors.primary, fontWeight: "800", fontSize: 18 },
-  l: { color: colors.muted, fontSize: 11, marginTop: 2 },
-  row: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  wrap: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
-  chipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  chipText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  chipTextActive: { color: colors.primary },
-  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
-  meta: { color: colors.muted, fontSize: 12, marginBottom: 8 },
-  optionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  correctChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#fff", minWidth: 62, alignItems: "center" },
-  correctChipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  correctText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  correctTextActive: { color: colors.primary },
-  qRow: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 },
-  qTitle: { color: colors.text, fontWeight: "700" },
-  qMeta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-});
+

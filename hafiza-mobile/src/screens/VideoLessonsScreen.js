@@ -17,7 +17,7 @@ import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { fetchKonular, fetchDersler, fetchVideoNotes, createVideoNote, updateVideoNote, deleteVideoNote } from "../services/quiz";
 import { getJSON, setJSON } from "../services/storage";
 import { addActivity } from "../services/activity";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 function makeVideoItems(konu) {
   const list = Array.isArray(konu?.videolar) ? konu.videolar : [];
@@ -165,7 +165,59 @@ function makeYoutubeHtml(videoId) {
 </html>`;
 }
 
+function createVideoLessonsStyles(c) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  card: { marginBottom: 10 },
+  h2: { color: c.text, fontSize: 16, fontWeight: "700", marginBottom: 8 },
+  meta: { color: c.muted, fontSize: 12, marginTop: 2 },
+  wrapRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  row: { flexDirection: "row", gap: 8 },
+  smallBtn: { minWidth: 90, paddingVertical: 8 },
+  activeBtn: { borderWidth: 2, borderColor: "#312e81" },
+  activeSecondary: { borderWidth: 2, borderColor: "#111827" },
+  topicBtnWrap: { minWidth: 110 },
+  selectedTopicBtn: { borderWidth: 2, borderColor: "#312e81" },
+  selectedTopicMeta: { marginTop: 8, color: c.primary, fontWeight: "800", fontSize: 12 },
+  player: { width: "100%", height: 220, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" },
+  errorText: { color: c.danger, fontSize: 12, marginTop: 6, fontWeight: "700" },
+  timer: { fontSize: 38, color: c.primary, fontWeight: "800", marginBottom: 8 },
+  input: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+  noteRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
+    paddingVertical: 8,
+  },
+  noteTime: { color: c.primary, fontWeight: "700", marginBottom: 2 },
+  noteText: { color: c.text },
+  noteActions: { gap: 6 },
+  noteActionBtn: { minWidth: 82, paddingVertical: 8 },
+  docRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
+    paddingVertical: 8,
+  },
+  docTitle: { color: c.text, fontWeight: "700" },
+});
+}
+
 export default function VideoLessonsScreen({ route }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createVideoLessonsStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [dersler, setDersler] = useState([]);
   const [konular, setKonular] = useState([]);
@@ -486,7 +538,7 @@ export default function VideoLessonsScreen({ route }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -715,50 +767,4 @@ export default function VideoLessonsScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: { marginBottom: 10 },
-  h2: { color: colors.text, fontSize: 16, fontWeight: "700", marginBottom: 8 },
-  meta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  wrapRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  row: { flexDirection: "row", gap: 8 },
-  smallBtn: { minWidth: 90, paddingVertical: 8 },
-  activeBtn: { borderWidth: 2, borderColor: "#312e81" },
-  activeSecondary: { borderWidth: 2, borderColor: "#111827" },
-  topicBtnWrap: { minWidth: 110 },
-  selectedTopicBtn: { borderWidth: 2, borderColor: "#312e81" },
-  selectedTopicMeta: { marginTop: 8, color: colors.primary, fontWeight: "800", fontSize: 12 },
-  player: { width: "100%", height: 220, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" },
-  errorText: { color: colors.danger, fontSize: 12, marginTop: 6, fontWeight: "700" },
-  timer: { fontSize: 38, color: colors.primary, fontWeight: "800", marginBottom: 8 },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-  },
-  noteRow: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: 8,
-  },
-  noteTime: { color: colors.primary, fontWeight: "700", marginBottom: 2 },
-  noteText: { color: colors.text },
-  noteActions: { gap: 6 },
-  noteActionBtn: { minWidth: 82, paddingVertical: 8 },
-  docRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: 8,
-  },
-  docTitle: { color: colors.text, fontWeight: "700" },
-});
+

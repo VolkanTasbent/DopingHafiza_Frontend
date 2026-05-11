@@ -19,12 +19,12 @@ import AiCoachScreen from "../screens/AiCoachScreen";
 import CalismaProgramiScreen from "../screens/CalismaProgramiScreen";
 import StudyPlanScreen from "../screens/StudyPlanScreen";
 import MainTabs from "./MainTabs";
-import { colors } from "../theme";
-import { useUiPrefs } from "../context/UiPrefsContext";
+import { useTheme } from "../context/ThemeContext";
 
 const Stack = createNativeStackNavigator();
 
 function Splash() {
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg }}>
       <ActivityIndicator size="large" color={colors.primary} />
@@ -34,7 +34,7 @@ function Splash() {
 
 export default function RootNavigator() {
   const { isAuthenticated, tokenChecked } = useAuth();
-  const { darkMode } = useUiPrefs();
+  const { colors, darkMode } = useTheme();
 
   if (!tokenChecked) return <Splash />;
 

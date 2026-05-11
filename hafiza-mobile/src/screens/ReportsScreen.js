@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { fetchRaporlar } from "../services/quiz";
 import { Card, PrimaryButton, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -31,7 +31,43 @@ function formatDuration(ms) {
   return `${mm}:${ss}`;
 }
 
+function createReportsStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    summaryRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+    backWrap: { marginBottom: 8 },
+    backBtn: { alignSelf: "flex-start", minWidth: 86 },
+    summaryCard: { flex: 1, alignItems: "center", paddingVertical: 12 },
+    summaryValue: { fontSize: 20, fontWeight: "800", color: c.primary },
+    summaryLabel: { color: c.muted, fontSize: 12, marginTop: 3 },
+    chartCard: { marginBottom: 12 },
+    chartTitle: { fontWeight: "800", fontSize: 15, color: c.text, marginBottom: 8 },
+    chartRow: { flexDirection: "row", alignItems: "center", marginBottom: 7 },
+    chartDay: { width: 38, color: c.muted, fontWeight: "700", fontSize: 12, textTransform: "capitalize" },
+    chartBarBg: { flex: 1, height: 10, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginHorizontal: 8 },
+    chartBarFill: { height: "100%", backgroundColor: c.primary },
+    chartVal: { width: 42, textAlign: "right", color: c.text, fontWeight: "800", fontSize: 12 },
+    filterRow: { flexDirection: "row", gap: 8, marginBottom: 10, flexWrap: "wrap" },
+    filterChip: { borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
+    filterChipActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
+    filterText: { color: c.muted, fontSize: 12, fontWeight: "700" },
+    filterTextActive: { color: c.primary },
+    empty: { color: "#6b7280", marginTop: 20 },
+    card: { marginBottom: 10 },
+    cardTitle: { fontWeight: "700", marginBottom: 6 },
+    metricsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+    metricPill: { flex: 1, backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: c.border, paddingVertical: 8, alignItems: "center" },
+    metricValue: { color: c.text, fontWeight: "800", fontSize: 14 },
+    metricLabel: { color: c.muted, fontSize: 11, marginTop: 2 },
+    net: { color: c.text, fontWeight: "700", marginBottom: 2 },
+    meta: { color: "#6b7280", marginTop: 3, fontSize: 12 },
+  });
+}
+
 export default function ReportsScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createReportsStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [raporlar, setRaporlar] = useState([]);
@@ -59,7 +95,7 @@ export default function ReportsScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -201,35 +237,3 @@ export default function ReportsScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  summaryRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  backWrap: { marginBottom: 8 },
-  backBtn: { alignSelf: "flex-start", minWidth: 86 },
-  summaryCard: { flex: 1, alignItems: "center", paddingVertical: 12 },
-  summaryValue: { fontSize: 20, fontWeight: "800", color: colors.primary },
-  summaryLabel: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  chartCard: { marginBottom: 12 },
-  chartTitle: { fontWeight: "800", fontSize: 15, color: colors.text, marginBottom: 8 },
-  chartRow: { flexDirection: "row", alignItems: "center", marginBottom: 7 },
-  chartDay: { width: 38, color: colors.muted, fontWeight: "700", fontSize: 12, textTransform: "capitalize" },
-  chartBarBg: { flex: 1, height: 10, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginHorizontal: 8 },
-  chartBarFill: { height: "100%", backgroundColor: colors.primary },
-  chartVal: { width: 42, textAlign: "right", color: colors.text, fontWeight: "800", fontSize: 12 },
-  filterRow: { flexDirection: "row", gap: 8, marginBottom: 10, flexWrap: "wrap" },
-  filterChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
-  filterChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  filterText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  filterTextActive: { color: colors.primary },
-  empty: { color: "#6b7280", marginTop: 20 },
-  card: { marginBottom: 10 },
-  cardTitle: { fontWeight: "700", marginBottom: 6 },
-  metricsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  metricPill: { flex: 1, backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, alignItems: "center" },
-  metricValue: { color: colors.text, fontWeight: "800", fontSize: 14 },
-  metricLabel: { color: colors.muted, fontSize: 11, marginTop: 2 },
-  net: { color: colors.text, fontWeight: "700", marginBottom: 2 },
-  meta: { color: "#6b7280", marginTop: 3, fontSize: 12 },
-});

@@ -5,9 +5,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { fetchDersler, fetchRaporlar } from "../services/quiz";
 import { useAuth } from "../context/AuthContext";
 import { PrimaryButton, ProgressBar, SecondaryButton, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
 import { getRecentActivities } from "../services/activity";
-import { useUiPrefs } from "../context/UiPrefsContext";
+import { useTheme } from "../context/ThemeContext";
 
 /** Mobil: web menüsüyle aynı hedefler; Derslerim = der listesine kaydır */
 const SHORTCUTS_BASE = [
@@ -25,9 +24,216 @@ const SHORTCUTS_BASE = [
   { id: "flash", label: "Flash Card", emoji: "🎴", nav: "flash" },
 ];
 
+function createHomeStyles(c) {
+  return StyleSheet.create({
+    safe: { flex: 1 },
+    shellCard: {
+      borderRadius: 14,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingTop: 12,
+      paddingBottom: 14,
+      marginBottom: 12,
+    },
+    topbarRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    brandRow: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 },
+    logoEmoji: { fontSize: 26 },
+    brandTitle: { fontSize: 17, fontWeight: "700", flex: 1, minWidth: 0 },
+    topbarActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    roundIconBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 10,
+      borderWidth: 2,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "transparent",
+    },
+    roundIconInner: { fontSize: 20 },
+    logoutBtn: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      backgroundColor: c.logout,
+    },
+    logoutBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+    searchWrap: { width: "100%" },
+    searchInput: {
+      width: "100%",
+      minHeight: 42,
+      borderRadius: 12,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 14,
+    },
+    hero: {
+      borderRadius: 16,
+      paddingHorizontal: 18,
+      paddingVertical: 22,
+      marginBottom: 12,
+      overflow: "hidden",
+    },
+    heroTitle: {
+      fontSize: 28,
+      fontWeight: "700",
+      color: "#fff",
+      marginBottom: 6,
+      letterSpacing: -0.5,
+      textShadowColor: "rgba(0,0,0,0.15)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 8,
+    },
+    heroSubtitle: { fontSize: 14, color: "rgba(255,255,255,0.95)", fontWeight: "400", marginBottom: 6 },
+    heroWelcome: { fontSize: 13, color: "rgba(255,255,255,0.88)", fontWeight: "600", marginBottom: 18 },
+    heroStatsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between" },
+    heroWeekLine: {
+      marginTop: 14,
+      fontSize: 12,
+      color: "rgba(255,255,255,0.9)",
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    statFrost: {
+      flexGrow: 1,
+      flexBasis: "28%",
+      minWidth: 88,
+      backgroundColor: "rgba(255,255,255,0.15)",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.22)",
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
+      alignItems: "center",
+    },
+    statFrostValue: { fontSize: 22, fontWeight: "700", marginBottom: 4 },
+    statFrostLabel: { fontSize: 11, color: "rgba(255,255,255,0.92)", fontWeight: "600", textAlign: "center" },
+    shortcutsCard: {
+      borderRadius: 14,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      marginBottom: 12,
+    },
+    shortcutsTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
+    shortcutsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    shortcutChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      gap: 6,
+      maxWidth: "48%",
+      flexGrow: 1,
+      minWidth: "42%",
+    },
+    shortcutEmoji: { fontSize: 16 },
+    shortcutLabel: { fontSize: 13, fontWeight: "700", flex: 1 },
+    dashOuter: {
+      borderRadius: 16,
+      borderWidth: 1,
+      marginBottom: 12,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    dashHead: {
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+    },
+    dashTitle: { fontSize: 16, fontWeight: "700" },
+    dashBody: { padding: 16 },
+    bodyStrong: { fontWeight: "800", fontSize: 15 },
+    bodyMuted: { fontSize: 13, marginTop: 4, lineHeight: 20 },
+    activityRow: {
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    activityTitle: { fontWeight: "700", fontSize: 14 },
+    activityMeta: { fontSize: 12, marginTop: 3 },
+    activityGo: { color: c.primary, fontWeight: "800", fontSize: 13 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 140 },
+    emptyCard: { borderRadius: 14, borderWidth: 1, padding: 20, marginBottom: 12 },
+    dersCard: {
+      borderRadius: 20,
+      borderWidth: 1,
+      marginBottom: 14,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
+    },
+    dersCardHeader: {
+      paddingHorizontal: 18,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    dersIconRow: { flexDirection: "row", alignItems: "center" },
+    dersIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 14,
+      backgroundColor: c.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#667eea",
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 3,
+    },
+    dersIconText: { color: "#fff", fontWeight: "700", fontSize: 20 },
+    dersBadge: {
+      backgroundColor: c.primarySoft,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+    },
+    dersBadgeText: { color: c.primary, fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
+    dersCardBody: { paddingHorizontal: 18, paddingVertical: 16 },
+    dersCardTitle: { fontSize: 19, fontWeight: "700", marginBottom: 8, letterSpacing: -0.3 },
+    dersCardDesc: { fontSize: 14, lineHeight: 21, marginBottom: 10 },
+    coursePerfBox: { marginBottom: 4, borderWidth: 1, borderRadius: 10, padding: 10 },
+    coursePerfPills: { flexDirection: "row", gap: 6, marginBottom: 8, flexWrap: "wrap" },
+    coursePill: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 999,
+      backgroundColor: c.primarySoft,
+      color: c.primary,
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    courseLast: { fontSize: 11, marginTop: 6, fontWeight: "600" },
+    courseHint: { fontSize: 13, marginBottom: 4 },
+    dersCardFooter: { paddingHorizontal: 16, paddingVertical: 16, borderTopWidth: 1 },
+    footerBtnRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
+  });
+}
+
 export default function HomeScreen({ navigation }) {
+  const { colors: themeColors, darkMode, toggleDarkMode } = useTheme();
+  const styles = useMemo(() => createHomeStyles(themeColors), [themeColors]);
   const { user, logout } = useAuth();
-  const { darkMode, toggleDarkMode } = useUiPrefs();
   const scrollRef = useRef(null);
   const dersListOffsetY = useRef(0);
   const [loading, setLoading] = useState(true);
@@ -37,39 +243,18 @@ export default function HomeScreen({ navigation }) {
   const [recentActivities, setRecentActivities] = useState([]);
 
   const palette = useMemo(
-    () =>
-      darkMode
-        ? {
-            bg: "#0f172a",
-            card: "#1e293b",
-            text: "#e2e8f0",
-            muted: "#94a3b8",
-            border: "rgba(255,255,255,0.12)",
-            dashHeadBorder: "rgba(255,255,255,0.1)",
-            inputBg: "#0f172a",
-            topbarBg: "#1e293b",
-            searchBorder: "rgba(255,255,255,0.14)",
-            footerBg: "#0f172a",
-            heroBg: "#312e81",
-            chipBg: "rgba(102, 126, 234, 0.22)",
-            chipBorder: "rgba(255,255,255,0.18)",
-          }
-        : {
-            bg: "#f8fafc",
-            card: "#ffffff",
-            text: "#111827",
-            muted: "#6b7280",
-            border: "#e5e7eb",
-            dashHeadBorder: "#f1f5f9",
-            inputBg: "#fafafa",
-            topbarBg: "#ffffff",
-            searchBorder: "#dddddd",
-            footerBg: "#f9fafb",
-            heroBg: "#667eea",
-            chipBg: "#eef2ff",
-            chipBorder: "#c7d2fe",
-          },
-    [darkMode]
+    () => ({
+      ...themeColors,
+      dashHeadBorder: darkMode ? "rgba(255,255,255,0.1)" : "#f1f5f9",
+      inputBg: darkMode ? "#0f172a" : "#fafafa",
+      topbarBg: darkMode ? "#1e293b" : "#ffffff",
+      searchBorder: darkMode ? "rgba(255,255,255,0.14)" : "#dddddd",
+      footerBg: darkMode ? "#0f172a" : "#f9fafb",
+      heroBg: darkMode ? "#312e81" : "#667eea",
+      chipBg: darkMode ? "rgba(102, 126, 234, 0.22)" : "#eef2ff",
+      chipBorder: darkMode ? "rgba(255,255,255,0.18)" : "#c7d2fe",
+    }),
+    [themeColors, darkMode]
   );
 
   const shortcuts = useMemo(() => {
@@ -314,15 +499,15 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.heroStatsRow}>
           <View style={styles.statFrost}>
-            <Text style={[styles.statFrostValue, { color: colors.success }]}>{stats.correct}</Text>
+            <Text style={[styles.statFrostValue, { color: themeColors.success }]}>{stats.correct}</Text>
             <Text style={styles.statFrostLabel}>Doğru</Text>
           </View>
           <View style={styles.statFrost}>
-            <Text style={[styles.statFrostValue, { color: colors.accentBlue }]}>%{stats.success}</Text>
+            <Text style={[styles.statFrostValue, { color: themeColors.accentBlue }]}>%{stats.success}</Text>
             <Text style={styles.statFrostLabel}>Başarı</Text>
           </View>
           <View style={styles.statFrost}>
-            <Text style={[styles.statFrostValue, { color: colors.accentCyan }]}>{stats.totalSolved}</Text>
+            <Text style={[styles.statFrostValue, { color: themeColors.accentCyan }]}>{stats.totalSolved}</Text>
             <Text style={styles.statFrostLabel}>Çözülen</Text>
           </View>
         </View>
@@ -356,7 +541,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      <DashboardSection palette={palette} darkMode={darkMode} title="Kaldığın Yerden Devam Et">
+      <DashboardSection styles={styles} palette={palette} darkMode={darkMode} title="Kaldığın Yerden Devam Et">
         {lastActivity ? (
           <>
             <Text style={[styles.bodyStrong, { color: palette.text }]}>{lastActivity.title || "Son aktivite"}</Text>
@@ -370,7 +555,7 @@ export default function HomeScreen({ navigation }) {
         )}
       </DashboardSection>
 
-      <DashboardSection palette={palette} darkMode={darkMode} title="📋 Son Aktivitelerim">
+      <DashboardSection styles={styles} palette={palette} darkMode={darkMode} title="📋 Son Aktivitelerim">
         {recentActivities.length === 0 ? (
           <Text style={[styles.bodyMuted, { color: palette.muted }]}>Henüz aktivite kaydı yok.</Text>
         ) : null}
@@ -415,7 +600,7 @@ export default function HomeScreen({ navigation }) {
         {listHeader}
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ActivityIndicator size="large" color={themeColors.primary} />
           </View>
         ) : dersler.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -496,7 +681,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-function DashboardSection({ palette, darkMode, title, children }) {
+function DashboardSection({ styles, palette, darkMode, title, children }) {
   return (
     <View style={[styles.dashOuter, { borderColor: palette.border, backgroundColor: palette.card }]}>
       <View style={[styles.dashHead, { borderBottomColor: palette.dashHeadBorder, backgroundColor: darkMode ? "#0f172a" : "#f8fafc" }]}>
@@ -506,207 +691,3 @@ function DashboardSection({ palette, darkMode, title, children }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  shellCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 14,
-    marginBottom: 12,
-  },
-  topbarRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 },
-  logoEmoji: { fontSize: 26 },
-  brandTitle: { fontSize: 17, fontWeight: "700", flex: 1, minWidth: 0 },
-  topbarActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  roundIconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-  },
-  roundIconInner: { fontSize: 20 },
-  logoutBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: colors.logout,
-  },
-  logoutBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  searchWrap: { width: "100%" },
-  searchInput: {
-    width: "100%",
-    minHeight: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  hero: {
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 22,
-    marginBottom: 12,
-    overflow: "hidden",
-  },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 6,
-    letterSpacing: -0.5,
-    textShadowColor: "rgba(0,0,0,0.15)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-  },
-  heroSubtitle: { fontSize: 14, color: "rgba(255,255,255,0.95)", fontWeight: "400", marginBottom: 6 },
-  heroWelcome: { fontSize: 13, color: "rgba(255,255,255,0.88)", fontWeight: "600", marginBottom: 18 },
-  heroStatsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between" },
-  heroWeekLine: {
-    marginTop: 14,
-    fontSize: 12,
-    color: "rgba(255,255,255,0.9)",
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  statFrost: {
-    flexGrow: 1,
-    flexBasis: "28%",
-    minWidth: 88,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    alignItems: "center",
-  },
-  statFrostValue: { fontSize: 22, fontWeight: "700", marginBottom: 4 },
-  statFrostLabel: { fontSize: 11, color: "rgba(255,255,255,0.92)", fontWeight: "600", textAlign: "center" },
-  shortcutsCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    marginBottom: 12,
-  },
-  shortcutsTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
-  shortcutsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  shortcutChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 6,
-    maxWidth: "48%",
-    flexGrow: 1,
-    minWidth: "42%",
-  },
-  shortcutEmoji: { fontSize: 16 },
-  shortcutLabel: { fontSize: 13, fontWeight: "700", flex: 1 },
-  dashOuter: {
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  dashHead: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-  },
-  dashTitle: { fontSize: 16, fontWeight: "700" },
-  dashBody: { padding: 16 },
-  bodyStrong: { fontWeight: "800", fontSize: 15 },
-  bodyMuted: { fontSize: 13, marginTop: 4, lineHeight: 20 },
-  activityRow: {
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  activityTitle: { fontWeight: "700", fontSize: 14 },
-  activityMeta: { fontSize: 12, marginTop: 3 },
-  activityGo: { color: colors.primary, fontWeight: "800", fontSize: 13 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 140 },
-  emptyCard: { borderRadius: 14, borderWidth: 1, padding: 20, marginBottom: 12 },
-  dersCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 14,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  dersCardHeader: {
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  dersIconRow: { flexDirection: "row", alignItems: "center" },
-  dersIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#667eea",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  dersIconText: { color: "#fff", fontWeight: "700", fontSize: 20 },
-  dersBadge: {
-    backgroundColor: "#e0e7ff",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  dersBadgeText: { color: "#3730a3", fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
-  dersCardBody: { paddingHorizontal: 18, paddingVertical: 16 },
-  dersCardTitle: { fontSize: 19, fontWeight: "700", marginBottom: 8, letterSpacing: -0.3 },
-  dersCardDesc: { fontSize: 14, lineHeight: 21, marginBottom: 10 },
-  coursePerfBox: { marginBottom: 4, borderWidth: 1, borderRadius: 10, padding: 10 },
-  coursePerfPills: { flexDirection: "row", gap: 6, marginBottom: 8, flexWrap: "wrap" },
-  coursePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: colors.primarySoft,
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  courseLast: { fontSize: 11, marginTop: 6, fontWeight: "600" },
-  courseHint: { fontSize: 13, marginBottom: 4 },
-  dersCardFooter: { paddingHorizontal: 16, paddingVertical: 16, borderTopWidth: 1 },
-  footerBtnRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
-});

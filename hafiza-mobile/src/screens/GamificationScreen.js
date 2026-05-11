@@ -3,12 +3,49 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchRaporlar } from "../services/quiz";
 import { fetchMarketItemsFromApi, purchaseMarketItem, syncGamification } from "../services/gamification";
-import { Card, PrimaryButton, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
-import { getJSON } from "../services/storage";
 import { BADGE_CATEGORIES, MARKET_ITEMS, calculateStreakFromReports, computeGamificationStats } from "../services/gamificationData";
+import { useTheme } from "../context/ThemeContext";
+import { Card, PrimaryButton, SectionTitle } from "../components/ui";
+
+function createGamificationStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    topRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+    backBtn: { minWidth: 78, marginTop: 2 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    card: { marginBottom: 10 },
+    h2: { fontWeight: "700", marginBottom: 6, fontSize: 16 },
+    barBg: { width: "100%", height: 12, backgroundColor: "#e5e7eb", borderRadius: 8, marginTop: 8, overflow: "hidden" },
+    barFill: { height: "100%", backgroundColor: "#4f46e5" },
+    smallBarBg: { width: "100%", height: 8, backgroundColor: "#edf2f7", borderRadius: 999, overflow: "hidden", marginTop: 5 },
+    smallBarFill: { height: "100%", backgroundColor: c.primary },
+    badgeRow: { marginBottom: 10 },
+    badgeName: { color: c.text, fontWeight: "600" },
+    badgeMeta: { color: c.muted, fontSize: 12, marginTop: 4 },
+    notice: { color: c.success, fontWeight: "700", marginTop: 6 },
+    chartLegendRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+    chartLegend: { color: c.text, fontWeight: "700", fontSize: 12 },
+    chartLegendValue: { color: c.primary, fontWeight: "800", fontSize: 12 },
+    chartTrack: { height: 10, borderRadius: 999, backgroundColor: "#e5e7eb", overflow: "hidden" },
+    chartFillPrimary: { height: "100%", backgroundColor: c.primary },
+    chartFillSecondary: { height: "100%", backgroundColor: "#06b6d4" },
+    marketHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+    toggleBtn: { backgroundColor: c.primarySoft, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+    toggleText: { color: c.primary, fontWeight: "700" },
+    marketBalance: { color: c.muted, marginBottom: 8 },
+    marketItem: { flexDirection: "row", gap: 10, alignItems: "center", marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: c.border },
+    marketTitle: { fontWeight: "700", color: c.text },
+    marketDesc: { color: c.muted, fontSize: 12, marginTop: 2 },
+    marketPrice: { color: c.text, marginTop: 4, fontWeight: "600" },
+    buyBtn: { backgroundColor: c.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+    buyBtnDisabled: { backgroundColor: "#9ca3af" },
+    buyText: { color: "#fff", fontWeight: "700" },
+  });
+}
 
 export default function GamificationScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createGamificationStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [raporlar, setRaporlar] = useState([]);
   const [marketOpen, setMarketOpen] = useState(false);
@@ -125,7 +162,7 @@ export default function GamificationScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -264,37 +301,3 @@ export default function GamificationScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  topRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  backBtn: { minWidth: 78, marginTop: 2 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { marginBottom: 10 },
-  h2: { fontWeight: "700", marginBottom: 6, fontSize: 16 },
-  barBg: { width: "100%", height: 12, backgroundColor: "#e5e7eb", borderRadius: 8, marginTop: 8, overflow: "hidden" },
-  barFill: { height: "100%", backgroundColor: "#4f46e5" },
-  smallBarBg: { width: "100%", height: 8, backgroundColor: "#edf2f7", borderRadius: 999, overflow: "hidden", marginTop: 5 },
-  smallBarFill: { height: "100%", backgroundColor: colors.primary },
-  badgeRow: { marginBottom: 10 },
-  badgeName: { color: colors.text, fontWeight: "600" },
-  badgeMeta: { color: colors.muted, fontSize: 12, marginTop: 4 },
-  notice: { color: colors.success, fontWeight: "700", marginTop: 6 },
-  chartLegendRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  chartLegend: { color: colors.text, fontWeight: "700", fontSize: 12 },
-  chartLegendValue: { color: colors.primary, fontWeight: "800", fontSize: 12 },
-  chartTrack: { height: 10, borderRadius: 999, backgroundColor: "#e5e7eb", overflow: "hidden" },
-  chartFillPrimary: { height: "100%", backgroundColor: colors.primary },
-  chartFillSecondary: { height: "100%", backgroundColor: "#06b6d4" },
-  marketHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-  toggleBtn: { backgroundColor: colors.primarySoft, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  toggleText: { color: colors.primary, fontWeight: "700" },
-  marketBalance: { color: colors.muted, marginBottom: 8 },
-  marketItem: { flexDirection: "row", gap: 10, alignItems: "center", marginBottom: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  marketTitle: { fontWeight: "700", color: colors.text },
-  marketDesc: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  marketPrice: { color: colors.text, marginTop: 4, fontWeight: "600" },
-  buyBtn: { backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  buyBtnDisabled: { backgroundColor: "#9ca3af" },
-  buyText: { color: "#fff", fontWeight: "700" },
-});

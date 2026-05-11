@@ -3,9 +3,37 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SecondaryButton, SectionTitle } from "../components/ui";
 import { fetchDersler, fetchSorular } from "../services/quiz";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createFlashcardsStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    card: { marginBottom: 10 },
+    h2: { fontWeight: "700", fontSize: 16, color: c.text, marginBottom: 8 },
+    rowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    row: { flexDirection: "row", gap: 8, marginTop: 10 },
+    smallBtn: { minWidth: 90, paddingVertical: 8 },
+    activeBtn: { borderWidth: 2, borderColor: "#312e81" },
+    meta: { color: c.muted, fontWeight: "600", marginBottom: 8 },
+    question: { color: c.text, fontSize: 16, fontWeight: "700", lineHeight: 22 },
+    optionsWrap: { marginTop: 10 },
+    optionCard: { marginBottom: 8, padding: 10 },
+    optionSelected: { borderColor: c.primary, backgroundColor: c.primarySoft },
+    optionCorrect: { borderColor: "#86efac", backgroundColor: "#f0fdf4" },
+    optionWrong: { borderColor: "#fca5a5", backgroundColor: "#fef2f2" },
+    optionText: { color: c.text, fontWeight: "600" },
+    optionBadge: { color: c.success, fontSize: 11, marginTop: 4, fontWeight: "800" },
+    optionBadgeWrong: { color: c.danger, fontSize: 11, marginTop: 4, fontWeight: "800" },
+    answerBox: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 10, marginTop: 10 },
+    answerLabel: { color: c.muted, fontSize: 11, fontWeight: "700", marginBottom: 4 },
+    answer: { color: c.text, lineHeight: 20 },
+  });
+}
 
 export default function FlashcardsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createFlashcardsStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [dersler, setDersler] = useState([]);
   const [selectedDersId, setSelectedDersId] = useState(null);
@@ -50,7 +78,7 @@ export default function FlashcardsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -140,27 +168,3 @@ export default function FlashcardsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { marginBottom: 10 },
-  h2: { fontWeight: "700", fontSize: 16, color: colors.text, marginBottom: 8 },
-  rowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  row: { flexDirection: "row", gap: 8, marginTop: 10 },
-  smallBtn: { minWidth: 90, paddingVertical: 8 },
-  activeBtn: { borderWidth: 2, borderColor: "#312e81" },
-  meta: { color: colors.muted, fontWeight: "600", marginBottom: 8 },
-  question: { color: colors.text, fontSize: 16, fontWeight: "700", lineHeight: 22 },
-  optionsWrap: { marginTop: 10 },
-  optionCard: { marginBottom: 8, padding: 10 },
-  optionSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  optionCorrect: { borderColor: "#86efac", backgroundColor: "#f0fdf4" },
-  optionWrong: { borderColor: "#fca5a5", backgroundColor: "#fef2f2" },
-  optionText: { color: colors.text, fontWeight: "600" },
-  optionBadge: { color: colors.success, fontSize: 11, marginTop: 4, fontWeight: "800" },
-  optionBadgeWrong: { color: colors.danger, fontSize: 11, marginTop: 4, fontWeight: "800" },
-  answerBox: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, marginTop: 10 },
-  answerLabel: { color: colors.muted, fontSize: 11, fontWeight: "700", marginBottom: 4 },
-  answer: { color: colors.text, lineHeight: 20 },
-});

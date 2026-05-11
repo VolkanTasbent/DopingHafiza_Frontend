@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { Card, SectionTitle } from "../components/ui";
 import { getApiBaseUrl } from "../services/apiBaseUrl";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 function analyzeItem(item) {
   const s = item?.soru;
@@ -45,7 +45,32 @@ function toAbsoluteUrl(url) {
   return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 
+function createQuestionSolutionStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    card: { marginBottom: 10 },
+    question: { color: c.text, fontSize: 16, fontWeight: "700", lineHeight: 22 },
+    blockTitle: { color: c.text, fontWeight: "800", marginBottom: 8 },
+    optionRow: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      padding: 10,
+      marginBottom: 8,
+      backgroundColor: "#fff",
+    },
+    optionCorrect: { borderColor: "#86efac", backgroundColor: "#f0fdf4" },
+    optionWrong: { borderColor: "#fca5a5", backgroundColor: "#fef2f2" },
+    optionText: { color: c.text, fontWeight: "600" },
+    badge: { color: c.muted, fontSize: 12, marginTop: 4, fontWeight: "700" },
+    meta: { color: c.muted, marginBottom: 4, lineHeight: 19 },
+    player: { width: "100%", height: 220, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" },
+  });
+}
+
 export default function QuestionSolutionScreen({ route }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createQuestionSolutionStyles(colors), [colors]);
   const reportItem = route?.params?.reportItem;
   const questionIndex = route?.params?.questionIndex;
 
@@ -107,24 +132,3 @@ export default function QuestionSolutionScreen({ route }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  card: { marginBottom: 10 },
-  question: { color: colors.text, fontSize: 16, fontWeight: "700", lineHeight: 22 },
-  blockTitle: { color: colors.text, fontWeight: "800", marginBottom: 8 },
-  optionRow: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-    backgroundColor: "#fff",
-  },
-  optionCorrect: { borderColor: "#86efac", backgroundColor: "#f0fdf4" },
-  optionWrong: { borderColor: "#fca5a5", backgroundColor: "#fef2f2" },
-  optionText: { color: colors.text, fontWeight: "600" },
-  badge: { color: colors.muted, fontSize: 12, marginTop: 4, fontWeight: "700" },
-  meta: { color: colors.muted, marginBottom: 4, lineHeight: 19 },
-  player: { width: "100%", height: 220, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" },
-});

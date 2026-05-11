@@ -12,7 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Card, SecondaryButton, SectionTitle } from "../components/ui";
 import { getJSON } from "../services/storage";
 import { fetchPomodoroDailyStats, fetchRaporlarGrafikler } from "../services/quiz";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const DAYS = ["Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi", "Pazar"];
 const DAY_BY_INDEX = ["Pazar", "Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi"];
@@ -83,7 +83,77 @@ function pomodoroFromFocusHistory(history, weekStart) {
   return map;
 }
 
+function createCalendarStyles(c) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+  card: { marginBottom: 10 },
+  h2: { color: c.text, fontWeight: "800", fontSize: 16, marginBottom: 8 },
+  meta: { color: c.muted, marginBottom: 4, fontSize: 13 },
+  row: { paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: c.border },
+  filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 6 },
+  filterChip: { borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
+  filterChipActive: { borderColor: c.primary, backgroundColor: c.primarySoft },
+  filterText: { color: c.muted, fontSize: 12, fontWeight: "700" },
+  filterTextActive: { color: c.primary },
+  day: { color: c.text, fontWeight: "700" },
+  dayMeta: { color: c.muted, fontSize: 12, marginTop: 2 },
+  weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 },
+  navBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: c.primarySoft,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  navBtnText: { fontSize: 12, fontWeight: "800", color: c.primary },
+  weekMid: { flex: 1, alignItems: "center" },
+  weekRange: { fontSize: 12, fontWeight: "700", color: c.text, textAlign: "center" },
+  todayLink: { fontSize: 12, fontWeight: "800", color: c.primary, marginTop: 4 },
+  loader: { paddingVertical: 16, alignItems: "center" },
+  summaryBig: { fontSize: 14, color: c.text, marginTop: 10, lineHeight: 20 },
+  summaryStrong: { fontWeight: "800", color: c.primary },
+  miniHint: { fontSize: 11, color: c.muted, marginTop: 6, lineHeight: 16 },
+  dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10, justifyContent: "space-between" },
+  dayCell: {
+    width: "31%",
+    minWidth: 100,
+    flexGrow: 1,
+    backgroundColor: c.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+    padding: 10,
+    marginBottom: 4,
+  },
+  dayCellToday: { borderColor: c.primary, borderWidth: 2 },
+  dayCellActive: { backgroundColor: "#f8faff" },
+  dayCellHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  dayCellName: { fontSize: 12, fontWeight: "800", color: c.text },
+  dayCellNum: { fontSize: 12, fontWeight: "800", color: c.muted },
+  dayCellTime: { fontSize: 13, fontWeight: "800", color: c.primary, marginBottom: 4 },
+  dayCellMeta: { fontSize: 10, color: c.muted, fontWeight: "600" },
+  pomoLine: { fontSize: 10, color: c.muted, marginTop: 4, fontWeight: "600" },
+  dayEmpty: { fontSize: 12, color: c.muted, fontStyle: "italic" },
+  barChart: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", height: 120, gap: 4, paddingTop: 8 },
+  barCol: { flex: 1, alignItems: "center", height: "100%", justifyContent: "flex-end" },
+  barTrack: {
+    width: "70%",
+    maxWidth: 32,
+    height: 88,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 6,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  barFill: { width: "100%", backgroundColor: c.primary, borderRadius: 6, minHeight: 6 },
+  barLabel: { fontSize: 9, fontWeight: "700", color: c.muted, marginTop: 6, textAlign: "center" },
+});
+}
+
 export default function CalendarScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createCalendarStyles(colors), [colors]);
   const [plan, setPlan] = useState({});
   const [tasks, setTasks] = useState([]);
   const [focusHistory, setFocusHistory] = useState([]);
@@ -443,68 +513,4 @@ export default function CalendarScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  card: { marginBottom: 10 },
-  h2: { color: colors.text, fontWeight: "800", fontSize: 16, marginBottom: 8 },
-  meta: { color: colors.muted, marginBottom: 4, fontSize: 13 },
-  row: { paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.border },
-  filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 6 },
-  filterChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
-  filterChipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  filterText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  filterTextActive: { color: colors.primary },
-  day: { color: colors.text, fontWeight: "700" },
-  dayMeta: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 },
-  navBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  navBtnText: { fontSize: 12, fontWeight: "800", color: colors.primary },
-  weekMid: { flex: 1, alignItems: "center" },
-  weekRange: { fontSize: 12, fontWeight: "700", color: colors.text, textAlign: "center" },
-  todayLink: { fontSize: 12, fontWeight: "800", color: colors.primary, marginTop: 4 },
-  loader: { paddingVertical: 16, alignItems: "center" },
-  summaryBig: { fontSize: 14, color: colors.text, marginTop: 10, lineHeight: 20 },
-  summaryStrong: { fontWeight: "800", color: colors.primary },
-  miniHint: { fontSize: 11, color: colors.muted, marginTop: 6, lineHeight: 16 },
-  dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10, justifyContent: "space-between" },
-  dayCell: {
-    width: "31%",
-    minWidth: 100,
-    flexGrow: 1,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 10,
-    marginBottom: 4,
-  },
-  dayCellToday: { borderColor: colors.primary, borderWidth: 2 },
-  dayCellActive: { backgroundColor: "#f8faff" },
-  dayCellHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  dayCellName: { fontSize: 12, fontWeight: "800", color: colors.text },
-  dayCellNum: { fontSize: 12, fontWeight: "800", color: colors.muted },
-  dayCellTime: { fontSize: 13, fontWeight: "800", color: colors.primary, marginBottom: 4 },
-  dayCellMeta: { fontSize: 10, color: colors.muted, fontWeight: "600" },
-  pomoLine: { fontSize: 10, color: colors.muted, marginTop: 4, fontWeight: "600" },
-  dayEmpty: { fontSize: 12, color: colors.muted, fontStyle: "italic" },
-  barChart: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", height: 120, gap: 4, paddingTop: 8 },
-  barCol: { flex: 1, alignItems: "center", height: "100%", justifyContent: "flex-end" },
-  barTrack: {
-    width: "70%",
-    maxWidth: 32,
-    height: 88,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 6,
-    justifyContent: "flex-end",
-    overflow: "hidden",
-  },
-  barFill: { width: "100%", backgroundColor: colors.primary, borderRadius: 6, minHeight: 6 },
-  barLabel: { fontSize: 9, fontWeight: "700", color: colors.muted, marginTop: 6, textAlign: "center" },
-});
+

@@ -3,11 +3,31 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SecondaryButton, SectionTitle } from "../components/ui";
 import { getJSON, setJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const PRESETS = [15, 25, 40, 60];
 
+function createFocusTimerStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    timerCard: { marginBottom: 10, alignItems: "center" },
+    modeText: { color: c.muted, fontWeight: "700", marginBottom: 4 },
+    timerText: { fontSize: 54, fontWeight: "800", color: c.primary, marginBottom: 8 },
+    row: { flexDirection: "row", gap: 8 },
+    card: { marginBottom: 10 },
+    h2: { fontSize: 16, fontWeight: "700", color: c.text, marginBottom: 8 },
+    presets: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+    sessionValue: { fontSize: 36, fontWeight: "800", color: c.text },
+    meta: { color: c.muted, marginTop: 6 },
+    historyRow: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: c.border },
+    historyMain: { color: c.text, fontWeight: "600" },
+    historyMeta: { color: c.muted, fontSize: 12, marginTop: 1 },
+  });
+}
+
 export default function FocusTimerScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createFocusTimerStyles(colors), [colors]);
   const [secondsLeft, setSecondsLeft] = useState(25 * 60);
   const [focusMinutes, setFocusMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
@@ -175,19 +195,3 @@ export default function FocusTimerScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  timerCard: { marginBottom: 10, alignItems: "center" },
-  modeText: { color: colors.muted, fontWeight: "700", marginBottom: 4 },
-  timerText: { fontSize: 54, fontWeight: "800", color: colors.primary, marginBottom: 8 },
-  row: { flexDirection: "row", gap: 8 },
-  card: { marginBottom: 10 },
-  h2: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 8 },
-  presets: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  sessionValue: { fontSize: 36, fontWeight: "800", color: colors.text },
-  meta: { color: colors.muted, marginTop: 6 },
-  historyRow: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
-  historyMain: { color: colors.text, fontWeight: "600" },
-  historyMeta: { color: colors.muted, fontSize: 12, marginTop: 1 },
-});

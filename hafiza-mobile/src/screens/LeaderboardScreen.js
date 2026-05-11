@@ -6,9 +6,23 @@ import { useAuth } from "../context/AuthContext";
 import { fetchRaporlar } from "../services/quiz";
 import { getJSON } from "../services/storage";
 import { calculateStreakFromReports, computeGamificationStats } from "../services/gamificationData";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+
+function createLeaderboardStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    row: { marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
+    me: { borderColor: "#312e81", borderWidth: 2 },
+    rank: { color: c.primary, fontWeight: "800", width: 36 },
+    name: { color: c.text, fontWeight: "700" },
+    xp: { color: c.text, fontWeight: "800" },
+  });
+}
 
 export default function LeaderboardScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createLeaderboardStyles(colors), [colors]);
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [myScore, setMyScore] = useState(0);
@@ -44,7 +58,7 @@ export default function LeaderboardScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -66,13 +80,3 @@ export default function LeaderboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  row: { marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
-  me: { borderColor: "#312e81", borderWidth: 2 },
-  rank: { color: colors.primary, fontWeight: "800", width: 36 },
-  name: { color: colors.text, fontWeight: "700" },
-  xp: { color: colors.text, fontWeight: "800" },
-});

@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PrimaryButton, SectionTitle, SecondaryButton } from "../components/ui";
 import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { fetchKonular, fetchRaporlar } from "../services/quiz";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 function makeVideoItems(konu) {
   const list = Array.isArray(konu?.videolar) ? konu.videolar : [];
@@ -30,7 +30,30 @@ function toAbsoluteUrl(url) {
   return `${base}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 
+function createCourseDetailStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    tabRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+    tabBtn: { flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingVertical: 10, alignItems: "center", backgroundColor: "#fff" },
+    tabBtnActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
+    tabText: { color: c.muted, fontWeight: "700", fontSize: 12 },
+    tabTextActive: { color: c.primary },
+    card: { marginBottom: 10 },
+    title: { color: c.text, fontWeight: "800", marginBottom: 6 },
+    meta: { color: c.muted, fontSize: 12 },
+    row: { flexDirection: "row", gap: 8, marginTop: 8 },
+    videoRow: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: c.border },
+    chip: { borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
+    chipActive: { borderColor: c.primary, backgroundColor: c.primarySoft },
+    chipText: { color: c.muted, fontWeight: "700", fontSize: 12 },
+    chipTextActive: { color: c.primary },
+  });
+}
+
 export default function CourseDetailScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createCourseDetailStyles(colors), [colors]);
   const ders = route?.params?.ders;
   const initialTab = route?.params?.initialTab;
   const initialKonuId = route?.params?.initialKonuId;
@@ -94,7 +117,7 @@ export default function CourseDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -210,22 +233,3 @@ export default function CourseDetailScreen({ route, navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  tabRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  tabBtn: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 10, alignItems: "center", backgroundColor: "#fff" },
-  tabBtnActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  tabText: { color: colors.muted, fontWeight: "700", fontSize: 12 },
-  tabTextActive: { color: colors.primary },
-  card: { marginBottom: 10 },
-  title: { color: colors.text, fontWeight: "800", marginBottom: 6 },
-  meta: { color: colors.muted, fontSize: 12 },
-  row: { flexDirection: "row", gap: 8, marginTop: 8 },
-  videoRow: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#fff" },
-  chipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  chipText: { color: colors.muted, fontWeight: "700", fontSize: 12 },
-  chipTextActive: { color: colors.primary },
-});

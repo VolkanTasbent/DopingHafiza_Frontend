@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, SectionTitle } from "../components/ui";
 import { fetchDenemeSinavlari, fetchDersler, fetchKonular, fetchRaporlar } from "../services/quiz";
 import { getJSON } from "../services/storage";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 function normalize(v) {
   return String(v || "")
@@ -77,7 +77,29 @@ function scoreItem(item, rawQuery) {
   return score;
 }
 
+function createSearchStyles(c) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, padding: 16 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    topBar: { marginBottom: 8, paddingVertical: 10 },
+    backText: { color: c.primary, fontWeight: "800" },
+    searchBox: { marginBottom: 10 },
+    input: {
+      backgroundColor: "#fff",
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      padding: 10,
+    },
+    item: { marginBottom: 8 },
+    title: { color: c.text, fontWeight: "700" },
+    subtitle: { color: c.muted, marginTop: 2, fontSize: 12 },
+  });
+}
+
 export default function SearchScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createSearchStyles(colors), [colors]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [dataset, setDataset] = useState([]);
@@ -204,7 +226,7 @@ export default function SearchScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -243,21 +265,3 @@ export default function SearchScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  topBar: { marginBottom: 8, paddingVertical: 10 },
-  backText: { color: colors.primary, fontWeight: "800" },
-  searchBox: { marginBottom: 10 },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 10,
-  },
-  item: { marginBottom: 8 },
-  title: { color: colors.text, fontWeight: "700" },
-  subtitle: { color: colors.muted, marginTop: 2, fontSize: 12 },
-});
