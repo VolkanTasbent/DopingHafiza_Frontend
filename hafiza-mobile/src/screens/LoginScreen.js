@@ -12,8 +12,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../context/AuthContext";
-import { PrimaryButton } from "../components/ui";
+import { PrimaryButton, SecondaryButton } from "../components/ui";
 import { getApiBaseUrl } from "../services/apiBaseUrl";
 import { colors } from "../theme";
 
@@ -23,6 +24,37 @@ const SINIF_OPTIONS = [
   { value: "11", label: "11" },
   { value: "12", label: "12" },
 ];
+
+function formatAuthError(e) {
+  const isNetwork =
+    e?.code === "ECONNABORTED" ||
+    e?.code === "ERR_NETWORK" ||
+    e?.message === "Network Error" ||
+    (!e?.response && e?.request);
+  const base = getApiBaseUrl();
+  if (isNetwork) {
+    return `Sunucuya ulaşılamadı.\n\nDenenen adres:\n${base}\n\nİnternet ve API adresini kontrol edin.`;
+  }
+  let payload = e?.response?.data;
+  if (typeof payload === "string") {
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      return payload || e?.message || "İşlem başarısız.";
+    }
+  }
+  if (payload && typeof payload === "object") {
+    const t = payload.type || payload.error;
+    if (t === "BadCredentialsException" || payload.error === "Bad credentials") {
+      return "E-posta veya şifre hatalı.";
+    }
+    if (t === "UsernameNotFoundException") {
+      return payload.message || "Bu e-posta ile kayıt bulunamadı.";
+    }
+    return payload.message || payload.error || payload.detail || "İşlem başarısız.";
+  }
+  return e?.message || "İşlem başarısız.";
+}
 
 export default function LoginScreen() {
   const { login, register, loading } = useAuth();
@@ -48,6 +80,10 @@ export default function LoginScreen() {
         Alert.alert("Eksik bilgi", "Sınıf seçin.");
         return;
       }
+      if (password.length < 6) {
+        Alert.alert("Şifre", "Şifre en az 6 karakter olmalı.");
+        return;
+      }
     }
 
     try {
@@ -69,19 +105,7 @@ export default function LoginScreen() {
         await login(email.trim(), password);
       }
     } catch (e) {
-      const isNetwork =
-        e?.code === "ECONNABORTED" ||
-        e?.code === "ERR_NETWORK" ||
-        e?.message === "Network Error" ||
-        (!e?.response && e?.request);
-      const base = getApiBaseUrl();
-      const errMsg = isNetwork
-        ? `Sunucuya ulaşılamadı.\n\nDenenen adres:\n${base}\n\nAğ ve backend adresini kontrol edin.`
-        : e?.response?.data?.message ||
-          e?.response?.data?.error ||
-          e?.message ||
-          "İşlem başarısız.";
-      Alert.alert("Hata", String(errMsg));
+      Alert.alert("Hata", formatAuthError(e));
     }
   }
 
@@ -95,7 +119,8 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <StatusBar style="light" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -103,15 +128,37 @@ export default function LoginScreen() {
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.hero}>
-            <View style={styles.heroOrb1} />
-            <View style={styles.heroOrb2} />
+            <View style={styles.heroGlow} pointerEvents="none" />
+            <View style={styles.heroGlow2} pointerEvents="none" />
+            <Text style={styles.heroBadge}>YKS · soru · deneme · rapor</Text>
             <Text style={styles.heroEmoji}>📚</Text>
-            <Text style={styles.heroTitle}>Hafıza Akademi</Text>
-            <Text style={styles.heroLead}>YKS hazırlığında sorular, videolar ve raporlar tek yerde.</Text>
+            <Text style={styles.heroTitle}>TYT ve AYT'ye hazırlanın; takip, grafik ve günlük görevler yanınızda.</Text>
+            <Text style={styles.heroLead}>
+              Soru çözümü, denemeler ve raporlar tek hesapta. Giriş yap veya ücretsiz kayıt ol.
+            </Text>
+            <View style={styles.heroCtas}>
+              <SecondaryButton
+                title="Ücretsiz kayıt ol"
+                variant="outline"
+                dark
+                disabled={loading}
+                style={styles.heroOutlineBtn}
+                onPress={() => switchMode(true)}
+              />
+              <SecondaryButton
+                title="Zaten hesabım var"
+                variant="outline"
+                dark
+                disabled={loading}
+                style={styles.heroOutlineBtn}
+                onPress={() => switchMode(false)}
+              />
+            </View>
           </View>
 
           <View style={styles.cardWrap}>
@@ -230,11 +277,7 @@ export default function LoginScreen() {
 
               <PrimaryButton title={isRegister ? "Kayıt ol" : "Giriş yap"} onPress={onSubmit} loading={loading} disabled={loading} />
 
-              <Pressable
-                style={styles.switchRow}
-                onPress={() => switchMode(!isRegister)}
-                disabled={loading}
-              >
+              <Pressable style={styles.switchRow} onPress={() => switchMode(!isRegister)} disabled={loading}>
                 <Text style={styles.switchText}>
                   {isRegister ? "Zaten hesabın var mı? " : "Hesabın yok mu? "}
                   <Text style={styles.switchBold}>{isRegister ? "Giriş yap" : "Kayıt ol"}</Text>
@@ -259,65 +302,101 @@ export default function LoginScreen() {
   );
 }
 
+const HERO_BG = "#0a0b12";
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0f1117" },
+  safe: { flex: 1, backgroundColor: HERO_BG },
   flex: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 32,
+    paddingBottom: 28,
   },
   hero: {
-    paddingTop: 12,
-    paddingBottom: 56,
-    paddingHorizontal: 24,
-    backgroundColor: colors.primary,
+    paddingTop: 8,
+    paddingBottom: 52,
+    paddingHorizontal: 22,
+    backgroundColor: HERO_BG,
     alignItems: "center",
     overflow: "hidden",
     position: "relative",
   },
-  heroOrb1: {
+  heroGlow: {
     position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    top: -90,
-    right: -70,
+    width: 320,
+    height: 280,
+    borderRadius: 160,
+    backgroundColor: "rgba(99, 102, 241, 0.22)",
+    top: -120,
+    alignSelf: "center",
   },
-  heroOrb2: {
+  heroGlow2: {
     position: "absolute",
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(168, 85, 247, 0.12)",
     bottom: -40,
-    left: -50,
+    right: -60,
+  },
+  heroBadge: {
+    zIndex: 1,
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    overflow: "hidden",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    color: "rgba(248,250,252,0.95)",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    textAlign: "center",
   },
   heroEmoji: {
-    fontSize: 40,
-    marginBottom: 10,
+    fontSize: 36,
+    marginBottom: 8,
     zIndex: 1,
   },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -0.5,
+    color: "#fafafa",
+    letterSpacing: -0.4,
     textAlign: "center",
+    lineHeight: 30,
     zIndex: 1,
+    maxWidth: 400,
   },
   heroLead: {
-    marginTop: 10,
-    fontSize: 15,
-    color: "rgba(255,255,255,0.9)",
+    marginTop: 12,
+    fontSize: 14,
+    color: "rgba(203,213,225,0.95)",
     textAlign: "center",
-    lineHeight: 22,
-    maxWidth: 320,
-    fontWeight: "600",
+    lineHeight: 21,
+    maxWidth: 340,
+    fontWeight: "500",
     zIndex: 1,
   },
+  heroCtas: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 18,
+    zIndex: 1,
+    paddingHorizontal: 4,
+  },
+  heroOutlineBtn: {
+    minWidth: 148,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    backgroundColor: "transparent",
+    borderColor: "rgba(255,255,255,0.42)",
+  },
   cardWrap: {
-    marginTop: -36,
+    marginTop: -32,
     paddingHorizontal: 16,
     zIndex: 2,
   },
@@ -451,8 +530,9 @@ const styles = StyleSheet.create({
   },
   footerBlock: {
     alignItems: "center",
-    marginTop: 28,
+    marginTop: 24,
     gap: 6,
+    paddingBottom: 8,
   },
   footer: {
     textAlign: "center",

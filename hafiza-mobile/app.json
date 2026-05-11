@@ -22,6 +22,7 @@
       }
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.hafiza.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
