@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -259,6 +259,14 @@ export default function VideoLessonsScreen({ route }) {
   const timerRef = useRef(null);
   const webViewRef = useRef(null);
   const lastAutoVideoId = useRef(null);
+  const scrollRef = useRef(null);
+  const deepLinkSectionY = useRef(0);
+  const scrolledForDeepLinkKey = useRef(null);
+
+  const deepLinkScrollKey = useMemo(() => {
+    const p = route?.params || {};
+    return `${p.dersId ?? ""}|${p.konuId ?? ""}|${p.videoId ?? ""}|${String(p.videoUrl || "").slice(0, 120)}`;
+  }, [route?.params?.dersId, route?.params?.konuId, route?.params?.videoId, route?.params?.videoUrl]);
 
   /** route.params ilk renderda okunur; pending state ile yarışmayı önler (yanlış ders/konu). */
   const deepLink = useMemo(() => {
@@ -289,6 +297,20 @@ export default function VideoLessonsScreen({ route }) {
     route?.params?.videoId,
     route?.params?.videoUrl,
   ]);
+
+  /** Git ile gelinen derin linkte ekrani Konular + Videolar bloguna kaydir (bir kez / link) */
+  useEffect(() => {
+    scrolledForDeepLinkKey.current = null;
+  }, [deepLinkScrollKey]);
+
+  const tryScrollToDeepLinkSection = useCallback(() => {
+    if (!deepLink || loading) return;
+    if (scrolledForDeepLinkKey.current === deepLinkScrollKey) return;
+    const y = deepLinkSectionY.current;
+    if (y <= 0) return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+    scrolledForDeepLinkKey.current = deepLinkScrollKey;
+  }, [deepLink, loading, deepLinkScrollKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,6 +400,12 @@ export default function VideoLessonsScreen({ route }) {
   }, [konular, selectedKonuId, deepLink?.videoId, deepLink?.videoUrl, deepLink?.noteSeconds]);
 
   useEffect(() => {
+    if (!deepLink || loading) return;
+    const t = setTimeout(() => tryScrollToDeepLinkSection(), 320);
+    return () => clearTimeout(t);
+  }, [deepLink, deepLinkScrollKey, loading, konular.length, selectedKonuId, selectedVideo?.id, tryScrollToDeepLinkSection]);
+
+  useEffect(() => {
     if (!selectedVideo) {
       setNotes([]);
       return;
@@ -420,26 +448,12 @@ export default function VideoLessonsScreen({ route }) {
 
   async function openVideo() {
     if (!selectedVideo?.url) return;
-    if (youtubeId && webViewRef.current) {
-      webViewRef.current.injectJavaScript("window.__play && window.__play(); true;");
-      await addActivity({
-        title: "Konu videosu oynatildi",
-        subtitle: currentTitle,
-        type: "video",
-        meta: {
-          dersId: selectedDersId,
-          konuId: selectedVideo.konuId,
-          videoId: selectedVideo.id,
-          videoUrl: selectedVideo.url,
-          noteSeconds: currentSeconds,
-        },
-      });
-      return;
-    }
+    const abs = toAbsoluteUrl(selectedVideo.url);
+    const url = buildUrlAtTime(abs, currentSeconds);
     try {
-      await Linking.openURL(toAbsoluteUrl(selectedVideo.url));
+      await Linking.openURL(url);
       await addActivity({
-        title: "Konu videosu acildi",
+        title: getYoutubeVideoId(selectedVideo.url) ? "Konu videosu YouTube'da acildi" : "Konu videosu acildi",
         subtitle: currentTitle,
         type: "video",
         meta: {
@@ -615,7 +629,11 @@ export default function VideoLessonsScreen({ route }) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <SectionTitle title="Konu Anlatim Videolari" subtitle="Udemy gibi saniye bazli not alabilirsin" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Card style={styles.card}>
           <Text style={styles.h2}>Dersler</Text>
           <View style={styles.wrapRow}>
@@ -630,61 +648,74 @@ export default function VideoLessonsScreen({ route }) {
           </View>
         </Card>
 
-        <Card style={styles.card}>
-          <Text style={styles.h2}>Konular</Text>
-          {konular.length === 0 ? <Text style={styles.meta}>Bu derste konu bulunamadi.</Text> : null}
-          <View style={styles.wrapRow}>
-            {konular.map((k) => {
-              const hasVideo = makeVideoItems(k).length > 0;
-              const selected = selectedKonuId === k.id;
-              return (
-                <View key={k.id} style={styles.topicBtnWrap}>
-                  {selected ? (
-                    <PrimaryButton
-                      title={`✓ ${hasVideo ? k.ad : `${k.ad} (Video yok)`}`}
-                      style={[styles.smallBtn, styles.selectedTopicBtn]}
-                      onPress={() => setSelectedKonuId(k.id)}
-                      disabled={!hasVideo}
-                    />
-                  ) : (
-                    <SecondaryButton
-                      title={hasVideo ? k.ad : `${k.ad} (Video yok)`}
-                      style={[styles.smallBtn]}
-                      onPress={() => setSelectedKonuId(k.id)}
-                      disabled={!hasVideo}
-                    />
-                  )}
-                </View>
-              );
-            })}
-          </View>
-          <Text style={styles.selectedTopicMeta}>
-            Secili Konu: {konular.find((k) => k.id === selectedKonuId)?.ad || "-"}
-          </Text>
-        </Card>
+        <View
+          collapsable={false}
+          onLayout={(e) => {
+            deepLinkSectionY.current = e.nativeEvent.layout.y;
+            if (deepLink && !loading) {
+              requestAnimationFrame(() => tryScrollToDeepLinkSection());
+            }
+          }}
+        >
+          <Card style={styles.card}>
+            <Text style={styles.h2}>Konular</Text>
+            {konular.length === 0 ? <Text style={styles.meta}>Bu derste konu bulunamadi.</Text> : null}
+            <View style={styles.wrapRow}>
+              {konular.map((k) => {
+                const hasVideo = makeVideoItems(k).length > 0;
+                const selected = selectedKonuId === k.id;
+                return (
+                  <View key={k.id} style={styles.topicBtnWrap}>
+                    {selected ? (
+                      <PrimaryButton
+                        title={`✓ ${hasVideo ? k.ad : `${k.ad} (Video yok)`}`}
+                        style={[styles.smallBtn, styles.selectedTopicBtn]}
+                        onPress={() => setSelectedKonuId(k.id)}
+                        disabled={!hasVideo}
+                      />
+                    ) : (
+                      <SecondaryButton
+                        title={hasVideo ? k.ad : `${k.ad} (Video yok)`}
+                        style={[styles.smallBtn]}
+                        onPress={() => setSelectedKonuId(k.id)}
+                        disabled={!hasVideo}
+                      />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+            <Text style={styles.selectedTopicMeta}>
+              Secili Konu: {konular.find((k) => k.id === selectedKonuId)?.ad || "-"}
+            </Text>
+          </Card>
 
-        <Card style={styles.card}>
-          <Text style={styles.h2}>Videolar</Text>
-          {videos.length === 0 ? <Text style={styles.meta}>Secili konuda video bulunamadi.</Text> : null}
-          <View style={styles.wrapRow}>
-            {videos.map((v) => (
-              <SecondaryButton
-                key={v.id}
-                title={v.title}
-                style={[styles.smallBtn, selectedVideo?.id === v.id && styles.activeSecondary]}
-                onPress={() => {
-                  setSelectedVideo(v);
-                  setCurrentSeconds(0);
-                  setNoteTimestamp(0);
-                  setRunning(false);
-                }}
-              />
-            ))}
-          </View>
-          <View style={{ marginTop: 10 }}>
-            <PrimaryButton title="Videoyu Ac" onPress={openVideo} disabled={!hasVideo} />
-          </View>
-        </Card>
+          <Card style={styles.card}>
+            <Text style={styles.h2}>Videolar</Text>
+            {videos.length === 0 ? <Text style={styles.meta}>Secili konuda video bulunamadi.</Text> : null}
+            <View style={styles.wrapRow}>
+              {videos.map((v) => (
+                <SecondaryButton
+                  key={v.id}
+                  title={v.title}
+                  style={[styles.smallBtn, selectedVideo?.id === v.id && styles.activeSecondary]}
+                  onPress={() => {
+                    setSelectedVideo(v);
+                    setCurrentSeconds(0);
+                    setNoteTimestamp(0);
+                    setRunning(false);
+                  }}
+                />
+              ))}
+            </View>
+            <View style={{ marginTop: 10 }}>
+              <PrimaryButton title="Videoyu Ac" onPress={openVideo} disabled={!hasVideo} />
+              <Text style={[styles.meta, { marginTop: 6 }]}>
+                YouTube veya tarayicide acilir; alttaki sure youtube.com linkine eklenir.
+              </Text>
+            </View>
+          </Card>
+        </View>
 
         {youtubeId ? (
           <Card style={styles.card}>
